@@ -1,0 +1,985 @@
+{
+  "timestamp": "2026-10-17T23:38:11.782Z",
+  "node": "v24.19.0",
+  "package": "z3-solver@5.3.1",
+  "startupMs": 67,
+  "elapsedMs": 1340,
+  "completed": true,
+  "passed": 44,
+  "total": 44,
+  "independentCorruptionChecks": 3,
+  "solveTimingMs": {
+    "min": 1.77,
+    "median": 12.44,
+    "max": 117.85
+  },
+  "scope": "Corridor-spine rectangular layouts, 2D clearance/path checks, four furniture footprints, aligned U-stair reservations and analytic headroom. No browser scene or AI calls.",
+  "assumptions": {
+    "unit": "10 cm",
+    "walkerRadiusCm": 30,
+    "wallThicknessCm": 10,
+    "doorwayCm": 90,
+    "reservedThroughRouteCm": 100,
+    "headroomCm": 210,
+    "notBuildingCodeCertification": true
+  },
+  "limitations": [
+    "No arbitrary room topology or aesthetic evaluation",
+    "No rendered geometry, Rapier stair traversal, mobile controls, TV playback, MongoDB or BullMQ integration",
+    "No AI or Meshy API calls",
+    "Experimental dimensions are product assumptions, not a building compliance assessment"
+  ],
+  "results": [
+    {
+      "name": "1br_0_forward",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 117.85,
+      "passed": true
+    },
+    {
+      "name": "1br_0_reversed",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 55.98,
+      "passed": true
+    },
+    {
+      "name": "1br_1_forward",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 13.03,
+      "passed": true
+    },
+    {
+      "name": "1br_1_reversed",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 11.2,
+      "passed": true
+    },
+    {
+      "name": "1br_2_forward",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 12.44,
+      "passed": true
+    },
+    {
+      "name": "1br_2_reversed",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 12.36,
+      "passed": true
+    },
+    {
+      "name": "1br_3_forward",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 12.18,
+      "passed": true
+    },
+    {
+      "name": "1br_3_reversed",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 11.8,
+      "passed": true
+    },
+    {
+      "name": "2br_0_forward",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 12.7,
+      "passed": true
+    },
+    {
+      "name": "2br_0_reversed",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 12.32,
+      "passed": true
+    },
+    {
+      "name": "2br_1_forward",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 14.68,
+      "passed": true
+    },
+    {
+      "name": "2br_1_reversed",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 11.86,
+      "passed": true
+    },
+    {
+      "name": "2br_2_forward",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 12.01,
+      "passed": true
+    },
+    {
+      "name": "2br_2_reversed",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 12.04,
+      "passed": true
+    },
+    {
+      "name": "2br_3_forward",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 12.06,
+      "passed": true
+    },
+    {
+      "name": "2br_3_reversed",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 11.64,
+      "passed": true
+    },
+    {
+      "name": "3br_0_forward",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 12.02,
+      "passed": true
+    },
+    {
+      "name": "3br_0_reversed",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 12.6,
+      "passed": true
+    },
+    {
+      "name": "3br_1_forward",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 12.45,
+      "passed": true
+    },
+    {
+      "name": "3br_1_reversed",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 12.44,
+      "passed": true
+    },
+    {
+      "name": "3br_2_forward",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 12.51,
+      "passed": true
+    },
+    {
+      "name": "3br_2_reversed",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 12.39,
+      "passed": true
+    },
+    {
+      "name": "3br_3_forward",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 12.55,
+      "passed": true
+    },
+    {
+      "name": "3br_3_reversed",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 12.68,
+      "passed": true
+    },
+    {
+      "name": "reject_undersized_house",
+      "expected": "unsat",
+      "actual": "unsat",
+      "solveMs": 12.6,
+      "passed": true
+    },
+    {
+      "name": "reject_too_shallow_for_rooms_and_hall",
+      "expected": "unsat",
+      "actual": "unsat",
+      "solveMs": 11.83,
+      "passed": true
+    },
+    {
+      "name": "free_furniture_6x5m",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 32.93,
+      "passed": true
+    },
+    {
+      "name": "free_furniture_7x5.5m",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 26.18,
+      "passed": true
+    },
+    {
+      "name": "reject_furniture_room_too_narrow",
+      "expected": "unsat",
+      "actual": "unsat",
+      "solveMs": 22.78,
+      "passed": true
+    },
+    {
+      "name": "validate_existing_furniture",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 10.75,
+      "passed": true
+    },
+    {
+      "name": "move_tv_preserve_other_items",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 11.15,
+      "passed": true
+    },
+    {
+      "name": "larger_table_preserve_sofa_tv_shelf",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 17.9,
+      "passed": true
+    },
+    {
+      "name": "reject_table_too_large",
+      "expected": "unsat",
+      "actual": "unsat",
+      "solveMs": 17.34,
+      "passed": true
+    },
+    {
+      "name": "reject_sofa_blocking_door_and_route",
+      "expected": "unsat",
+      "actual": "unsat",
+      "solveMs": 9.42,
+      "passed": true
+    },
+    {
+      "name": "reject_tv_through_wall",
+      "expected": "unsat",
+      "actual": "unsat",
+      "solveMs": 9.91,
+      "passed": true
+    },
+    {
+      "name": "two_storey_0",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 17.73,
+      "passed": true
+    },
+    {
+      "name": "two_storey_1",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 15.86,
+      "passed": true
+    },
+    {
+      "name": "two_storey_2",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 16.45,
+      "passed": true
+    },
+    {
+      "name": "two_storey_3",
+      "expected": "sat",
+      "actual": "sat",
+      "solveMs": 15.65,
+      "passed": true
+    },
+    {
+      "name": "reject_missing_stair_opening",
+      "expected": "unsat",
+      "actual": "unsat",
+      "solveMs": 1.77,
+      "passed": true
+    },
+    {
+      "name": "reject_shifted_stair_opening",
+      "expected": "unsat",
+      "actual": "unsat",
+      "solveMs": 2.54,
+      "passed": true
+    },
+    {
+      "name": "reject_narrow_stair_opening",
+      "expected": "unsat",
+      "actual": "unsat",
+      "solveMs": 2.56,
+      "passed": true
+    },
+    {
+      "name": "reject_misaligned_stairwells",
+      "expected": "unsat",
+      "actual": "unsat",
+      "solveMs": 10.79,
+      "passed": true
+    },
+    {
+      "name": "reject_low_headroom",
+      "expected": "unsat",
+      "actual": "unsat",
+      "solveMs": 2.35,
+      "passed": true
+    }
+  ],
+  "examples": {
+    "1br": {
+      "width": 80,
+      "depth": 70,
+      "hall": {
+        "x": 0,
+        "z": 28,
+        "w": 80,
+        "d": 12
+      },
+      "rooms": [
+        {
+          "id": "living_dining",
+          "x": 0,
+          "z": 0,
+          "w": 54,
+          "d": 28,
+          "minW": 42,
+          "minD": 28,
+          "door": {
+            "x": 27,
+            "z": 28,
+            "width": 9
+          }
+        },
+        {
+          "id": "kitchen",
+          "x": 54,
+          "z": 0,
+          "w": 26,
+          "d": 28,
+          "minW": 26,
+          "minD": 26,
+          "door": {
+            "x": 67,
+            "z": 28,
+            "width": 9
+          }
+        },
+        {
+          "id": "bedroom_1",
+          "x": 0,
+          "z": 40,
+          "w": 36,
+          "d": 30,
+          "minW": 32,
+          "minD": 30,
+          "door": {
+            "x": 18,
+            "z": 40,
+            "width": 9
+          }
+        },
+        {
+          "id": "bathroom",
+          "x": 36,
+          "z": 40,
+          "w": 20,
+          "d": 30,
+          "minW": 20,
+          "minD": 22,
+          "door": {
+            "x": 46,
+            "z": 40,
+            "width": 9
+          }
+        },
+        {
+          "id": "workspace",
+          "x": 56,
+          "z": 40,
+          "w": 24,
+          "d": 30,
+          "minW": 24,
+          "minD": 24,
+          "door": {
+            "x": 68,
+            "z": 40,
+            "width": 9
+          }
+        }
+      ]
+    },
+    "2br": {
+      "width": 100,
+      "depth": 80,
+      "hall": {
+        "x": 0,
+        "z": 28,
+        "w": 100,
+        "d": 12
+      },
+      "rooms": [
+        {
+          "id": "living_dining",
+          "x": 0,
+          "z": 0,
+          "w": 50,
+          "d": 28,
+          "minW": 42,
+          "minD": 28,
+          "door": {
+            "x": 25,
+            "z": 28,
+            "width": 9
+          }
+        },
+        {
+          "id": "kitchen",
+          "x": 50,
+          "z": 0,
+          "w": 26,
+          "d": 28,
+          "minW": 26,
+          "minD": 26,
+          "door": {
+            "x": 63,
+            "z": 28,
+            "width": 9
+          }
+        },
+        {
+          "id": "workspace",
+          "x": 76,
+          "z": 0,
+          "w": 24,
+          "d": 28,
+          "minW": 24,
+          "minD": 24,
+          "door": {
+            "x": 88,
+            "z": 28,
+            "width": 9
+          }
+        },
+        {
+          "id": "bedroom_1",
+          "x": 0,
+          "z": 40,
+          "w": 48,
+          "d": 40,
+          "minW": 32,
+          "minD": 30,
+          "door": {
+            "x": 24,
+            "z": 40,
+            "width": 9
+          }
+        },
+        {
+          "id": "bedroom_2",
+          "x": 48,
+          "z": 40,
+          "w": 32,
+          "d": 40,
+          "minW": 32,
+          "minD": 30,
+          "door": {
+            "x": 64,
+            "z": 40,
+            "width": 9
+          }
+        },
+        {
+          "id": "bathroom",
+          "x": 80,
+          "z": 40,
+          "w": 20,
+          "d": 40,
+          "minW": 20,
+          "minD": 22,
+          "door": {
+            "x": 90,
+            "z": 40,
+            "width": 9
+          }
+        }
+      ]
+    },
+    "3br": {
+      "width": 120,
+      "depth": 90,
+      "hall": {
+        "x": 0,
+        "z": 28,
+        "w": 120,
+        "d": 12
+      },
+      "rooms": [
+        {
+          "id": "living_dining",
+          "x": 0,
+          "z": 0,
+          "w": 50,
+          "d": 28,
+          "minW": 42,
+          "minD": 28,
+          "door": {
+            "x": 25,
+            "z": 28,
+            "width": 9
+          }
+        },
+        {
+          "id": "kitchen",
+          "x": 50,
+          "z": 0,
+          "w": 26,
+          "d": 28,
+          "minW": 26,
+          "minD": 26,
+          "door": {
+            "x": 63,
+            "z": 28,
+            "width": 9
+          }
+        },
+        {
+          "id": "workspace",
+          "x": 76,
+          "z": 0,
+          "w": 24,
+          "d": 28,
+          "minW": 24,
+          "minD": 24,
+          "door": {
+            "x": 88,
+            "z": 28,
+            "width": 9
+          }
+        },
+        {
+          "id": "bathroom",
+          "x": 100,
+          "z": 0,
+          "w": 20,
+          "d": 28,
+          "minW": 20,
+          "minD": 22,
+          "door": {
+            "x": 110,
+            "z": 28,
+            "width": 9
+          }
+        },
+        {
+          "id": "bedroom_1",
+          "x": 0,
+          "z": 40,
+          "w": 56,
+          "d": 50,
+          "minW": 32,
+          "minD": 30,
+          "door": {
+            "x": 28,
+            "z": 40,
+            "width": 9
+          }
+        },
+        {
+          "id": "bedroom_2",
+          "x": 56,
+          "z": 40,
+          "w": 32,
+          "d": 50,
+          "minW": 32,
+          "minD": 30,
+          "door": {
+            "x": 72,
+            "z": 40,
+            "width": 9
+          }
+        },
+        {
+          "id": "bedroom_3",
+          "x": 88,
+          "z": 40,
+          "w": 32,
+          "d": 50,
+          "minW": 32,
+          "minD": 30,
+          "door": {
+            "x": 104,
+            "z": 40,
+            "width": 9
+          }
+        }
+      ]
+    },
+    "freeFurniture": [
+      {
+        "id": "sofa",
+        "w": 9,
+        "d": 21,
+        "side": "left",
+        "x": 1,
+        "z": 5
+      },
+      {
+        "id": "tv",
+        "w": 4,
+        "d": 16,
+        "side": "right",
+        "x": 35,
+        "z": 6
+      },
+      {
+        "id": "table",
+        "w": 6,
+        "d": 11,
+        "side": "left",
+        "x": 1,
+        "z": 26
+      },
+      {
+        "id": "shelf",
+        "w": 4,
+        "d": 8,
+        "side": "right",
+        "x": 35,
+        "z": 22
+      }
+    ],
+    "fixture": [
+      {
+        "id": "sofa",
+        "w": 9,
+        "d": 21,
+        "side": "left",
+        "x": 2,
+        "z": 10
+      },
+      {
+        "id": "tv",
+        "w": 4,
+        "d": 16,
+        "side": "right",
+        "x": 53,
+        "z": 12
+      },
+      {
+        "id": "table",
+        "w": 6,
+        "d": 11,
+        "side": "left",
+        "x": 15,
+        "z": 33
+      },
+      {
+        "id": "shelf",
+        "w": 4,
+        "d": 8,
+        "side": "right",
+        "x": 48,
+        "z": 34
+      }
+    ],
+    "moveTV": [
+      {
+        "id": "sofa",
+        "w": 9,
+        "d": 21,
+        "side": "left",
+        "x": 2,
+        "z": 10
+      },
+      {
+        "id": "tv",
+        "w": 4,
+        "d": 16,
+        "side": "right",
+        "x": 51,
+        "z": 12
+      },
+      {
+        "id": "table",
+        "w": 6,
+        "d": 11,
+        "side": "left",
+        "x": 15,
+        "z": 33
+      },
+      {
+        "id": "shelf",
+        "w": 4,
+        "d": 8,
+        "side": "right",
+        "x": 48,
+        "z": 34
+      }
+    ],
+    "replaceTable": [
+      {
+        "id": "sofa",
+        "w": 9,
+        "d": 21,
+        "side": "left",
+        "x": 2,
+        "z": 10
+      },
+      {
+        "id": "tv",
+        "w": 4,
+        "d": 16,
+        "side": "right",
+        "x": 53,
+        "z": 12
+      },
+      {
+        "id": "table",
+        "w": 10,
+        "d": 12,
+        "side": "left",
+        "x": 1,
+        "z": 31
+      },
+      {
+        "id": "shelf",
+        "w": 4,
+        "d": 8,
+        "side": "right",
+        "x": 48,
+        "z": 34
+      }
+    ],
+    "twoStorey": {
+      "floors": [
+        {
+          "width": 100,
+          "depth": 90,
+          "hall": {
+            "x": 0,
+            "z": 40,
+            "w": 100,
+            "d": 12
+          },
+          "rooms": [
+            {
+              "id": "bathroom",
+              "x": 0,
+              "z": 0,
+              "w": 44,
+              "d": 40,
+              "minW": 20,
+              "minD": 22,
+              "door": {
+                "x": 22,
+                "z": 40,
+                "width": 9
+              }
+            },
+            {
+              "id": "stairs",
+              "x": 44,
+              "z": 0,
+              "w": 24,
+              "d": 40,
+              "minW": 24,
+              "minD": 40,
+              "door": {
+                "x": 50,
+                "z": 40,
+                "width": 9
+              }
+            },
+            {
+              "id": "guest_bedroom",
+              "x": 68,
+              "z": 0,
+              "w": 32,
+              "d": 40,
+              "minW": 32,
+              "minD": 30,
+              "door": {
+                "x": 84,
+                "z": 40,
+                "width": 9
+              }
+            },
+            {
+              "id": "living_dining",
+              "x": 0,
+              "z": 52,
+              "w": 50,
+              "d": 38,
+              "minW": 42,
+              "minD": 28,
+              "door": {
+                "x": 25,
+                "z": 52,
+                "width": 9
+              }
+            },
+            {
+              "id": "kitchen",
+              "x": 50,
+              "z": 52,
+              "w": 26,
+              "d": 38,
+              "minW": 26,
+              "minD": 26,
+              "door": {
+                "x": 63,
+                "z": 52,
+                "width": 9
+              }
+            },
+            {
+              "id": "workspace",
+              "x": 76,
+              "z": 52,
+              "w": 24,
+              "d": 38,
+              "minW": 24,
+              "minD": 24,
+              "door": {
+                "x": 88,
+                "z": 52,
+                "width": 9
+              }
+            }
+          ]
+        },
+        {
+          "width": 100,
+          "depth": 90,
+          "hall": {
+            "x": 0,
+            "z": 40,
+            "w": 100,
+            "d": 12
+          },
+          "rooms": [
+            {
+              "id": "bathroom",
+              "x": 0,
+              "z": 0,
+              "w": 44,
+              "d": 40,
+              "minW": 20,
+              "minD": 22,
+              "door": {
+                "x": 22,
+                "z": 40,
+                "width": 9
+              }
+            },
+            {
+              "id": "stairs",
+              "x": 44,
+              "z": 0,
+              "w": 24,
+              "d": 40,
+              "minW": 24,
+              "minD": 40,
+              "door": {
+                "x": 62,
+                "z": 40,
+                "width": 9
+              }
+            },
+            {
+              "id": "bedroom_1",
+              "x": 68,
+              "z": 0,
+              "w": 32,
+              "d": 40,
+              "minW": 32,
+              "minD": 30,
+              "door": {
+                "x": 84,
+                "z": 40,
+                "width": 9
+              }
+            },
+            {
+              "id": "bedroom_2",
+              "x": 0,
+              "z": 52,
+              "w": 44,
+              "d": 38,
+              "minW": 32,
+              "minD": 30,
+              "door": {
+                "x": 22,
+                "z": 52,
+                "width": 9
+              }
+            },
+            {
+              "id": "bedroom_3",
+              "x": 44,
+              "z": 52,
+              "w": 32,
+              "d": 38,
+              "minW": 32,
+              "minD": 30,
+              "door": {
+                "x": 60,
+                "z": 52,
+                "width": 9
+              }
+            },
+            {
+              "id": "workspace",
+              "x": 76,
+              "z": 52,
+              "w": 24,
+              "d": 38,
+              "minW": 24,
+              "minD": 24,
+              "door": {
+                "x": 88,
+                "z": 52,
+                "width": 9
+              }
+            }
+          ]
+        }
+      ],
+      "stairs": {
+        "footprint": {
+          "x": 44,
+          "z": 0,
+          "w": 24,
+          "d": 40
+        },
+        "opening": {
+          "x": 44,
+          "z": 0,
+          "w": 24,
+          "d": 40
+        },
+        "floorRise": 30,
+        "ceilingBelow": 28,
+        "risers": 18,
+        "tread": 2.8,
+        "flightWidth": 10,
+        "landing": 11
+      }
+    }
+  },
+  "failure": null
+}

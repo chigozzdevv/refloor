@@ -1,0 +1,17 @@
+{
+  "name": "@refloor/z3-layouts",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./validate": "./validate.ts"
+  },
+  "scripts": {
+    "test": "node probe.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@types/node": "26.6.5",
+    "typescript": "7.0.2",
+    "z3-solver": "5.3.1"
+  }
+}
