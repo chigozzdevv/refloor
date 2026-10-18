@@ -2,5 +2,7 @@ node_modules/
 dist/
 coverage/
 pnpm-lock.yaml
-client/public/assets/
+client/public/models/
+client/public/textures/
+client/public/media/
 .local/

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createHouse } from '@refloor/catalogue/houses';
-import { encodeProject, parseProjectFile } from '@/runtime/projects/files';
+import { encodeProject, parseProjectFile } from '@/shared/scene/files';
 
 describe('portable project files', () => {
   it('round-trips the complete two-storey building with stable identities and state', () => {

@@ -1,0 +1,570 @@
+{
+  "schemaVersion": 1,
+  "license": "CC0-1.0",
+  "licenseUrl": "https://polyhaven.com/license",
+  "apiGuide": "https://polyhaven.com/llms.txt",
+  "apiDimensionsUnit": "millimetres",
+  "retrievedAt": "2026-10-18T00:41:49.792447+00:00",
+  "assets": [
+    {
+      "id": "wood-floor",
+      "providerId": "oak_wood_planks",
+      "name": "Oak Wood Planks",
+      "kind": "material",
+      "sourcePage": "https://polyhaven.com/a/oak_wood_planks",
+      "authors": {
+        "Dimitrios Savva": "All"
+      },
+      "resolution": "1k",
+      "files": [
+        {
+          "role": "basecolor",
+          "path": "/textures/wood-floor/basecolor.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/oak_wood_planks/oak_wood_planks_diff_1k.jpg",
+          "bytes": 696814,
+          "md5": "e9e25ac7abcc482f73214fda23e2de25",
+          "sha256": "f715ed3e4346e94f971ef8dd61221ff6cc774886c20f65381e01e1dc0bb0a634"
+        },
+        {
+          "role": "normal",
+          "path": "/textures/wood-floor/normal.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/oak_wood_planks/oak_wood_planks_nor_gl_1k.jpg",
+          "bytes": 392213,
+          "md5": "6a71c23551887b77b29623bb871aefbf",
+          "sha256": "b4272cb2818f8f33f2620a2dc093c962f34920e9d485a4e132eb6d69de1ba950"
+        },
+        {
+          "role": "arm",
+          "path": "/textures/wood-floor/arm.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/oak_wood_planks/oak_wood_planks_arm_1k.jpg",
+          "bytes": 959397,
+          "md5": "acda23b587f7485d8c9c1d2c035e421f",
+          "sha256": "7786fe98ea2824ca90072fca069996429c56469acd96a80166d3780a13be70ce"
+        }
+      ],
+      "sourceDimensionsMillimetres": [1200.0000476837158, 1200.0000476837158],
+      "tileMetres": [1.2, 1.2],
+      "channels": {
+        "basecolor": "sRGB",
+        "normal": "linear, OpenGL +Y",
+        "arm": "linear: R ambient occlusion, G roughness, B metalness"
+      },
+      "provider": "Poly Haven",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license"
+    },
+    {
+      "id": "plaster",
+      "providerId": "white_stucco",
+      "name": "White Stucco",
+      "kind": "material",
+      "sourcePage": "https://polyhaven.com/a/white_stucco",
+      "authors": {
+        "Amal Kumar": "All"
+      },
+      "resolution": "1k",
+      "files": [
+        {
+          "role": "basecolor",
+          "path": "/textures/plaster/basecolor.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/white_stucco/white_stucco_diff_1k.jpg",
+          "bytes": 557550,
+          "md5": "34b66656dbf2a90eec29306deb1a20d0",
+          "sha256": "5f2d11f5675ffe679155d8e38ed8eaa9b9972126675641e4977c8a4f905f276b"
+        },
+        {
+          "role": "normal",
+          "path": "/textures/plaster/normal.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/white_stucco/white_stucco_nor_gl_1k.jpg",
+          "bytes": 932038,
+          "md5": "3e70f3be77f582fd41a9a08c8e8a6e66",
+          "sha256": "f0d4f34b30093ceca5e58d5168fc06c2f0cd0b81289708aa3eac7d0801bd069d"
+        },
+        {
+          "role": "arm",
+          "path": "/textures/plaster/arm.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/white_stucco/white_stucco_arm_1k.jpg",
+          "bytes": 323604,
+          "md5": "8528cc4a2fe3c4c047161682ecacdf7f",
+          "sha256": "f072f12ac50d667f23ec2c20dd03463923e405f109106cc7ad4d2d85eeb16bd6"
+        }
+      ],
+      "sourceDimensionsMillimetres": [1998.0629682540894, 1998.0640411376953],
+      "tileMetres": [1.998063, 1.998064],
+      "channels": {
+        "basecolor": "sRGB",
+        "normal": "linear, OpenGL +Y",
+        "arm": "linear: R ambient occlusion, G roughness, B metalness"
+      },
+      "provider": "Poly Haven",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license"
+    },
+    {
+      "id": "fabric",
+      "providerId": "cotton_jersey",
+      "name": "Cotton Jersey",
+      "kind": "material",
+      "sourcePage": "https://polyhaven.com/a/cotton_jersey",
+      "authors": {
+        "colormass": "Photography",
+        "Rico Cilliers": "Processing"
+      },
+      "resolution": "1k",
+      "files": [
+        {
+          "role": "basecolor",
+          "path": "/textures/fabric/basecolor.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/cotton_jersey/cotton_jersey_diff_1k.jpg",
+          "bytes": 581360,
+          "md5": "d2f4493fdd48634b50d40f810ce9deb7",
+          "sha256": "0f1b790e4087223275aaa6fdffdd46a556a26d2af72cd811acf72ba9c21ec1f6"
+        },
+        {
+          "role": "normal",
+          "path": "/textures/fabric/normal.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/cotton_jersey/cotton_jersey_nor_gl_1k.jpg",
+          "bytes": 678670,
+          "md5": "2dcc9dda3b726477f607c808e52f1833",
+          "sha256": "9b79709806511b62567fb007ff61009c3b194bb0d0821fbaee3faf1b2bff0318"
+        },
+        {
+          "role": "arm",
+          "path": "/textures/fabric/arm.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/cotton_jersey/cotton_jersey_arm_1k.jpg",
+          "bytes": 976674,
+          "md5": "f568748c335892e00b767565a3d5b6ae",
+          "sha256": "c3d38c2d862df80f0133f895bb7142978f097d69b4507374d5a8eafd6e088d71"
+        }
+      ],
+      "sourceDimensionsMillimetres": [263.6027473872483, 263.7999951839447],
+      "tileMetres": [0.263603, 0.2638],
+      "channels": {
+        "basecolor": "sRGB",
+        "normal": "linear, OpenGL +Y",
+        "arm": "linear: R ambient occlusion, G roughness, B metalness"
+      },
+      "provider": "Poly Haven",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license"
+    },
+    {
+      "id": "daylight",
+      "providerId": "qwantani_late_afternoon_puresky",
+      "name": "Qwantani Late Afternoon (Pure Sky)",
+      "kind": "environment",
+      "sourcePage": "https://polyhaven.com/a/qwantani_late_afternoon_puresky",
+      "authors": {
+        "Greg Zaal": "Photography",
+        "Jarod Guest": "Processing"
+      },
+      "resolution": "1k",
+      "files": [
+        {
+          "role": "environment",
+          "path": "/textures/environment/daylight.hdr",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/qwantani_late_afternoon_puresky_1k.hdr",
+          "bytes": 1115880,
+          "md5": "80b4eae23e4984fc1e643f3bb147c6d1",
+          "sha256": "9ac3609a3b1381c1c5f0775abf65835ac4215739b5860c60883cf0b215132dfd"
+        }
+      ],
+      "provider": "Poly Haven",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license"
+    },
+    {
+      "id": "sofa_02",
+      "providerId": "sofa_02",
+      "name": "Sofa 02",
+      "kind": "model",
+      "sourcePage": "https://polyhaven.com/a/sofa_02",
+      "authors": {
+        "Kirill Sannikov": "All"
+      },
+      "resolution": "1k",
+      "files": [
+        {
+          "role": "model",
+          "path": "/models/furniture/sofa_02/sofa_02_1k.gltf",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/sofa_02/sofa_02_1k.gltf",
+          "bytes": 4183,
+          "md5": "ec2590dc8433a523d0fe9e507766c16f",
+          "sha256": "5df114209f9b956ccd4831eaeef469a81339ab371d0056eb6d5d29eee08eb431"
+        },
+        {
+          "role": "dependency",
+          "path": "/models/furniture/sofa_02/textures/sofa_02_diff_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/sofa_02/sofa_02_diff_1k.jpg",
+          "bytes": 86514,
+          "md5": "0452c7d8dd3ef414d5ed3055085028a1",
+          "sha256": "4ff65c782578b52eee89cb96cc4e258ce1b6848e1a7655019af1f7207c749840"
+        },
+        {
+          "role": "dependency",
+          "path": "/models/furniture/sofa_02/textures/sofa_02_arm_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/sofa_02/sofa_02_arm_1k.jpg",
+          "bytes": 121752,
+          "md5": "78799d978a1117ba83dbffed9af0fa33",
+          "sha256": "f2813f32cd9ec42a9080590d0953ac9e272d9baa0b22fdb5910bf325157393c6"
+        },
+        {
+          "role": "dependency",
+          "path": "/models/furniture/sofa_02/textures/sofa_02_nor_gl_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/sofa_02/sofa_02_nor_gl_1k.jpg",
+          "bytes": 139858,
+          "md5": "968528a369bced172d34275dba5aebf1",
+          "sha256": "c97a359703a8ce1cee62cbd9dc4013b611d821afb7769810983b464ebc5d0cfe"
+        },
+        {
+          "role": "dependency",
+          "path": "/models/furniture/sofa_02/sofa_02.bin",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/4k/sofa_02/sofa_02.bin",
+          "bytes": 74864,
+          "md5": "024d6f57a7c2ee7915430cd6e1c2651e",
+          "sha256": "cb337e03211be0309afa1ded2b6cbb2d402c0f794aaf8828fba559d27a42d3f5"
+        }
+      ],
+      "sourceDimensionsMillimetres": [1807.1673512458801, 817.7513778209686, 709.4888985157013],
+      "providerPolygonCount": 2728,
+      "triangleCount": 2728,
+      "vertexCount": 1828,
+      "sourceBoundsMetres": {
+        "min": [-0.903316353505943, 0.00020572543144226074, -0.4776984825730324],
+        "max": [0.9038509977399372, 0.7096946537494659, 0.34005289524793625]
+      },
+      "sourceSizeMetres": {
+        "width": 1.8071673512458801,
+        "height": 0.7094889283180237,
+        "depth": 0.8177513778209686
+      },
+      "upAxis": "+Y",
+      "nodeNames": ["sofa_02_Base", "sofa_02_Seat"],
+      "materialNames": ["sofa_02"],
+      "dependenciesVerified": true,
+      "recolourNote": "Frame and upholstery share one atlas material; use the separate Seat node for seat-only colour changes or keep original texture.",
+      "provider": "Poly Haven",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license"
+    },
+    {
+      "id": "modern_arm_chair_01",
+      "providerId": "modern_arm_chair_01",
+      "name": "Modern Arm Chair 01",
+      "kind": "model",
+      "sourcePage": "https://polyhaven.com/a/modern_arm_chair_01",
+      "authors": {
+        "Vibrant Nordic": "All"
+      },
+      "resolution": "1k",
+      "files": [
+        {
+          "role": "model",
+          "path": "/models/furniture/modern_arm_chair_01/modern_arm_chair_01_1k.gltf",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/modern_arm_chair_01/modern_arm_chair_01_1k.gltf",
+          "bytes": 5121,
+          "md5": "a5ce303bc2962fe98b733fcdfa5a842b",
+          "sha256": "d31be520add2603447b43acedbdacf9516866f7c89e9ea9230c9edbac9cc6e6a"
+        },
+        {
+          "role": "dependency",
+          "path": "/models/furniture/modern_arm_chair_01/textures/modern_arm_chair_01_pillow_nor_gl_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modern_arm_chair_01/modern_arm_chair_01_pillow_nor_gl_1k.jpg",
+          "bytes": 302377,
+          "md5": "6804f34108fcc755f0c84dd3c638270c",
+          "sha256": "2717b9d22e1d3533e3c7436a0230b00b1d25bf396246679825c8db08edaba0a8"
+        },
+        {
+          "role": "dependency",
+          "path": "/models/furniture/modern_arm_chair_01/textures/modern_arm_chair_01_legs_nor_gl_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modern_arm_chair_01/modern_arm_chair_01_legs_nor_gl_1k.jpg",
+          "bytes": 560864,
+          "md5": "7cece7eccf75588af5b5df9b095d2c97",
+          "sha256": "af328e8530884907cf0d38a675338bb4e2b03c56ed2d21eb5abf505bb67c11de"
+        },
+        {
+          "role": "dependency",
+          "path": "/models/furniture/modern_arm_chair_01/textures/modern_arm_chair_01_pillow_arm_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modern_arm_chair_01/modern_arm_chair_01_pillow_arm_1k.jpg",
+          "bytes": 321223,
+          "md5": "772495ddbf26ca3de4b31298f10113b9",
+          "sha256": "fec333290ddfd70e78428251874d30d5410d6d0a956dd84922b0d3f3596e4b7a"
+        },
+        {
+          "role": "dependency",
+          "path": "/models/furniture/modern_arm_chair_01/textures/modern_arm_chair_01_legs_diff_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modern_arm_chair_01/modern_arm_chair_01_legs_diff_1k.jpg",
+          "bytes": 460937,
+          "md5": "778f1897e07ff81b2bc338f3d463ad1f",
+          "sha256": "6291421a8db6cd9bbbc8c141aa087465d698427249f813d24c6e5ccdbf0bf536"
+        },
+        {
+          "role": "dependency",
+          "path": "/models/furniture/modern_arm_chair_01/textures/modern_arm_chair_01_legs_arm_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modern_arm_chair_01/modern_arm_chair_01_legs_arm_1k.jpg",
+          "bytes": 577931,
+          "md5": "9c69cb001df175bddf6d1c2436567fb7",
+          "sha256": "c76b65200a52cf649a865baf7f879dc34277b923edaac7ec8164eaf7c51c935d"
+        },
+        {
+          "role": "dependency",
+          "path": "/models/furniture/modern_arm_chair_01/modern_arm_chair_01.bin",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/modern_arm_chair_01/modern_arm_chair_01.bin",
+          "bytes": 240728,
+          "md5": "5a8f2ea1c79ea484140e484b2a621670",
+          "sha256": "8755f2f498c0bb165660379d1b045465751c16bbeaf553c8dd76bb14c16d1ff6"
+        },
+        {
+          "role": "dependency",
+          "path": "/models/furniture/modern_arm_chair_01/textures/modern_arm_chair_01_pillow_diff_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modern_arm_chair_01/modern_arm_chair_01_pillow_diff_1k.jpg",
+          "bytes": 228851,
+          "md5": "2e4f64c633c3cb1656ad3eabdb3f0607",
+          "sha256": "f1935436b460ad5c03ac7ff9d1e1b4aaedcdc9a503d79c257beb8cdac2e9e1f7"
+        }
+      ],
+      "sourceDimensionsMillimetres": [820.3444182872772, 986.5616858005524, 1022.8520567470696],
+      "providerPolygonCount": 8916,
+      "triangleCount": 8916,
+      "vertexCount": 5851,
+      "sourceBoundsMetres": {
+        "min": [-0.4068087339401245, 0.0003815953677985817, -0.5754517316818237],
+        "max": [0.4135356843471527, 1.0232336521148682, 0.41110995411872864]
+      },
+      "sourceSizeMetres": {
+        "width": 0.8203444182872772,
+        "height": 1.0228520567470696,
+        "depth": 0.9865616858005524
+      },
+      "upAxis": "+Y",
+      "nodeNames": ["modern_arm_chair_01"],
+      "materialNames": ["modern_arm_chair_01_legs", "modern_arm_chair_01_pillow"],
+      "dependenciesVerified": true,
+      "recolourMaterialNames": ["modern_arm_chair_01_pillow"],
+      "provider": "Poly Haven",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license"
+    },
+    {
+      "id": "modern_coffee_table_01",
+      "providerId": "modern_coffee_table_01",
+      "name": "Modern Coffee Table 01",
+      "kind": "model",
+      "sourcePage": "https://polyhaven.com/a/modern_coffee_table_01",
+      "authors": {
+        "Amin": "All"
+      },
+      "resolution": "1k",
+      "files": [
+        {
+          "role": "model",
+          "path": "/models/furniture/modern_coffee_table_01/modern_coffee_table_01_1k.gltf",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/modern_coffee_table_01/modern_coffee_table_01_1k.gltf",
+          "bytes": 2771,
+          "md5": "f1c079ab5bc307630258cf3b40910511",
+          "sha256": "a35d811da4c174d0c888f23353dda21501763dbf5505c66f57fef4b3f613e50c"
+        },
+        {
+          "role": "dependency",
+          "path": "/models/furniture/modern_coffee_table_01/modern_coffee_table_01.bin",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/modern_coffee_table_01/modern_coffee_table_01.bin",
+          "bytes": 154864,
+          "md5": "6e8f65bff935af308eab9eff062f6daa",
+          "sha256": "b8fe0d49041b879a5d5962685a39e3daf009679f7b6a88ced1347e6dc6c0851e"
+        },
+        {
+          "role": "dependency",
+          "path": "/models/furniture/modern_coffee_table_01/textures/modern_coffee_table_01_rough_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modern_coffee_table_01/modern_coffee_table_01_rough_1k.jpg",
+          "bytes": 403959,
+          "md5": "6ccbc448fa0e2bed32eac52511e84e2c",
+          "sha256": "8013b48b0ebb845907f840afcae9cbc915a5205ac82ed99cbba31771febacb0f"
+        },
+        {
+          "role": "dependency",
+          "path": "/models/furniture/modern_coffee_table_01/textures/modern_coffee_table_01_diff_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modern_coffee_table_01/modern_coffee_table_01_diff_1k.jpg",
+          "bytes": 410569,
+          "md5": "356014e027b59c21b3c99ac112e645f9",
+          "sha256": "069b89dd3ef03ddcbb7b2e6a124b1903aa7848394509121aa19f87bd0ef0218c"
+        },
+        {
+          "role": "dependency",
+          "path": "/models/furniture/modern_coffee_table_01/textures/modern_coffee_table_01_nor_gl_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/modern_coffee_table_01/modern_coffee_table_01_nor_gl_1k.jpg",
+          "bytes": 359134,
+          "md5": "d263e6131abc518760d6771390bc5066",
+          "sha256": "43e0d317d0f8418b130c0058c645225ee83b808b1dc0e5e7236bead3bdd77139"
+        }
+      ],
+      "sourceDimensionsMillimetres": [1201.8300294876099, 600.0000834465027, 389.99998569488525],
+      "providerPolygonCount": 4504,
+      "triangleCount": 4504,
+      "vertexCount": 3995,
+      "sourceBoundsMetres": {
+        "min": [-0.2999998927116394, -0.00011512637138366699, -0.6006690263748169],
+        "max": [0.3000001311302185, 0.3898848593235016, 0.601161003112793]
+      },
+      "sourceSizeMetres": {
+        "width": 0.6000000238418579,
+        "height": 0.38999998569488525,
+        "depth": 1.2018300294876099
+      },
+      "upAxis": "+Y",
+      "nodeNames": ["modern_coffee_table_01"],
+      "materialNames": ["modern_coffee_table_01"],
+      "dependenciesVerified": true,
+      "longAxis": "Z",
+      "recommendedYawRadians": 1.5707963267948966,
+      "provider": "Poly Haven",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license"
+    },
+    {
+      "id": "waterfall",
+      "provider": "Wikimedia Commons",
+      "providerId": "File:V8.webm",
+      "name": "Rainbow over Murchison Falls National Park",
+      "kind": "video",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:V8.webm",
+      "authors": {
+        "BMKME": "Original video"
+      },
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "attribution": "Rainbow over Murchison Falls National Park by BMKME, CC0, via Wikimedia Commons.",
+      "durationSeconds": 6.4,
+      "width": 960,
+      "height": 540,
+      "framesPerSecond": 30,
+      "videoCodec": "H.264 High profile, yuv420p",
+      "audioCodec": "AAC-LC stereo, 48000 Hz",
+      "modifications": "Resized from 1920\u00d71080 to 960\u00d7540; converted VP9/Opus WebM to H.264/AAC MP4 with FFmpeg 7.1; source duration and sound preserved; source metadata removed; fast-start enabled.",
+      "sourceBytes": 3145371,
+      "sourceSha256": "c6a21a3a7619ca7fbcbc1b4d012d7098d18f599f0200f735d31cae15a4772dd1",
+      "files": [
+        {
+          "role": "video",
+          "path": "/media/tv-demo.mp4",
+          "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a7/V8.webm",
+          "bytes": 884988,
+          "md5": "bc517cacac79d8538756754a83cab480",
+          "sha256": "ce92afd0dc7d5d98165dd01ce1570e35925840fed10a5df97151c6ef5e1d4321"
+        }
+      ]
+    },
+    {
+      "id": "potted_plant_02",
+      "providerId": "potted_plant_02",
+      "provider": "Poly Haven",
+      "name": "Potted Plant 02",
+      "kind": "model",
+      "sourcePage": "https://polyhaven.com/a/potted_plant_02",
+      "authors": {
+        "Rico Cilliers": "All"
+      },
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "resolution": "1k",
+      "sourceDimensionsMillimetres": [701.1570334434509, 657.3865860700607, 841.1787391305552],
+      "providerPolygonCount": 69806,
+      "triangleCount": 69806,
+      "vertexCount": 44794,
+      "sourceBoundsMetres": {
+        "min": [-0.3966600392013788, 5.296462768455967e-5, -0.42031260282965377],
+        "max": [0.3044969942420721, 0.8412317037582397, 0.23707397282123566]
+      },
+      "sourceSizeMetres": {
+        "width": 0.7011570334434509,
+        "height": 0.8411787391305552,
+        "depth": 0.6573865756508894
+      },
+      "upAxis": "+Y",
+      "nodeNames": ["potted_plant_02_pot", "potted_plant_02_leaves", "potted_plant_02_dirt"],
+      "materialNames": ["potted_plant_02_pot", "potted_plant_02_leaves"],
+      "recolourMaterialNames": ["potted_plant_02_pot"],
+      "renderingNotes": [
+        "Retain original double-sided leaf material and alpha-mask settings.",
+        "Keep foliage source textures; pot can be recoloured independently.",
+        "69,806 triangles: use a small number of instances.",
+        "Pot and dirt meshes share the pot material; clone and recolour only the pot node to preserve soil colour."
+      ],
+      "dependenciesVerified": true,
+      "files": [
+        {
+          "role": "model",
+          "path": "/models/furniture/potted_plant_02/potted_plant_02_1k.gltf",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/potted_plant_02/potted_plant_02_1k.gltf",
+          "bytes": 6653,
+          "md5": "9999d7e6c51018a85551840e1bdae656",
+          "sha256": "c533dcce0d1aa4379eb7db04601a04983f8df2422b28578de922655a416e64a9"
+        },
+        {
+          "role": "dependency",
+          "path": "/models/furniture/potted_plant_02/textures/potted_plant_02_leaves_diff_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/potted_plant_02/potted_plant_02_leaves_diff_1k.jpg",
+          "bytes": 167700,
+          "md5": "e8a026bd7bfa6497729d855c59da03ce",
+          "sha256": "3643dce6e6c0a9f40129bd837ec1a11802e8f43ea43cb29e58219d82e0ac632b"
+        },
+        {
+          "role": "dependency",
+          "path": "/models/furniture/potted_plant_02/potted_plant_02.bin",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/potted_plant_02/potted_plant_02.bin",
+          "bytes": 1852244,
+          "md5": "cdbd4619b2596c9c469ad34676085fa8",
+          "sha256": "9c9812482c78a59789ed32fa842b4cbd9365e09c900c31ebb998e5efe627fe97"
+        },
+        {
+          "role": "dependency",
+          "path": "/models/furniture/potted_plant_02/textures/potted_plant_02_pot_rough_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/potted_plant_02/potted_plant_02_pot_rough_1k.jpg",
+          "bytes": 114886,
+          "md5": "68ed80fa32791fb0e81df61a75de40b4",
+          "sha256": "4e92ad8ee0f098050785d9a025e2c5a7d55bc7a7f7e1916cc7627fc7824a938f"
+        },
+        {
+          "role": "dependency",
+          "path": "/models/furniture/potted_plant_02/textures/potted_plant_02_leaves_rough_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/potted_plant_02/potted_plant_02_leaves_rough_1k.jpg",
+          "bytes": 102396,
+          "md5": "ba934a78cc6496d934c014eb8a33af37",
+          "sha256": "ac8959f70c0e91e77f3cd6fd3f73578b8aed64ac6c33fc34ac027a4e88276960"
+        },
+        {
+          "role": "dependency",
+          "path": "/models/furniture/potted_plant_02/textures/potted_plant_02_pot_diff_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/potted_plant_02/potted_plant_02_pot_diff_1k.jpg",
+          "bytes": 155244,
+          "md5": "97e149c93eb0d962e491d4c82d3ce477",
+          "sha256": "684949bf24821d7e951d46915366b5a388d2e4ccaaa9d5284e718c83604705e9"
+        },
+        {
+          "role": "dependency",
+          "path": "/models/furniture/potted_plant_02/textures/potted_plant_02_leaves_nor_gl_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/potted_plant_02/potted_plant_02_leaves_nor_gl_1k.jpg",
+          "bytes": 127232,
+          "md5": "2420d5c0ab87426f5318a5e91d1ea3bb",
+          "sha256": "e0fe090ff7a511729c9bbe59df7288b400430fdab178529443dec75e0f06007d"
+        },
+        {
+          "role": "dependency",
+          "path": "/models/furniture/potted_plant_02/textures/potted_plant_02_pot_nor_gl_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/potted_plant_02/potted_plant_02_pot_nor_gl_1k.jpg",
+          "bytes": 108343,
+          "md5": "fbb44ccc1c6564b2837b79a11ed45d58",
+          "sha256": "981a68721c8b7b9ac26b96d0210334599d5e8f529362f505082c071a0a58e86c"
+        }
+      ],
+      "recolourNodeNames": ["potted_plant_02_pot"]
+    }
+  ],
+  "totalBytes": 15190386,
+  "notes": [
+    "All assets are downloaded locally; the app does not depend on the live Poly Haven API.",
+    "The source dimensions field is millimetres per the official API schema.",
+    "PBR map channels: diffuse/basecolor sRGB; OpenGL normal and packed ARM remain linear.",
+    "Furniture glTF buffer and image references, byte lengths and source checksums were verified locally."
+  ],
+  "providers": ["Poly Haven", "Wikimedia Commons"]
+}

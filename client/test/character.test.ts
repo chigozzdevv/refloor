@@ -1,10 +1,10 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { createHouse } from '@refloor/blueprints';
+import { createHouse } from '@refloor/catalogue/houses';
 import { applyCommands } from '@refloor/scene';
 import { buildNavigation, compileBuilding, findPath } from '@refloor/engine';
 import type { Point3 } from '@refloor/engine';
-import { CharacterWorld, initializePhysics } from '@/runtime/physics/CharacterWorld';
-import { entryPose } from '@/runtime/physics/entry';
+import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
+import { entryPose } from '@/shared/navigation/entry';
 
 beforeAll(initializePhysics);
 

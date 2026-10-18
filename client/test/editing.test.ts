@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { createHouse } from '@refloor/blueprints';
+import { createHouse } from '@refloor/catalogue/houses';
 import { compileBuilding } from '@refloor/engine';
 import { finishes } from '@refloor/catalogue';
 import { fingerprintBuilding } from '@refloor/scene';
-import type { DocumentState } from '@/runtime/editing/document';
-import { editDocument, reverseDocument } from '@/runtime/editing/document';
-import { findFurniturePlacement, replacementCommand } from '@/runtime/editing/placement';
+import type { DocumentState } from '@/shared/editor/document';
+import { editDocument, reverseDocument } from '@/shared/editor/document';
+import { findFurniturePlacement, replacementCommand } from '@/shared/editor/placement';
 
 const initial = (): DocumentState => ({
   compiled: compileBuilding(createHouse({ id: 'editable', name: 'Editable home', storeys: 1 })),

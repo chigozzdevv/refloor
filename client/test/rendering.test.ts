@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three';
-import { visibleGroupRaycast, visibleMeshRaycast } from '@/runtime/rendering/picking';
-import { createHouse } from '@refloor/blueprints';
+import { visibleGroupRaycast, visibleMeshRaycast } from '@/shared/editor/picking';
+import { createHouse } from '@refloor/catalogue/houses';
 import { getCatalogueEntry } from '@refloor/catalogue';
 import { compileBuilding } from '@refloor/engine';
-import { sameMaterial } from '@/runtime/rendering/finish';
-import { partGeometry } from '@/runtime/rendering/geometry';
+import { sameMaterial } from '@/shared/scene/finish';
+import { partGeometry } from '@/shared/scene/geometry';
 
 describe('rendering contracts', () => {
   it('preserves original scanned PBR materials after scene parsing and JSON reload', () => {

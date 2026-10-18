@@ -22,7 +22,7 @@ export const catalogue: CatalogueEntry[] = [
     behaviours: [],
     renderer: 'sofa',
     description: 'Generous leather upholstery and a low profile.',
-    modelUrl: '/assets/models/sofa_02/sofa_02_1k.gltf',
+    modelUrl: '/models/furniture/sofa_02/sofa_02_1k.gltf',
   },
   {
     assetId: 'catalogue/chair',
@@ -33,7 +33,7 @@ export const catalogue: CatalogueEntry[] = [
     behaviours: [],
     renderer: 'chair',
     description: 'Sculpted timber and a leather seat.',
-    modelUrl: '/assets/models/modern_arm_chair_01/modern_arm_chair_01_1k.gltf',
+    modelUrl: '/models/furniture/modern_arm_chair_01/modern_arm_chair_01_1k.gltf',
     tintMaterials: ['modern_arm_chair_01_pillow'],
   },
   {
@@ -45,7 +45,7 @@ export const catalogue: CatalogueEntry[] = [
     behaviours: [],
     renderer: 'coffee-table',
     description: 'Low oak, softly rounded edges.',
-    modelUrl: '/assets/models/modern_coffee_table_01/modern_coffee_table_01_1k.gltf',
+    modelUrl: '/models/furniture/modern_coffee_table_01/modern_coffee_table_01_1k.gltf',
     modelRotation: Math.PI / 2,
   },
   {
@@ -103,7 +103,7 @@ export const catalogue: CatalogueEntry[] = [
     behaviours: [],
     renderer: 'plant',
     description: 'Variegated leaves and a terracotta pot.',
-    modelUrl: '/assets/models/potted_plant_02/potted_plant_02_1k.gltf',
+    modelUrl: '/models/furniture/potted_plant_02/potted_plant_02_1k.gltf',
     tintMaterials: ['potted_plant_02_pot'],
     tintNodes: ['potted_plant_02_pot'],
   },

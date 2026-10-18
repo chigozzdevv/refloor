@@ -37,6 +37,8 @@ If that port is occupied, set another server `PORT` and pass its URL with
 `REFLOOR_API_URL=http://127.0.0.1:3002 pnpm dev` (or `pnpm preview`).
 
 `pnpm check` runs formatting, linting, type checking, compiled-package and domain tests.
+It also checks every shipped asset against the manifest's size and SHA-256 checksum,
+including the local buffer and texture dependencies referenced by furniture models.
 `pnpm build` emits packages and the production client to their `dist` directories.
 `pnpm test` builds the workspace and runs its tests. `pnpm preview` serves a completed
 production build locally. Development and standalone type checking build shared packages
@@ -49,6 +51,17 @@ first, so a fresh checkout does not depend on existing build output.
 - `packages/catalogue`: furniture assets, dimensions, behaviours, finishes and validated starting homes.
 - `client`: React/Three.js browser studio. `pnpm dev` starts its local preview.
 - `server`: Fastify/Node API, MongoDB transactions and private browser sessions.
+- `scripts/check-assets.ts`: verify the self-hosted rendering assets and their dependencies.
+
+The client uses `app/app.tsx`, `app/routes.tsx` and `app/pages` for the studio shell and
+entrance/house views. `components/entrance`, `components/scene`, `components/navigation`,
+`components/editor`, `components/objects` and `components/ui` contain rendered controls.
+`shared/refloor` owns HTTP communication, `shared/scene` owns scene state and persistence,
+`shared/editor` owns editing state and commands, and `shared/navigation` and
+`shared/behaviours` own movement, physics and object actions. Source filenames use
+lowercase kebab case. Prepared models live in `client/public/models/furniture`, material
+maps and environment textures in `client/public/textures`, and the TV clip in
+`client/public/media/tv-demo.mp4`.
 
 The server follows the feature layout: `features/houses` owns house routes,
 controllers, services, schemas, models and repositories; `features/edits` owns commands,
@@ -90,7 +103,7 @@ in the browser; snapshot saves replace the server's active command history, whil
 current browser undo history remains available until another project is opened.
 New spaces can use one or two storeys, widths 11.5–16 m and depths 9.5–14 m.
 
-Rendering assets are self-hosted. `client/public/assets/manifest.json` records their
+Rendering assets are self-hosted. `client/public/manifest.json` records their
 source URLs, CC0 licences, authors, physical dimensions and checksums. The material
 maps, HDR sky and four scanned furniture models are from [Poly Haven](https://polyhaven.com/license).
 The TV clip is [BMKME's CC0 waterfall video](https://commons.wikimedia.org/wiki/File:V8.webm).
