@@ -5,3 +5,5 @@ packages:
 allowBuilds:
   esbuild: true
   mongodb-memory-server: true
+minimumReleaseAgeExclude:
+  - openai@7.38.0
