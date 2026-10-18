@@ -44,27 +44,62 @@ export function furnishFloor(
       0,
       2.33,
     ),
-    place('bedroom-plant', 'plant', 'front-room', width - 0.65, 0.9),
+    place('bedroom-plant', 'plant', 'front-room', split + 0.65, 0.9),
+    place('wardrobe', 'wardrobe', 'front-room', width - 0.42, 1.4, -Math.PI / 2),
   ];
+  if (width - split >= 5.2)
+    objects.push(
+      place(
+        'bedside-left',
+        'bedside',
+        'front-room',
+        split + (width - split) * 0.58 - 1.25,
+        middle - 1.2,
+      ),
+      place(
+        'bedside-right',
+        'bedside',
+        'front-room',
+        split + (width - split) * 0.58 + 1.25,
+        middle - 1.2,
+      ),
+    );
   if (!upper) {
     const kitchen = place(
       'kitchen-counter',
-      'cabinet',
+      'kitchen-counter',
       'rear-room',
-      width - 0.4,
+      width - 0.45,
       middle + (depth - middle) * 0.55,
       -Math.PI / 2,
     );
-    kitchen.dimensions = { width: 2.8, height: 0.9, depth: 0.6 };
+    kitchen.dimensions.width = 2.8;
     objects.push(
       kitchen,
-      place('kitchen-island', 'cabinet', 'rear-room', split + 2.1, middle + 2.45, Math.PI / 2),
+      place(
+        'kitchen-island',
+        'kitchen-island',
+        'rear-room',
+        split + 2.1,
+        middle + 2.45,
+        Math.PI / 2,
+      ),
+      place('fridge', 'fridge', 'rear-room', split + 0.65, depth - 0.65, Math.PI),
       place('kitchen-light', 'pendant', 'rear-room', split + 2.1, middle + 2.45, 0, 2.33),
     );
   } else
     objects.push(
-      place('studio-chair', 'chair', 'rear-room', split + 2, middle + 2.3, Math.PI),
-      place('studio-sideboard', 'cabinet', 'rear-room', width - 0.4, depth - 1.3, -Math.PI / 2),
+      place('studio-chair', 'chair', 'rear-room', split + (width - split) / 2, depth - 1.6),
+      place('studio-desk', 'desk', 'rear-room', split + (width - split) / 2, depth - 0.55, Math.PI),
+      place(
+        'studio-light',
+        'pendant',
+        'rear-room',
+        split + (width - split) / 2,
+        middle + (depth - middle) / 2,
+        0,
+        2.33,
+      ),
     );
   return objects;
 }

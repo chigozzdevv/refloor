@@ -57,6 +57,17 @@ describe('Z3 house generation', () => {
       'television',
     );
     expect(building.objects.filter((item) => item.kind === 'bed')).toHaveLength(2);
+    expect(building.objects.map((item) => item.assetId)).toEqual(
+      expect.arrayContaining([
+        'catalogue/kitchen-counter',
+        'catalogue/fridge',
+        'catalogue/vanity',
+        'catalogue/toilet',
+        'catalogue/shower',
+        'catalogue/desk',
+        'catalogue/wardrobe',
+      ]),
+    );
   });
 
   it('coordinates both floors, stair openings and navigable routes to every room', async () => {

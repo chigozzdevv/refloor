@@ -8,6 +8,7 @@ import { finishes } from '@refloor/catalogue';
 import { useSurface } from '@/shared/scene/asset-loader';
 import { useProject } from '@/shared/scene/scene-store';
 import { TelevisionScreen } from '@/components/objects/television';
+import { RoomFixtures } from '@/components/scene/room-fixtures';
 
 function Bed({ object }: { object: SceneObject }) {
   const body = useSurface(object.materials.body ?? finishes.linen),
@@ -225,5 +226,5 @@ export function FurnitureModels({
   if (renderer === 'cabinet') return <Cabinet object={object} />;
   if (renderer === 'pendant') return <Pendant object={object} />;
   if (renderer === 'television') return <Television object={object} />;
-  throw new Error(`Furniture renderer is unavailable: ${renderer}`);
+  return <RoomFixtures object={object} renderer={renderer} />;
 }

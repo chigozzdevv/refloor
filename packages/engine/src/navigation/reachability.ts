@@ -82,7 +82,7 @@ export function checkReachability(navigation: Navigation): EngineIssue[] {
               })),
             ),
           ]
-        : object.kind === 'television'
+        : object.kind === 'television' || (object.kind === 'decor' && object.position.y > 0.8)
           ? [margin, margin + 0.5, margin + 1].map((distance) => ({
               x: 0,
               z: object.dimensions.depth / 2 + distance,
@@ -92,6 +92,12 @@ export function checkReachability(navigation: Navigation): EngineIssue[] {
               { x: object.dimensions.width / 2 + margin, z: 0 },
               { x: -object.dimensions.width / 2 - margin, z: 0 },
               { x: 0, z: -object.dimensions.depth / 2 - margin },
+              ...[-1, 1].flatMap((x) =>
+                [-1, 1].map((z) => ({
+                  x: x * (object.dimensions.width / 2 + margin / Math.SQRT2),
+                  z: z * (object.dimensions.depth / 2 + margin / Math.SQRT2),
+                })),
+              ),
             ];
     const accessible = positions.some((local) => {
       const delta = rotate(local, object.rotation),

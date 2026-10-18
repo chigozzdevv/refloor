@@ -1,0 +1,83 @@
+import type { CatalogueEntry, FurnitureRenderer } from '@refloor/catalogue/furniture';
+import type { ObjectAsset } from '@refloor/scene';
+import { finish, finishes } from '@refloor/catalogue/materials';
+
+const entry = (
+  name: string,
+  label: string,
+  kind: ObjectAsset['kind'],
+  width: number,
+  height: number,
+  depth: number,
+  renderer: FurnitureRenderer,
+  body = finishes.oak,
+): CatalogueEntry => ({
+  assetId: `catalogue/${name}`,
+  label,
+  kind,
+  dimensions: { width, height, depth },
+  materials: { body, frame: finishes.black },
+  behaviours: [],
+  renderer,
+  description: label,
+});
+
+export const roomEssentials: CatalogueEntry[] = [
+  entry('kitchen-counter', 'Kitchen unit with sink and hob', 'custom', 2.6, 1.18, 0.65, 'kitchen'),
+  entry('kitchen-island', 'Oak kitchen island', 'storage', 1.6, 0.9, 0.72, 'island'),
+  entry(
+    'fridge',
+    'Stainless refrigerator',
+    'custom',
+    0.72,
+    1.9,
+    0.72,
+    'fridge',
+    finish('#b8c0c3', null, 0.28, 0.7),
+  ),
+  entry('vanity', 'Basin vanity', 'custom', 1.15, 0.98, 0.56, 'vanity'),
+  entry(
+    'toilet',
+    'Ceramic toilet',
+    'custom',
+    0.7,
+    0.86,
+    0.8,
+    'toilet',
+    finish('#f1f0e9', null, 0.22),
+  ),
+  entry(
+    'shower',
+    'Glass shower enclosure',
+    'custom',
+    1.05,
+    2.15,
+    1.05,
+    'shower',
+    finish('#e8eee9', null, 0.12),
+  ),
+  entry('desk', 'Oak writing desk', 'table', 1.6, 0.75, 0.65, 'desk'),
+  entry('dining-table', 'Oak dining table', 'table', 1.8, 0.75, 0.9, 'dining-table'),
+  entry(
+    'dining-chair',
+    'Upholstered dining chair',
+    'chair',
+    0.5,
+    0.86,
+    0.55,
+    'dining-chair',
+    finishes.linen,
+  ),
+  entry('wardrobe', 'Oak wardrobe', 'storage', 1.4, 2, 0.58, 'wardrobe'),
+  entry('bedside', 'Oak bedside table', 'storage', 0.45, 0.48, 0.42, 'bedside'),
+  entry(
+    'mirror',
+    'Framed bathroom mirror',
+    'decor',
+    0.85,
+    0.72,
+    0.04,
+    'mirror',
+    finish('#b8c0c3', null, 0.02, 1),
+  ),
+];

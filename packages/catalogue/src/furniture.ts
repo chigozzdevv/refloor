@@ -1,8 +1,28 @@
 import type { ObjectAsset, SceneObject } from '@refloor/scene';
 import { finish, finishes } from '@refloor/catalogue/materials';
+import { roomEssentials } from '@refloor/catalogue/essentials';
 
 export type FurnitureRenderer =
-  'sofa' | 'chair' | 'coffee-table' | 'bed' | 'television' | 'pendant' | 'cabinet' | 'plant';
+  | 'sofa'
+  | 'chair'
+  | 'coffee-table'
+  | 'bed'
+  | 'television'
+  | 'pendant'
+  | 'cabinet'
+  | 'plant'
+  | 'kitchen'
+  | 'island'
+  | 'fridge'
+  | 'vanity'
+  | 'toilet'
+  | 'shower'
+  | 'desk'
+  | 'dining-table'
+  | 'dining-chair'
+  | 'wardrobe'
+  | 'bedside'
+  | 'mirror';
 export type CatalogueEntry = ObjectAsset & {
   renderer: FurnitureRenderer;
   description: string;
@@ -13,6 +33,7 @@ export type CatalogueEntry = ObjectAsset & {
 };
 
 export const catalogue: CatalogueEntry[] = [
+  ...roomEssentials,
   {
     assetId: 'catalogue/sofa',
     label: 'Forma sofa',
