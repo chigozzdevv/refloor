@@ -7,6 +7,7 @@ import { BuildingMesh } from '@/features/viewport/BuildingMesh';
 import { Furniture } from '@/features/viewport/Furniture';
 import { ArchitecturalDetails } from '@/features/viewport/ArchitecturalDetails';
 import { CameraRig } from '@/features/viewport/CameraRig';
+import { PhysicsRuntime } from '@/features/viewport/PhysicsRuntime';
 
 function SceneReady() {
   const setReady = useProject((state) => state.setSceneReady);
@@ -35,6 +36,7 @@ export function Viewport() {
       onPointerMissed={() => select(null)}
     >
       <Suspense fallback={null}>
+        <PhysicsRuntime />
         <Lighting />
         <BuildingMesh />
         <Furniture />

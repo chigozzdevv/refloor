@@ -43,12 +43,13 @@ Their input documents describe buildings and edits; no network or model inferenc
 needed for these packages. Engine tests instantiate Rapier and walk a capsule through
 the generated colliders, including entrance-to-upstairs routes, both stair types and
 rotated flights. This verifies the geometry in a headless physics world. The browser
-currently supports orbiting, zooming, floor selection, surface/object inspection,
-day/evening lighting and render-quality selection.
+supports an animated entrance with a draggable handle, orbit and first-person views,
+WASD/touch movement, collision-aware stairs, guided floor changes, surface/object
+inspection, day/evening lighting and render-quality selection.
 
 Rendering assets are self-hosted. `client/public/assets/manifest.json` records their
 source URLs, CC0 licences, authors, physical dimensions and checksums. The material
-maps, HDR sky and three scanned furniture models are from [Poly Haven](https://polyhaven.com/license).
+maps, HDR sky and four scanned furniture models are from [Poly Haven](https://polyhaven.com/license).
 The TV clip is [BMKME's CC0 waterfall video](https://commons.wikimedia.org/wiki/File:V8.webm).
 
 ## Scene API
@@ -126,8 +127,9 @@ numerical tolerance. These are application constraints; structural engineering, 
 compliance, detailed asset silhouettes and arbitrary furniture support are outside
 the current validation.
 
-TV, light and door commands update validated state. Browser playback, lighting, hinge
-animation, door-handle dragging and movement controls still need implementation. Media
+TV, light and door commands update validated state. The browser animates door hinges
+and updates their physics colliders while they move. Playback and device controls are
+the next integration. Media
 sources accept HTTP(S) URLs or `asset:` references; the backend must enforce its network-fetch policy.
 
 ## Next implementation

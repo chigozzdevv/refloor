@@ -8,11 +8,14 @@ import {
   Plus,
   Rotate3D,
   SlidersHorizontal,
+  DoorOpen,
+  Footprints,
 } from 'lucide-react';
 import { useState } from 'react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Viewport } from '@/features/viewport/Viewport';
 import { useProject } from '@/features/projects/project-store';
+import { WalkPad } from '@/features/viewport/WalkPad';
 
 export function App() {
   const {
@@ -27,6 +30,10 @@ export function App() {
     select,
     createHome,
     sceneReady,
+    mode,
+    setMode,
+    enterHome,
+    notice,
   } = useProject();
   const [newHome, setNewHome] = useState(false);
   const object = compiled.building.objects.find((value) => value.id === selection?.id),
@@ -35,7 +42,7 @@ export function App() {
       .find((value) => value.id === selection?.id);
   return (
     <ErrorBoundary>
-      <main className="studio">
+      <main className={`studio ${mode}-mode`}>
         <div className="viewport">
           <Viewport />
         </div>
@@ -66,22 +73,52 @@ export function App() {
             </button>
           </div>
         </header>
-        <section className="space-heading">
-          <span className="eyebrow">A SPACE TO MAKE YOUR OWN</span>
-          <h1>
-            Good spaces.
-            <br />
-            <em>Better living.</em>
-          </h1>
-          <p>
-            Look around. Find your angle.
-            <br />
-            Make yourself at home.
-          </p>
-        </section>
+        {mode !== 'walk' && (
+          <section className={`space-heading ${mode === 'entry' ? 'entry-heading' : ''}`}>
+            <span className="eyebrow">A SPACE TO MAKE YOUR OWN</span>
+            <h1>
+              {mode === 'entry' ? 'Step inside.' : 'Good spaces.'}
+              <br />
+              <em>{mode === 'entry' ? 'Make it yours.' : 'Better living.'}</em>
+            </h1>
+            <p>
+              {mode === 'entry'
+                ? 'Your next chapter starts at the door.'
+                : 'Look around. Find your angle.'}
+              <br />
+              Make yourself at home.
+            </p>
+            {mode === 'entry' && (
+              <div className="entry-actions">
+                <button className="button primary" onClick={enterHome}>
+                  Open the door <MoveUpRight size={16} />
+                </button>
+                <span>Or drag the brass handle.</span>
+              </div>
+            )}
+          </section>
+        )}
         <aside className="left-rail" aria-label="Viewport settings">
-          <button className="rail-button active" title="Orbit the house">
+          <button
+            className={`rail-button ${mode === 'orbit' ? 'active' : ''}`}
+            title="Orbit the house"
+            onClick={() => setMode('orbit')}
+          >
             <Rotate3D size={20} />
+          </button>
+          <button
+            className={`rail-button ${mode === 'walk' ? 'active' : ''}`}
+            title="Walk through the house"
+            onClick={() => setMode('walk')}
+          >
+            <Footprints size={20} />
+          </button>
+          <button
+            className={`rail-button ${mode === 'entry' ? 'active' : ''}`}
+            title="Return to the entrance"
+            onClick={() => setMode('entry')}
+          >
+            <DoorOpen size={20} />
           </button>
           <div className="rail-divider" />
           <button
@@ -107,18 +144,20 @@ export function App() {
             <SlidersHorizontal size={19} />
           </button>
         </aside>
-        <div className="floor-switch" aria-label="Choose floor">
-          <Layers3 size={16} />
-          {compiled.building.floors.map((floor) => (
-            <button
-              key={floor.id}
-              className={floorId === floor.id ? 'selected' : ''}
-              onClick={() => setFloor(floor.id)}
-            >
-              {floor.name}
-            </button>
-          ))}
-        </div>
+        {mode !== 'entry' && (
+          <div className="floor-switch" aria-label="Choose floor">
+            <Layers3 size={16} />
+            {compiled.building.floors.map((floor) => (
+              <button
+                key={floor.id}
+                className={floorId === floor.id ? 'selected' : ''}
+                onClick={() => setFloor(floor.id)}
+              >
+                {floor.name}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="viewport-note">
           <span className="live-dot" />
           {quality === 'high' ? 'High fidelity' : 'Balanced'}
@@ -127,24 +166,42 @@ export function App() {
         </div>
         <div className="interaction-hint">
           <span className="mouse-icon" />
-          Drag to orbit<span>·</span>Scroll to zoom<span>·</span>Click to select
+          {mode === 'walk' ? (
+            <>
+              WASD to move<span>·</span>Drag to look<span>·</span>Click a door to open
+            </>
+          ) : mode === 'entry' ? (
+            <>A little curiosity goes a long way.</>
+          ) : (
+            <>
+              Drag to orbit<span>·</span>Scroll to zoom<span>·</span>Click to select
+            </>
+          )}
         </div>
-        <div className="space-stats">
-          <span>
-            {compiled.building.floors.length}{' '}
-            {compiled.building.floors.length === 1 ? 'STOREY' : 'STOREYS'}
-          </span>
-          <span>
-            {Math.round(
-              compiled.building.floors.reduce(
-                (sum, floor) => sum + floor.footprint.width * floor.footprint.depth,
-                0,
-              ),
-            )}{' '}
-            M²
-          </span>
-          <span>{compiled.building.objects.length} OBJECTS</span>
-        </div>
+        {mode !== 'walk' && (
+          <div className="space-stats">
+            <span>
+              {compiled.building.floors.length}{' '}
+              {compiled.building.floors.length === 1 ? 'STOREY' : 'STOREYS'}
+            </span>
+            <span>
+              {Math.round(
+                compiled.building.floors.reduce(
+                  (sum, floor) => sum + floor.footprint.width * floor.footprint.depth,
+                  0,
+                ),
+              )}{' '}
+              M²
+            </span>
+            <span>{compiled.building.objects.length} OBJECTS</span>
+          </div>
+        )}
+        {mode === 'walk' && <WalkPad />}
+        {notice && (
+          <div className="notice" role="status">
+            {notice}
+          </div>
+        )}
         {selection && (
           <aside className="inspector">
             <div className="panel-heading">

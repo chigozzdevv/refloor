@@ -4,6 +4,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   resolve: {
     alias: [
+      { find: /^@\//, replacement: fileURLToPath(new URL('./client/src/', import.meta.url)) },
       {
         find: /^@refloor\/catalogue$/,
         replacement: fileURLToPath(new URL('./packages/catalogue/src/index.ts', import.meta.url)),
@@ -47,7 +48,7 @@ export default defineConfig({
     ],
   },
   test: {
-    include: ['packages/*/test/**/*.test.ts'],
+    include: ['packages/*/test/**/*.test.ts', 'client/test/**/*.test.ts'],
     environment: 'node',
   },
 });

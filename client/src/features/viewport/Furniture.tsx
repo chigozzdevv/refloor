@@ -85,6 +85,7 @@ function FurnitureInstance({ object }: { object: SceneObject }) {
       position={[object.position.x, floor.elevation + object.position.y, object.position.z]}
       rotation={[0, object.rotation, 0]}
       onClick={(event) => {
+        if (event.delta > 5) return;
         event.stopPropagation();
         select({ kind: 'object', id: object.id });
       }}

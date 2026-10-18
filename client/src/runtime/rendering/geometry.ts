@@ -28,6 +28,12 @@ export function partGeometry(part: MeshPart): BufferGeometry {
   geometry.setAttribute('uv', new Float32BufferAttribute(uv, 2));
   geometry.setAttribute('uv1', new Float32BufferAttribute(uv, 2));
   geometry.setIndex(mesh.indices);
+  if (['slab', 'stair-tread', 'stair-landing'].includes(part.role)) {
+    for (let i = 0; i < mesh.indices.length; i += 3) {
+      const vertex = mesh.indices[i] ?? 0;
+      geometry.addGroup(i, 3, (mesh.normals[vertex * 3 + 1] ?? 0) > 0.5 ? 0 : 1);
+    }
+  }
   geometry.computeBoundingSphere();
   return geometry;
 }

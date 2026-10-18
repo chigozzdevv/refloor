@@ -637,3 +637,203 @@ a {
     transform: translateX(180%);
   }
 }
+
+.entry-heading {
+  top: 30%;
+  width: 340px;
+}
+.entry-heading h1 {
+  font-size: 52px;
+  line-height: 1.15;
+  letter-spacing: -2.8px;
+}
+.entry-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  margin-top: 28px;
+  pointer-events: auto;
+}
+.entry-actions .button {
+  padding: 16px 22px;
+  min-width: 178px;
+  justify-content: space-between;
+}
+.entry-actions > span {
+  font-size: 10px;
+  color: #88917b;
+}
+.walk-pad {
+  position: absolute;
+  bottom: 92px;
+  left: 105px;
+  display: grid;
+  grid-template-columns: repeat(3, 36px);
+  grid-template-rows: repeat(2, 36px);
+  gap: 5px;
+}
+.walk-key {
+  background: #f4f5ecd9;
+  backdrop-filter: blur(12px);
+  color: #6b7c59;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ffffff80;
+  touch-action: none;
+}
+.walk-key:active {
+  background: #b6c7a3;
+}
+.key-w {
+  grid-column: 2;
+  grid-row: 1;
+}
+.key-a {
+  grid-column: 1;
+  grid-row: 2;
+}
+.key-s {
+  grid-column: 2;
+  grid-row: 2;
+}
+.key-d {
+  grid-column: 3;
+  grid-row: 2;
+}
+.notice {
+  position: absolute;
+  left: 50%;
+  bottom: 102px;
+  transform: translateX(-50%);
+  max-width: 540px;
+  width: max-content;
+  padding: 14px 20px;
+  background: #35452feb;
+  backdrop-filter: blur(12px);
+  color: #f0f2e8;
+  font-size: 11px;
+  line-height: 1.65;
+  border-radius: 9px;
+  z-index: 25;
+  box-shadow: 0 6px 30px #1c281e1a;
+}
+@media (max-width: 600px) {
+  .entry-heading {
+    top: 25%;
+    width: 220px;
+  }
+  .entry-heading h1 {
+    font-size: 37px;
+    letter-spacing: -1.7px;
+  }
+  .entry-heading p {
+    max-width: 180px;
+  }
+  .entry-actions .button {
+    padding: 13px 16px;
+    min-width: 154px;
+  }
+  .walk-pad {
+    left: auto;
+    right: 18px;
+    bottom: 97px;
+  }
+  .notice {
+    width: calc(100% - 34px);
+    bottom: 190px;
+    max-width: 400px;
+  }
+  .entry-heading + .left-rail {
+    bottom: 83px;
+  }
+}
+
+.entry-mode .left-rail {
+  left: auto;
+  right: 35px;
+  top: auto;
+  bottom: 120px;
+  transform: none;
+}
+@media (max-width: 600px) {
+  .entry-mode .left-rail {
+    left: 18px;
+    right: auto;
+    bottom: 88px;
+    flex-direction: row;
+    gap: 2px;
+  }
+  .entry-mode .rail-divider {
+    height: 20px;
+    width: 1px;
+    margin: 0 3px;
+  }
+  .entry-mode .rail-button {
+    width: 31px;
+    height: 34px;
+  }
+}
+
+.walk-mode .topbar {
+  left: 20px;
+  right: 20px;
+  top: 15px;
+  height: 58px;
+  padding: 12px 18px;
+  border: 1px solid #ffffff80;
+  border-radius: 10px;
+  background: #f7f6f0e8;
+  backdrop-filter: blur(16px);
+}
+.walk-mode .viewport-note,
+.walk-mode .interaction-hint {
+  background: #f7f6f0db;
+  backdrop-filter: blur(12px);
+  padding: 8px 12px;
+  border-radius: 6px;
+  bottom: 23px;
+}
+.walk-mode .interaction-hint {
+  bottom: 65px;
+}
+@media (max-width: 600px) {
+  .walk-mode .topbar {
+    left: 12px;
+    right: 12px;
+    top: 12px;
+    padding: 10px 12px;
+    gap: 13px;
+    height: 54px;
+  }
+  .walk-mode .wordmark {
+    font-size: 24px;
+  }
+  .walk-mode .project-name {
+    font-size: 9px;
+    max-width: 80px;
+  }
+  .walk-mode .topbar .button {
+    padding: 9px;
+    font-size: 9px;
+  }
+  .walk-mode .floor-switch {
+    top: 77px;
+  }
+  .walk-mode .interaction-hint {
+    font-size: 8px;
+    gap: 5px;
+    bottom: 64px;
+    max-width: calc(100% - 24px);
+    padding: 8px;
+  }
+  .walk-mode .north-marker {
+    bottom: 21px;
+  }
+  .walk-mode .viewport-note {
+    left: 12px;
+    font-size: 8px;
+  }
+}
