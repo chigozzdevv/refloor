@@ -20,7 +20,9 @@ describe('parametric starting homes', () => {
   });
   it.each([
     [11.5, 9.5],
+    [11.5, 14],
     [14, 12],
+    [16, 9.5],
     [16, 14],
   ])('keeps dimensions and clearance valid at %sx%s m', (width, depth) => {
     expect(
