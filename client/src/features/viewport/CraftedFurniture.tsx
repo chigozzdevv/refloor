@@ -150,7 +150,7 @@ function Pendant({ object }: { object: SceneObject }) {
   const powered = state?.powered ?? false;
   return (
     <>
-      <mesh position={[0, 0.09, 0]} castShadow>
+      <mesh position={[0, 0.2, 0]}>
         <sphereGeometry args={[0.2, 32, 24]} />
         <meshPhysicalMaterial
           color="#f1eadb"
@@ -161,8 +161,8 @@ function Pendant({ object }: { object: SceneObject }) {
           emissiveIntensity={powered ? 0.8 : 0}
         />
       </mesh>
-      <mesh position={[0, 0.33, 0]}>
-        <cylinderGeometry args={[0.006, 0.006, 0.25, 8]} />
+      <mesh position={[0, 0.397, 0]}>
+        <cylinderGeometry args={[0.006, 0.006, 0.09, 8]} />
         <meshStandardMaterial color="#615746" roughness={0.4} metalness={0.6} />
       </mesh>
       <mesh position={[0, 0.44, 0]}>
@@ -178,7 +178,7 @@ function Pendant({ object }: { object: SceneObject }) {
           shadow-bias={-0.00015}
           shadow-normalBias={0.015}
           shadow-autoUpdate={false}
-          position={[0, -0.05, 0]}
+          position={[0, 0.18, 0]}
           color={state?.color ?? '#ffe6bf'}
           intensity={(state?.intensity ?? 3) * (lighting === 'day' ? 4 : 7)}
           distance={8}

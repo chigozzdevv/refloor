@@ -8,16 +8,13 @@ import type { SceneObject } from '@refloor/scene';
 import { useProject } from '@/features/projects/project-store';
 import { CraftedFurniture } from '@/features/viewport/CraftedFurniture';
 import { useSurface } from '@/runtime/rendering/materials';
+import { sameMaterial } from '@/runtime/rendering/finish';
 
-function ScannedFurniture({
-  object,
-  entry,
-}: {
-  object: SceneObject;
-  entry: CatalogueEntry & { modelUrl: string };
-}) {
-  const { scene } = useGLTF(entry.modelUrl, false),
-    finish = useSurface(object.materials.body!);
+function ScannedFurniture({ object, entry }: { object: SceneObject; entry: CatalogueEntry }) {
+  const { scene } = useGLTF(entry.modelUrl!, false),
+    finish = useSurface(object.materials.body!),
+    { width, height, depth } = object.dimensions,
+    changed = !sameMaterial(object.materials.body, entry.materials.body);
   const model = useMemo(() => {
     const clone = scene.clone(true),
       container = new Group();
@@ -29,11 +26,7 @@ function ScannedFurniture({
       centre = box.getCenter(new Vector3());
     if (Math.min(size.x, size.y, size.z) <= 0)
       throw new Error(`Furniture model has no measurable geometry: ${entry.assetId}`);
-    const scale = new Vector3(
-      object.dimensions.width / size.x,
-      object.dimensions.height / size.y,
-      object.dimensions.depth / size.z,
-    );
+    const scale = new Vector3(width / size.x, height / size.y, depth / size.z);
     container.scale.copy(scale);
     container.position.set(-centre.x * scale.x, -box.min.y * scale.y, -centre.z * scale.z);
     clone.traverse((child) => {
@@ -42,8 +35,6 @@ function ScannedFurniture({
       child.receiveShadow = true;
       const materials = (Array.isArray(child.material) ? child.material : [child.material]).map(
         (source) => {
-          const changed =
-            JSON.stringify(object.materials.body) !== JSON.stringify(entry.materials.body);
           const tint =
             (!entry.tintMaterials || entry.tintMaterials.includes(source.name)) &&
             (!entry.tintNodes || entry.tintNodes.includes(child.name));
@@ -57,7 +48,7 @@ function ScannedFurniture({
       child.material = Array.isArray(child.material) ? materials : materials[0]!;
     });
     return container;
-  }, [scene, object, entry, finish]);
+  }, [scene, width, height, depth, changed, entry, finish]);
   useEffect(
     () => () =>
       model.traverse((child) => {
@@ -112,7 +103,7 @@ function FurnitureInstance({ object }: { object: SceneObject }) {
         }}
       >
         {entry.modelUrl ? (
-          <ScannedFurniture object={object} entry={{ ...entry, modelUrl: entry.modelUrl }} />
+          <ScannedFurniture object={object} entry={entry} />
         ) : (
           <CraftedFurniture object={object} renderer={entry.renderer} />
         )}

@@ -19,14 +19,15 @@ const scales: Record<string, [number, number]> = {
 };
 
 export function useSurface(finish: Material, glass = false): MeshPhysicalMaterial {
-  const id = finish.textureId;
+  const { textureId: id, color, roughness, metalness, opacity } = finish;
   if (id !== null && !Object.hasOwn(scales, id))
     throw new Error(`Surface texture is unavailable: ${id}`);
-  const textures = useTexture(
+  const [base, normal, arm] = useTexture(
     id ? ['basecolor', 'normal', 'arm'].map((name) => `/assets/materials/${id}/${name}.jpg`) : [],
   );
   const result = useMemo(() => {
-    const cloned = textures.map((texture, index) => {
+    const cloned = [base, normal, arm].flatMap((texture, index) => {
+      if (!texture) return [];
       const copy = texture.clone();
       copy.wrapS = copy.wrapT = RepeatWrapping;
       copy.colorSpace = index === 0 ? SRGBColorSpace : NoColorSpace;
@@ -34,12 +35,12 @@ export function useSurface(finish: Material, glass = false): MeshPhysicalMateria
       copy.repeat.set(1 / width, 1 / depth);
       copy.anisotropy = 8;
       copy.needsUpdate = true;
-      return copy;
+      return [copy];
     });
     const material = new MeshPhysicalMaterial({
-      color: new Color(finish.color),
-      roughness: finish.roughness,
-      metalness: finish.metalness,
+      color: new Color(color),
+      roughness,
+      metalness,
       side: glass ? DoubleSide : FrontSide,
       map: cloned[0] ?? null,
       normalMap: cloned[1] ?? null,
@@ -55,12 +56,12 @@ export function useSurface(finish: Material, glass = false): MeshPhysicalMateria
       transmission: glass ? 0.94 : 0,
       thickness: glass ? 0.015 : 0,
       ior: glass ? 1.5 : 1.45,
-      transparent: !glass && finish.opacity < 1,
-      opacity: glass ? 1 : finish.opacity,
+      transparent: !glass && opacity < 1,
+      opacity: glass ? 1 : opacity,
       envMapIntensity: glass ? 1 : 0.65,
     });
     return { material, cloned };
-  }, [finish, glass, id, textures]);
+  }, [color, roughness, metalness, opacity, glass, id, base, normal, arm]);
   useEffect(
     () => () => {
       result.material.dispose();
