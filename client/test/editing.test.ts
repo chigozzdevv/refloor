@@ -3,15 +3,17 @@ import { createHouse } from '@refloor/catalogue/houses';
 import { compileBuilding } from '@refloor/engine';
 import { finishes, lightTuning, lightOutput } from '@refloor/catalogue';
 import { fingerprintBuilding } from '@refloor/scene';
+import { createEditMemory } from '@refloor/scene/edit-memory';
 import type { DocumentState } from '@/shared/editor/document';
 import { editDocument, reverseDocument, restoreBefore, redoChange } from '@/shared/editor/document';
 import { findFurniturePlacement, replacementCommand } from '@/shared/editor/placement';
 
-const initial = (): DocumentState => ({
-  compiled: compileBuilding(createHouse({ id: 'editable', name: 'Editable home', storeys: 1 })),
-  past: [],
-  future: [],
-});
+const initial = (): DocumentState => {
+  const compiled = compileBuilding(
+    createHouse({ id: 'editable', name: 'Editable home', storeys: 1 }),
+  );
+  return { compiled, past: [], future: [], memory: createEditMemory(compiled.building) };
+};
 
 describe('validated browser editing', () => {
   it('resets a legacy overbright light and retains a reversible, bounded history', () => {

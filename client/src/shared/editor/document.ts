@@ -5,11 +5,14 @@ import type { EditDetails, HistoryRecord } from '@/shared/editor/history';
 import { describeChange, describeTarget } from '@/shared/editor/history';
 import { isPlayerPositionValid, validateBuilding, validatePlacement } from '@refloor/engine';
 import type { CompiledBuilding, NavigationPoint } from '@refloor/engine';
+import { recordTransition } from '@refloor/scene/edit-memory';
+import type { EditMemory } from '@refloor/scene/edit-memory';
 
 export type DocumentState = {
   compiled: CompiledBuilding;
   past: HistoryRecord[];
   future: HistoryRecord[];
+  memory: EditMemory;
 };
 const metadata = () => ({ id: crypto.randomUUID(), at: new Date().toISOString() });
 
@@ -28,6 +31,12 @@ export function editDocument(
   );
   return {
     compiled: result.compiled,
+    memory: recordTransition(state.memory, result.building, {
+      revision: result.revision,
+      kind: 'edit',
+      label: details?.label ?? describeChange(state.compiled.building, commands),
+      source: details?.source ?? 'manual',
+    }),
     past: [
       ...state.past,
       {
@@ -55,6 +64,12 @@ export function reverseDocument(
     throw new Error('Move clear of this object or door before restoring the previous arrangement.');
   return {
     compiled,
+    memory: recordTransition(state.memory, result.building, {
+      revision: result.revision,
+      kind: direction,
+      label: record.label,
+      source: record.source,
+    }),
     past:
       direction === 'undo'
         ? state.past.slice(0, -1)

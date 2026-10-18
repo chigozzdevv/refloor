@@ -4,6 +4,7 @@ import type { Building } from '@refloor/scene';
 import type { DocumentState } from '@/shared/editor/document';
 import type { HistoryRecord } from '@/shared/editor/history';
 import { parseProjectFile } from '@/shared/scene/files';
+import { restoreEditMemory } from '@/shared/editor/memory';
 
 const maxDraftBytes = 4 * 1024 * 1024;
 const historyRecordSchema = z.strictObject({
@@ -40,8 +41,16 @@ export function decodeDraft(text: string) {
     typeof input !== 'object' ||
     !('format' in input) ||
     input.format !== 'refloor-browser-draft'
-  )
-    return { compiled: parseProjectFile(text), past: [], future: [], historyWarning: null };
+  ) {
+    const compiled = parseProjectFile(text);
+    return {
+      compiled,
+      past: [],
+      future: [],
+      memory: restoreEditMemory(compiled.building),
+      historyWarning: null,
+    };
+  }
   if (!('version' in input) || input.version !== 1 || !('building' in input))
     throw new Error('This browser draft version is not supported.');
   const compiled = parseProjectFile(JSON.stringify(input.building)),
@@ -49,23 +58,46 @@ export function decodeDraft(text: string) {
       past: 'past' in input ? input.past : undefined,
       future: 'future' in input ? input.future : undefined,
     });
-  if (
-    !history.success ||
-    !matchesBuilding(compiled.building, history.data.past) ||
-    !matchesBuilding(compiled.building, history.data.future)
-  )
+  const validHistory =
+    history.success &&
+    matchesBuilding(compiled.building, history.data.past) &&
+    matchesBuilding(compiled.building, history.data.future)
+      ? history.data
+      : null;
+  const records = validHistory ?? { past: [], future: [] },
+    historyWarning = validHistory
+      ? null
+      : 'This house opened, but its saved undo history could not be restored.';
+  try {
     return {
       compiled,
-      past: [],
-      future: [],
-      historyWarning: 'This house opened, but its saved undo history could not be restored.',
+      ...records,
+      memory: restoreEditMemory(
+        compiled.building,
+        'memory' in input ? input.memory : undefined,
+        records.past,
+      ),
+      historyWarning,
     };
-  return { compiled, ...history.data, historyWarning: null };
+  } catch {
+    return {
+      compiled,
+      ...records,
+      memory: restoreEditMemory(compiled.building, undefined, records.past),
+      historyWarning:
+        historyWarning ?? 'The house opened with context recovered from its recorded changes.',
+    };
+  }
 }
 
 export function encodeDraft(state: DocumentState) {
   const past = state.past.slice(-50),
     future = state.future.slice(-50);
+  const memory = {
+    ...state.memory,
+    transitions: [...state.memory.transitions],
+    turns: [...state.memory.turns],
+  };
   const encode = () =>
     JSON.stringify({
       format: 'refloor-browser-draft',
@@ -73,11 +105,14 @@ export function encodeDraft(state: DocumentState) {
       building: state.compiled.building,
       past,
       future,
+      memory,
     });
   let encoded = encode();
   while (new TextEncoder().encode(encoded).length > maxDraftBytes) {
     if (past.length) past.shift();
     else if (future.length) future.shift();
+    else if (memory.turns.length) memory.turns.shift();
+    else if (memory.transitions.length) memory.transitions.shift();
     else throw new Error('This browser draft is too large. Export your space to keep it.');
     encoded = encode();
   }

@@ -7,6 +7,7 @@ export function restoreDraft() {
     if (!raw)
       return {
         compiled: null,
+        memory: null,
         past: [],
         future: [],
         historyWarning: null,
@@ -18,6 +19,7 @@ export function restoreDraft() {
     } catch {
       return {
         compiled: null,
+        memory: null,
         past: [],
         future: [],
         historyWarning: null,
@@ -29,6 +31,7 @@ export function restoreDraft() {
   } catch {
     return {
       compiled: null,
+      memory: null,
       past: [],
       future: [],
       historyWarning: null,

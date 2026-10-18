@@ -7,13 +7,18 @@ import type { DocumentState } from '@/shared/editor/document';
 import type { EditDetails } from '@/shared/editor/history';
 import { findFurniturePlacement } from '@/shared/editor/placement';
 import { editingError } from '@/shared/editor/errors';
+import { recordChatTurn } from '@refloor/scene/edit-memory';
+import type { ChatTurn } from '@refloor/scene/edit-memory';
 
 export type Selection = {
   kind: 'object' | 'wall' | 'floor' | 'door';
   id: string;
   point?: { x: number; y: number; z: number };
 } | null;
-export type EditorState = Omit<DocumentState, 'compiled'> & {
+export type EditorState = Omit<DocumentState, 'compiled' | 'memory'> & {
+  chatPending: string | null;
+  beginChat: (id: string) => boolean;
+  finishChat: (id: string, turn?: ChatTurn) => void;
   edit: (commands: SceneCommand[], details?: EditDetails) => boolean;
   undo: () => void;
   undoTo: (id: string) => boolean;
@@ -28,6 +33,16 @@ export type EditorState = Omit<DocumentState, 'compiled'> & {
 };
 
 export const createEditorState: StateCreator<ProjectState, [], [], EditorState> = (set, get) => ({
+  chatPending: null,
+  beginChat: (id) => {
+    if (get().chatPending) return false;
+    set({ chatPending: id });
+    return true;
+  },
+  finishChat: (id, turn) => {
+    if (get().chatPending !== id) return;
+    set({ chatPending: null, ...(turn ? { memory: recordChatTurn(get().memory, turn) } : {}) });
+  },
   past: [],
   future: [],
   focusRequest: null,

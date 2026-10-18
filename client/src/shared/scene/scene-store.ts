@@ -11,19 +11,22 @@ import { encodeDraft } from '@/shared/scene/draft-codec';
 import { persistRemoteLink, restoreRemoteLink } from '@/shared/scene/remote';
 import type { RemoteLink } from '@/shared/scene/remote';
 import { navigationFor } from '@/shared/navigation/destinations';
+import { createEditMemory } from '@refloor/scene/edit-memory';
+import type { EditMemory } from '@refloor/scene/edit-memory';
 
 export type ViewMode = 'entry' | 'orbit' | 'walk';
 export type ProjectState = EditorState & {
   sceneReady: boolean;
   setSceneReady: (ready: boolean) => void;
   compiled: CompiledBuilding;
+  memory: EditMemory;
   projectEpoch: number;
   saveError: string | null;
   recovery: string | null;
   saved: boolean;
   resumeSaving: () => void;
   remote: RemoteLink | null;
-  loadProject: (compiled: CompiledBuilding, remote?: RemoteLink) => void;
+  loadProject: (compiled: CompiledBuilding, remote?: RemoteLink, memory?: EditMemory) => void;
   floorId: string;
   mode: ViewMode;
   lighting: 'day' | 'evening';
@@ -66,9 +69,11 @@ export const useProject = create<ProjectState>((set, get, store) => ({
       });
     }
   },
-  loadProject: (compiled, remote) => {
+  loadProject: (compiled, remote, memory) => {
     set({
       compiled,
+      memory: memory ?? createEditMemory(compiled.building),
+      chatPending: null,
       remote: remote ?? null,
       projectEpoch: get().projectEpoch + 1,
       past: [],
@@ -83,6 +88,7 @@ export const useProject = create<ProjectState>((set, get, store) => ({
   ...createEditorState(set, get, store),
   past: restored.past,
   future: restored.future,
+  memory: restored.memory ?? createEditMemory(initial.building),
   floorId: entryPose(initial).floorId,
   mode: 'entry',
   lighting: 'evening',
@@ -154,8 +160,11 @@ export const useProject = create<ProjectState>((set, get, store) => ({
       ...(width === undefined ? {} : { width }),
       ...(depth === undefined ? {} : { depth }),
     };
+    const compiled = compileBuilding(createHouse(options));
     set({
-      compiled: compileBuilding(createHouse(options)),
+      compiled,
+      memory: createEditMemory(compiled.building),
+      chatPending: null,
       remote: null,
       projectEpoch: get().projectEpoch + 1,
       floorId: 'ground',
@@ -173,7 +182,8 @@ const unsubscribeDraft = useProject.subscribe((state, previous) => {
   if (
     state.compiled.building === previous.compiled.building &&
     state.past === previous.past &&
-    state.future === previous.future
+    state.future === previous.future &&
+    state.memory === previous.memory
   )
     return;
   if (state.recovery !== null) {

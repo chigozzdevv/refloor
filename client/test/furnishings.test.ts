@@ -3,6 +3,7 @@ import { assetFromCatalogue } from '@refloor/catalogue';
 import { createHouse } from '@refloor/catalogue/houses';
 import { validateBuilding } from '@refloor/engine';
 import { fingerprintBuilding } from '@refloor/scene';
+import { createEditMemory } from '@refloor/scene/edit-memory';
 import { completeFurnishings } from '@/shared/editor/furnishings';
 import { editDocument, restoreBefore } from '@/shared/editor/document';
 
@@ -25,7 +26,10 @@ describe('existing house furnishings', () => {
     const compiled = validateBuilding(building),
       original = fingerprintBuilding(building),
       result = await completeFurnishings(compiled),
-      edited = editDocument({ compiled, past: [], future: [] }, result.commands);
+      edited = editDocument(
+        { compiled, past: [], future: [], memory: createEditMemory(compiled.building) },
+        result.commands,
+      );
     expect(result.commands.length).toBeGreaterThan(3);
     expect(edited.compiled.building.floors).toEqual(building.floors);
     expect(edited.compiled.building.stairs).toEqual(building.stairs);

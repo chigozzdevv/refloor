@@ -5,7 +5,7 @@ import {
   downloadText,
   encodeProject,
   maxProjectBytes,
-  parseProjectFile,
+  readProjectFile,
 } from '@/shared/scene/files';
 import { editingError } from '@/shared/editor/errors';
 import { SavedSpaces } from '@/components/editor/saved-spaces';
@@ -15,7 +15,8 @@ export function ProjectActions() {
     [busy, setBusy] = useState(false),
     input = useRef<HTMLInputElement>(null),
     panel = useRef<HTMLDivElement>(null);
-  const { compiled, saved, saveError, recovery, resumeSaving, loadProject, notify } = useProject();
+  const { compiled, memory, saved, saveError, recovery, resumeSaving, loadProject, notify } =
+    useProject();
   useEffect(() => {
     const pointer = (event: PointerEvent) => {
         if (event.target instanceof Node && !panel.current?.contains(event.target)) setOpen(false);
@@ -54,8 +55,8 @@ export function ProjectActions() {
           try {
             if (file.size > maxProjectBytes)
               throw new Error('Project files must be smaller than 2 MB.');
-            const result = parseProjectFile(await file.text());
-            loadProject(result);
+            const result = readProjectFile(await file.text());
+            loadProject(result.compiled, undefined, result.memory);
             setOpen(false);
           } catch (error) {
             notify(`Could not open this project. ${editingError(error)}`);
@@ -88,7 +89,7 @@ export function ProjectActions() {
             className="file-action"
             onClick={() =>
               downloadText(
-                encodeProject(compiled.building),
+                encodeProject(compiled.building, memory),
                 `${compiled.building.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.refloor.json`,
               )
             }
