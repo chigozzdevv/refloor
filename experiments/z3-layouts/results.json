@@ -1,17 +1,17 @@
 {
-  "timestamp": "2026-10-17T23:38:11.782Z",
+  "timestamp": "2026-10-18T00:21:27.517Z",
   "node": "v24.19.0",
   "package": "z3-solver@5.3.1",
   "startupMs": 67,
-  "elapsedMs": 1340,
+  "elapsedMs": 1217,
   "completed": true,
   "passed": 44,
   "total": 44,
   "independentCorruptionChecks": 3,
   "solveTimingMs": {
-    "min": 1.77,
-    "median": 12.44,
-    "max": 117.85
+    "min": 1.83,
+    "median": 10.93,
+    "max": 119.16
   },
   "scope": "Corridor-spine rectangular layouts, 2D clearance/path checks, four furniture footprints, aligned U-stair reservations and analytic headroom. No browser scene or AI calls.",
   "assumptions": {
@@ -34,308 +34,308 @@
       "name": "1br_0_forward",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 117.85,
+      "solveMs": 119.16,
       "passed": true
     },
     {
       "name": "1br_0_reversed",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 55.98,
+      "solveMs": 12.39,
       "passed": true
     },
     {
       "name": "1br_1_forward",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 13.03,
+      "solveMs": 11.21,
       "passed": true
     },
     {
       "name": "1br_1_reversed",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 11.2,
+      "solveMs": 11.34,
       "passed": true
     },
     {
       "name": "1br_2_forward",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 12.44,
+      "solveMs": 11.18,
       "passed": true
     },
     {
       "name": "1br_2_reversed",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 12.36,
+      "solveMs": 10.81,
       "passed": true
     },
     {
       "name": "1br_3_forward",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 12.18,
+      "solveMs": 11.14,
       "passed": true
     },
     {
       "name": "1br_3_reversed",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 11.8,
+      "solveMs": 10.71,
       "passed": true
     },
     {
       "name": "2br_0_forward",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 12.7,
+      "solveMs": 11.31,
       "passed": true
     },
     {
       "name": "2br_0_reversed",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 12.32,
+      "solveMs": 10.73,
       "passed": true
     },
     {
       "name": "2br_1_forward",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 14.68,
+      "solveMs": 10.79,
       "passed": true
     },
     {
       "name": "2br_1_reversed",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 11.86,
+      "solveMs": 10.39,
       "passed": true
     },
     {
       "name": "2br_2_forward",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 12.01,
+      "solveMs": 10.39,
       "passed": true
     },
     {
       "name": "2br_2_reversed",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 12.04,
+      "solveMs": 10.64,
       "passed": true
     },
     {
       "name": "2br_3_forward",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 12.06,
+      "solveMs": 10.46,
       "passed": true
     },
     {
       "name": "2br_3_reversed",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 11.64,
+      "solveMs": 9.21,
       "passed": true
     },
     {
       "name": "3br_0_forward",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 12.02,
+      "solveMs": 10.86,
       "passed": true
     },
     {
       "name": "3br_0_reversed",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 12.6,
+      "solveMs": 11.06,
       "passed": true
     },
     {
       "name": "3br_1_forward",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 12.45,
+      "solveMs": 10.93,
       "passed": true
     },
     {
       "name": "3br_1_reversed",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 12.44,
+      "solveMs": 10.96,
       "passed": true
     },
     {
       "name": "3br_2_forward",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 12.51,
+      "solveMs": 11.01,
       "passed": true
     },
     {
       "name": "3br_2_reversed",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 12.39,
+      "solveMs": 11,
       "passed": true
     },
     {
       "name": "3br_3_forward",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 12.55,
+      "solveMs": 10.76,
       "passed": true
     },
     {
       "name": "3br_3_reversed",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 12.68,
+      "solveMs": 10.87,
       "passed": true
     },
     {
       "name": "reject_undersized_house",
       "expected": "unsat",
       "actual": "unsat",
-      "solveMs": 12.6,
+      "solveMs": 11.1,
       "passed": true
     },
     {
       "name": "reject_too_shallow_for_rooms_and_hall",
       "expected": "unsat",
       "actual": "unsat",
-      "solveMs": 11.83,
+      "solveMs": 9.65,
       "passed": true
     },
     {
       "name": "free_furniture_6x5m",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 32.93,
+      "solveMs": 28.88,
       "passed": true
     },
     {
       "name": "free_furniture_7x5.5m",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 26.18,
+      "solveMs": 22.99,
       "passed": true
     },
     {
       "name": "reject_furniture_room_too_narrow",
       "expected": "unsat",
       "actual": "unsat",
-      "solveMs": 22.78,
+      "solveMs": 20.98,
       "passed": true
     },
     {
       "name": "validate_existing_furniture",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 10.75,
+      "solveMs": 9.21,
       "passed": true
     },
     {
       "name": "move_tv_preserve_other_items",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 11.15,
+      "solveMs": 8.28,
       "passed": true
     },
     {
       "name": "larger_table_preserve_sofa_tv_shelf",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 17.9,
+      "solveMs": 15.78,
       "passed": true
     },
     {
       "name": "reject_table_too_large",
       "expected": "unsat",
       "actual": "unsat",
-      "solveMs": 17.34,
+      "solveMs": 14.73,
       "passed": true
     },
     {
       "name": "reject_sofa_blocking_door_and_route",
       "expected": "unsat",
       "actual": "unsat",
-      "solveMs": 9.42,
+      "solveMs": 8.38,
       "passed": true
     },
     {
       "name": "reject_tv_through_wall",
       "expected": "unsat",
       "actual": "unsat",
-      "solveMs": 9.91,
+      "solveMs": 8.64,
       "passed": true
     },
     {
       "name": "two_storey_0",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 17.73,
+      "solveMs": 16.13,
       "passed": true
     },
     {
       "name": "two_storey_1",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 15.86,
+      "solveMs": 12.62,
       "passed": true
     },
     {
       "name": "two_storey_2",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 16.45,
+      "solveMs": 14.36,
       "passed": true
     },
     {
       "name": "two_storey_3",
       "expected": "sat",
       "actual": "sat",
-      "solveMs": 15.65,
+      "solveMs": 13.95,
       "passed": true
     },
     {
       "name": "reject_missing_stair_opening",
       "expected": "unsat",
       "actual": "unsat",
-      "solveMs": 1.77,
+      "solveMs": 1.83,
       "passed": true
     },
     {
       "name": "reject_shifted_stair_opening",
       "expected": "unsat",
       "actual": "unsat",
-      "solveMs": 2.54,
+      "solveMs": 2.07,
       "passed": true
     },
     {
       "name": "reject_narrow_stair_opening",
       "expected": "unsat",
       "actual": "unsat",
-      "solveMs": 2.56,
+      "solveMs": 2.07,
       "passed": true
     },
     {
       "name": "reject_misaligned_stairwells",
       "expected": "unsat",
       "actual": "unsat",
-      "solveMs": 10.79,
+      "solveMs": 9.06,
       "passed": true
     },
     {
       "name": "reject_low_headroom",
       "expected": "unsat",
       "actual": "unsat",
-      "solveMs": 2.35,
+      "solveMs": 2.39,
       "passed": true
     }
   ],

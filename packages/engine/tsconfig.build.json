@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "types": [],
+    "paths": {
+      "@refloor/engine": ["./src/index.ts"],
+      "@refloor/engine/*": ["./src/*.ts"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["test"]
+}

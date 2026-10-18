@@ -5,6 +5,18 @@ export default defineConfig({
   resolve: {
     alias: [
       {
+        find: /^@refloor\/engine$/,
+        replacement: fileURLToPath(new URL('./packages/engine/src/index.ts', import.meta.url)),
+      },
+      {
+        find: /^@refloor\/engine\//,
+        replacement: fileURLToPath(new URL('./packages/engine/src/', import.meta.url)),
+      },
+      {
+        find: /^@engine-test\//,
+        replacement: fileURLToPath(new URL('./packages/engine/test/', import.meta.url)),
+      },
+      {
         find: /^@refloor\/scene$/,
         replacement: fileURLToPath(new URL('./packages/scene/src/index.ts', import.meta.url)),
       },

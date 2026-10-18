@@ -48,12 +48,29 @@ the later backend must apply its own network-fetch policy before retrieving a UR
 
 ## Validation boundaries
 
-Scene validation currently covers schema correctness, references, unique identities,
+Scene validation covers schema correctness, references, unique identities,
 room/floor bounds, room overlap, wall openings, rotated object bounds and stairwell links.
-It does not yet establish furniture-to-furniture collision, door swing clearance,
-stair tread/headroom geometry or navigation reachability. Those checks belong to the
-geometry engine and must pass before a generated scene is accepted for exploration.
+The engine adds indexed meshes, matching collision transforms, actual wall and slab
+openings, hinged door leaves, roofs, stair treads and landings. Furniture remains an
+asset instance with a dimensioned collision proxy; the engine does not fabricate its
+visual asset.
+
+`validateBuilding` checks full-height exterior enclosure, furniture collisions,
+door swing clearance, supported landings, stair headroom and routes to rooms and
+object interaction positions. `validatePlacement` applies the real scene commands
+and repeats those checks before returning an accepted edit. The optional player check
+accepts a floor-level navigation position; the browser's character controller must
+also handle live motion and collision updates during edits.
+
+The current engine supports rectangular floors with aligned storeys, connected slabs,
+straight or U-shaped stairs at quarter-turn headings, and a flat or gable roof. It
+rejects unsupported storey offsets, insufficient stair runs and resource-budget
+overflows. The walker profile is configurable and is a product constraint, not a
+building-code certification. See `packages/engine/README.md` for the public API and
+navigation policies.
 
 The Z3 experiment's 44 bounded cases establish solver feasibility, not an unrestricted
-house generator or a tested browser walkthrough. Real stair colliders and walking
-controllers must be tested together before upstairs navigation is considered complete.
+house generator or a tested browser walkthrough. Engine tests now walk Rapier's
+character controller up and down the generated colliders and from an entrance
+approach to an upstairs bedroom. Browser controls, visual assets, door-handle dragging,
+video playback, generation and persistence still need implementation.

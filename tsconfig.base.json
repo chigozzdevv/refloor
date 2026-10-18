@@ -16,7 +16,10 @@
     "paths": {
       "@refloor/scene": ["./packages/scene/src/index.ts"],
       "@refloor/scene/*": ["./packages/scene/src/*.ts"],
-      "@scene-test/*": ["./packages/scene/test/*.ts"]
+      "@scene-test/*": ["./packages/scene/test/*.ts"],
+      "@refloor/engine": ["./packages/engine/src/index.ts"],
+      "@refloor/engine/*": ["./packages/engine/src/*.ts"],
+      "@engine-test/*": ["./packages/engine/test/*.ts"]
     }
   }
 }
