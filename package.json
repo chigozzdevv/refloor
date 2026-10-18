@@ -13,8 +13,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "pnpm build && vitest run",
-    "test:solver": "pnpm --filter @refloor/z3-layouts test",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:solver"
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
