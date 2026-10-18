@@ -83,6 +83,7 @@ function Bed({ object }: { object: SceneObject }) {
 
 function Cabinet({ object }: { object: SceneObject }) {
   const material = useSurface(object.materials.body ?? finishes.oak),
+    frame = useSurface(object.materials.frame ?? finishes.black),
     { width: w, height: h, depth: d } = object.dimensions;
   const sections = Math.max(2, Math.round(w / 0.55));
   return (
@@ -117,7 +118,7 @@ function Cabinet({ object }: { object: SceneObject }) {
       ))}
       <mesh position={[0, 0.055, 0]} castShadow>
         <boxGeometry args={[w - 0.14, 0.11, d - 0.12]} />
-        <meshStandardMaterial color="#393b34" roughness={0.65} />
+        <primitive object={frame} attach="material" />
       </mesh>
     </>
   );
@@ -147,27 +148,26 @@ function Pendant({ object }: { object: SceneObject }) {
       lastShadow.current = now;
     }
   });
-  const powered = state?.powered ?? false;
+  const powered = state?.powered ?? false,
+    shade = useSurface(object.materials.body ?? finishes.linen),
+    frame = useSurface(object.materials.frame ?? finishes.brass);
+  useEffect(() => {
+    shade.transmission = 0.15;
+    shade.thickness = 0.08;
+    shade.emissive.set(state?.color ?? '#ffe6bf');
+    shade.emissiveIntensity = powered ? 0.8 : 0;
+    shade.needsUpdate = true;
+  }, [shade, powered, state?.color]);
   return (
     <>
-      <mesh position={[0, 0.2, 0]}>
+      <mesh position={[0, 0.2, 0]} material={shade}>
         <sphereGeometry args={[0.2, 32, 24]} />
-        <meshPhysicalMaterial
-          color="#f1eadb"
-          roughness={0.45}
-          transmission={0.15}
-          thickness={0.08}
-          emissive={state?.color ?? '#ffe6bf'}
-          emissiveIntensity={powered ? 0.8 : 0}
-        />
       </mesh>
-      <mesh position={[0, 0.397, 0]}>
+      <mesh position={[0, 0.397, 0]} material={frame}>
         <cylinderGeometry args={[0.006, 0.006, 0.09, 8]} />
-        <meshStandardMaterial color="#615746" roughness={0.4} metalness={0.6} />
       </mesh>
-      <mesh position={[0, 0.44, 0]}>
+      <mesh position={[0, 0.44, 0]} material={frame}>
         <cylinderGeometry args={[0.065, 0.065, 0.018, 20]} />
-        <meshStandardMaterial color="#bba37e" roughness={0.3} metalness={0.8} />
       </mesh>
       {powered && (
         <pointLight
@@ -190,7 +190,8 @@ function Pendant({ object }: { object: SceneObject }) {
 }
 
 function Television({ object }: { object: SceneObject }) {
-  const { width: w, height: h, depth: d } = object.dimensions;
+  const { width: w, height: h, depth: d } = object.dimensions,
+    body = useSurface(object.materials.body ?? finishes.black);
   return (
     <>
       <RoundedBox
@@ -199,13 +200,8 @@ function Television({ object }: { object: SceneObject }) {
         smoothness={4}
         position={[0, h / 2, 0]}
         castShadow
-      >
-        <meshPhysicalMaterial
-          color={object.materials.body?.color ?? '#171a18'}
-          roughness={0.3}
-          metalness={0.3}
-        />
-      </RoundedBox>
+        material={body}
+      />
       <mesh name="screen" position={[0, h / 2, d / 2 + 0.001]}>
         <planeGeometry args={[w - 0.035, h - 0.035]} />
         <VideoScreen object={object} />

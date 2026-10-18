@@ -1,5 +1,5 @@
 import type { ObjectAsset, SceneObject } from '@refloor/scene';
-import { finishes } from '@refloor/catalogue/materials';
+import { finish, finishes } from '@refloor/catalogue/materials';
 
 export type FurnitureRenderer =
   'sofa' | 'chair' | 'coffee-table' | 'bed' | 'television' | 'pendant' | 'cabinet' | 'plant';
@@ -79,7 +79,7 @@ export const catalogue: CatalogueEntry[] = [
     label: 'Opal pendant',
     kind: 'light',
     dimensions: { width: 0.42, height: 0.45, depth: 0.42 },
-    materials: { body: finishes.linen, frame: finishes.brass },
+    materials: { body: finish('#f1eadb', null, 0.45), frame: finishes.brass },
     behaviours: [{ kind: 'light', state: { powered: true, intensity: 3, color: '#ffe6bf' } }],
     renderer: 'pendant',
     description: 'Warm light through an opal shade.',
