@@ -1417,3 +1417,37 @@ select:focus {
     font-size: 25px;
   }
 }
+
+.inspector-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.inspector.collapsed {
+  height: auto;
+  overflow: hidden;
+}
+.inspector.collapsed .eyebrow {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.inspector-content[hidden] {
+  display: none;
+}
+@media (max-width: 600px) {
+  .inspector.collapsed {
+    top: auto;
+    bottom: 160px;
+    max-height: 75px;
+  }
+  .inspector-heading-actions {
+    flex-shrink: 0;
+  }
+  .inspector.collapsed .eyebrow {
+    max-width: 190px;
+    font-size: 9px;
+    letter-spacing: 1px;
+  }
+}
