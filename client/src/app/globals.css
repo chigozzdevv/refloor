@@ -364,8 +364,8 @@ textarea:focus-visible,
   transition: opacity 120ms;
 }
 .marker-portal .marker-caption {
-  top: 46px;
-  bottom: auto;
+  top: auto;
+  bottom: 46px;
 }
 .marker-primary .marker-caption,
 .marker-portal .marker-caption,
