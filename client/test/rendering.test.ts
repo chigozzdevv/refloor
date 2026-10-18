@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { BoxGeometry, Group, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three';
+import { visibleGroupRaycast, visibleMeshRaycast } from '@/runtime/rendering/picking';
 import { createHouse } from '@refloor/blueprints';
 import { getCatalogueEntry } from '@refloor/catalogue';
 import { compileBuilding } from '@refloor/engine';
@@ -16,6 +18,35 @@ describe('rendering contracts', () => {
       expect(sameMaterial(object.materials.body, original)).toBe(true);
       expect(sameMaterial({ ...object.materials.body!, color: '#f010ff' }, original)).toBe(false);
     }
+  });
+  it('selects visible surfaces behind cutaway walls and hidden furniture groups', () => {
+    const geometry = new BoxGeometry(2, 2, 0.1),
+      material = new MeshBasicMaterial(),
+      wall = new Mesh(geometry, material),
+      object = new Mesh(geometry, material),
+      group = new Group(),
+      surface = new Mesh(geometry, material),
+      ray = new Raycaster(new Vector3(0, 0, 5), new Vector3(0, 0, -1));
+    wall.position.z = 2;
+    wall.visible = false;
+    wall.raycast = visibleMeshRaycast;
+    group.position.z = 1;
+    group.visible = false;
+    group.raycast = visibleGroupRaycast;
+    group.add(object);
+    wall.updateMatrixWorld(true);
+    group.updateMatrixWorld(true);
+    surface.updateMatrixWorld(true);
+    expect(
+      ray.intersectObjects([wall, group, surface]).every((hit) => hit.object === surface),
+    ).toBe(true);
+    expect(ray.intersectObjects([wall, group, surface])[0]?.object).toBe(surface);
+    group.visible = true;
+    expect(ray.intersectObjects([wall, group, surface])[0]?.object).toBe(object);
+    wall.visible = true;
+    expect(ray.intersectObjects([wall, group, surface])[0]?.object).toBe(wall);
+    geometry.dispose();
+    material.dispose();
   });
   it('keeps floor tops and white undersides separate without a draw call per triangle', () => {
     const compiled = compileBuilding(

@@ -8,6 +8,7 @@ import { partGeometry } from '@/runtime/rendering/geometry';
 import { useProject } from '@/features/projects/project-store';
 import { hiddenExterior } from '@/runtime/rendering/visibility';
 import { Door } from '@/features/viewport/Door';
+import { visibleMeshRaycast } from '@/runtime/rendering/picking';
 
 export function BuildingPart({ part }: { part: MeshPart }) {
   const ref = useRef<Mesh>(null),
@@ -43,6 +44,7 @@ export function BuildingPart({ part }: { part: MeshPart }) {
   return (
     <mesh
       ref={ref}
+      raycast={visibleMeshRaycast}
       geometry={geometry}
       material={
         ['slab', 'stair-tread', 'stair-landing'].includes(part.role)

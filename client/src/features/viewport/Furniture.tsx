@@ -9,6 +9,7 @@ import { useProject } from '@/features/projects/project-store';
 import { CraftedFurniture } from '@/features/viewport/CraftedFurniture';
 import { useSurface } from '@/runtime/rendering/materials';
 import { sameMaterial } from '@/runtime/rendering/finish';
+import { visibleGroupRaycast } from '@/runtime/rendering/picking';
 
 function ScannedFurniture({ object, entry }: { object: SceneObject; entry: CatalogueEntry }) {
   const { scene } = useGLTF(entry.modelUrl!, false),
@@ -86,6 +87,7 @@ function FurnitureInstance({ object }: { object: SceneObject }) {
     <>
       <group
         ref={attach}
+        raycast={visibleGroupRaycast}
         visible={visible}
         position={[object.position.x, floor.elevation + object.position.y, object.position.z]}
         rotation={[0, object.rotation, 0]}

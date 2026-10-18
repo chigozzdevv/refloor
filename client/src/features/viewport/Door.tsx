@@ -11,6 +11,7 @@ import { useSurface } from '@/runtime/rendering/materials';
 import { physicsSession } from '@/runtime/physics/session';
 import { entryPose } from '@/runtime/physics/entry';
 import { hiddenExterior } from '@/runtime/rendering/visibility';
+import { visibleGroupRaycast, visibleMeshRaycast } from '@/runtime/rendering/picking';
 
 export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
   const pivot = useRef<Group>(null),
@@ -92,6 +93,7 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
       rotation={[0, portal.rotation + portal.openingAngle * fraction.current, 0]}
     >
       <RoundedBox
+        raycast={visibleMeshRaycast}
         args={[source.size.x, source.size.y, source.size.z]}
         radius={0.006}
         smoothness={3}
@@ -107,6 +109,7 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
       {[-1, 1].map((side) => (
         <group
           key={side}
+          raycast={visibleGroupRaycast}
           position={[sign * (source.size.x - 0.12), 1.05, side * (source.size.z / 2 + 0.025)]}
           onPointerDown={down}
           onPointerMove={move}
