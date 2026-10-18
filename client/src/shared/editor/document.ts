@@ -1,4 +1,5 @@
 import { undoRevision } from '@refloor/scene';
+import { validateCommandTuning } from '@refloor/catalogue';
 import type { SceneCommand } from '@refloor/scene';
 import type { EditDetails, HistoryRecord } from '@/shared/editor/history';
 import { describeChange, describeTarget } from '@/shared/editor/history';
@@ -18,6 +19,7 @@ export function editDocument(
   player?: NavigationPoint,
   details?: EditDetails,
 ): DocumentState {
+  validateCommandTuning(state.compiled.building, commands);
   const result = validatePlacement(
     state.compiled.building,
     { ...metadata(), expectedRevision: state.compiled.building.revision, commands },

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createHouse } from '@refloor/catalogue/houses';
 import { compileBuilding } from '@refloor/engine';
-import { finishes } from '@refloor/catalogue';
+import { finishes, lightTuning, lightOutput } from '@refloor/catalogue';
 import { fingerprintBuilding } from '@refloor/scene';
 import type { DocumentState } from '@/shared/editor/document';
 import { editDocument, reverseDocument, restoreBefore, redoChange } from '@/shared/editor/document';
@@ -14,6 +14,34 @@ const initial = (): DocumentState => ({
 });
 
 describe('validated browser editing', () => {
+  it('resets a legacy overbright light and retains a reversible, bounded history', () => {
+    const original = initial(),
+      light = original.compiled.building.objects.find((object) => object.kind === 'light')!,
+      state = light.behaviours.find((item) => item.kind === 'light')!.state;
+    state.intensity = 100;
+    state.color = '#ffffff';
+    const reset = editDocument(
+      original,
+      [{ type: 'set-light', objectId: light.id, state: lightTuning(light)!.defaults }],
+      undefined,
+      { label: 'Reset light' },
+    );
+    const restored = reset.compiled.building.objects.find((item) => item.id === light.id)!;
+    expect(restored.behaviours.find((item) => item.kind === 'light')!.state).toEqual(
+      lightTuning(light)!.defaults,
+    );
+    expect(lightOutput(restored)).toBe(3);
+    const undone = reverseDocument(reset, 'undo');
+    expect(
+      lightOutput(undone.compiled.building.objects.find((item) => item.id === light.id)!),
+    ).toBe(6);
+    expect(fingerprintBuilding(reverseDocument(undone, 'redo').compiled.building)).toBe(
+      fingerprintBuilding(reset.compiled.building),
+    );
+    expect(() =>
+      editDocument(reset, [{ type: 'set-light', objectId: light.id, state: { intensity: 6.01 } }]),
+    ).toThrow('200%');
+  });
   it('undoes a chat and later edits atomically and retains labels across redo', () => {
     const original = initial(),
       object = original.compiled.building.objects[0]!;

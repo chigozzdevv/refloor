@@ -2,17 +2,21 @@ import { useState } from 'react';
 import { ArrowUp, LoaderCircle, X } from 'lucide-react';
 import type { ChatTarget } from '@refloor/scene/chat';
 import { useLanguageEdit } from '@/shared/editor/use-language-edit';
+import type { SceneObject } from '@refloor/scene';
+import { LightControls } from '@/components/editor/light-controls';
 
 export function ElementChat({
   target,
   label,
   location,
+  object,
   suggestions,
   close,
 }: {
   target: ChatTarget;
   label: string;
   location?: string;
+  object?: SceneObject | null;
   suggestions: string[];
   close?: () => void;
 }) {
@@ -39,6 +43,7 @@ export function ElementChat({
           </button>
         )}
       </div>
+      {object?.kind === 'light' && <LightControls object={object} disabled={busy} />}
       {reply && (
         <p className="chat-reply" role="status">
           {reply}
