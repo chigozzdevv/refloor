@@ -51,16 +51,18 @@ function Cupboard({
   h,
   d,
   material,
+  frame,
 }: {
   w: number;
   h: number;
   d: number;
   material: ThreeMaterial;
+  frame: ThreeMaterial;
 }) {
   const count = Math.max(2, Math.round(w / 0.6));
   return (
     <>
-      <Solid size={[w, 0.1, d - 0.08]} at={[0, 0.05, 0]} color="#272924" />
+      <Solid size={[w, 0.1, d - 0.08]} at={[0, 0.05, 0]} material={frame} />
       <Solid size={[w, h - 0.1, 0.02]} at={[0, (h + 0.1) / 2, -d / 2 + 0.01]} material={material} />
       {[-1, 1].map((side) => (
         <Solid
@@ -80,9 +82,7 @@ function Cupboard({
           <Solid
             size={[0.012, Math.min(0.2, h * 0.3), 0.025]}
             at={[(w / count) * 0.3, h * 0.62, 0.025]}
-            color="#b3a782"
-            metalness={0.8}
-            roughness={0.25}
+            material={frame}
           />
         </group>
       ))}
@@ -154,10 +154,12 @@ function Basin({ x, y, w, d }: { x: number; y: number; w: number; d: number }) {
 function Kitchen({
   object,
   body,
+  frame,
   island = false,
 }: {
   object: SceneObject;
   body: ThreeMaterial;
+  frame: ThreeMaterial;
   island?: boolean;
 }) {
   const { width: w, height: h, depth: d } = object.dimensions,
@@ -169,7 +171,7 @@ function Kitchen({
     right = w - left - sinkW;
   return (
     <>
-      <Cupboard w={w} h={top - 0.04} d={d - 0.035} material={body} />
+      <Cupboard w={w} h={top - 0.04} d={d - 0.035} material={body} frame={frame} />
       {island ? (
         <Solid
           size={[w + 0.025, 0.05, d + 0.025]}
@@ -240,7 +242,15 @@ function Kitchen({
   );
 }
 
-function Refrigerator({ object, body }: { object: SceneObject; body: ThreeMaterial }) {
+function Refrigerator({
+  object,
+  body,
+  frame,
+}: {
+  object: SceneObject;
+  body: ThreeMaterial;
+  frame: ThreeMaterial;
+}) {
   const { width: w, height: h, depth: d } = object.dimensions;
   return (
     <>
@@ -258,9 +268,7 @@ function Refrigerator({ object, body }: { object: SceneObject; body: ThreeMateri
           <Solid
             size={[0.025, door.height * 0.45, 0.05]}
             at={[-w * 0.35, door.y, d / 2 + 0.065]}
-            color="#d8dedd"
-            metalness={0.9}
-            roughness={0.2}
+            material={frame}
           />
         </group>
       ))}
@@ -269,7 +277,15 @@ function Refrigerator({ object, body }: { object: SceneObject; body: ThreeMateri
   );
 }
 
-function Vanity({ object, body }: { object: SceneObject; body: ThreeMaterial }) {
+function Vanity({
+  object,
+  body,
+  frame,
+}: {
+  object: SceneObject;
+  body: ThreeMaterial;
+  frame: ThreeMaterial;
+}) {
   const { width: w, height: h, depth: d } = object.dimensions,
     top = h * 0.75,
     bw = Math.min(0.55, w * 0.55),
@@ -277,7 +293,7 @@ function Vanity({ object, body }: { object: SceneObject; body: ThreeMaterial }) 
     side = (w - bw) / 2;
   return (
     <>
-      <Cupboard w={w} h={top - 0.04} d={d - 0.025} material={body} />
+      <Cupboard w={w} h={top - 0.04} d={d - 0.025} material={body} frame={frame} />
       {[-1, 1].map((sign) => (
         <group key={sign}>
           <Solid size={[side, 0.045, d]} at={[(sign * (bw + side)) / 2, top - 0.022, 0]} />
@@ -290,7 +306,15 @@ function Vanity({ object, body }: { object: SceneObject; body: ThreeMaterial }) 
   );
 }
 
-function Toilet({ object, body }: { object: SceneObject; body: ThreeMaterial }) {
+function Toilet({
+  object,
+  body,
+  frame,
+}: {
+  object: SceneObject;
+  body: ThreeMaterial;
+  frame: ThreeMaterial;
+}) {
   const { width: w, height: h, depth: d } = object.dimensions;
   return (
     <>
@@ -316,22 +340,24 @@ function Toilet({ object, body }: { object: SceneObject; body: ThreeMaterial }) 
         <meshStandardMaterial color="#526468" roughness={0.18} />
       </mesh>
       <Solid size={[w * 0.77, h * 0.55, d * 0.22]} at={[0, h * 0.71, -d * 0.34]} material={body} />
-      <Solid
-        size={[0.07, 0.012, 0.04]}
-        at={[w * 0.2, h * 0.995, -d * 0.34]}
-        color="#c4cccd"
-        metalness={0.9}
-        roughness={0.18}
-      />
+      <Solid size={[0.07, 0.012, 0.04]} at={[w * 0.2, h * 0.995, -d * 0.34]} material={frame} />
     </>
   );
 }
 
-function Shower({ object }: { object: SceneObject }) {
+function Shower({
+  object,
+  body,
+  frame,
+}: {
+  object: SceneObject;
+  body: ThreeMaterial;
+  frame: ThreeMaterial;
+}) {
   const { width: w, height: h, depth: d } = object.dimensions;
   return (
     <>
-      <Solid size={[w, 0.085, d]} at={[0, 0.045, 0]} color="#e5e5de" roughness={0.26} />
+      <Solid size={[w, 0.085, d]} at={[0, 0.045, 0]} material={body} />
       <mesh position={[0, h * 0.5, -d / 2 + 0.02]}>
         <boxGeometry args={[w, h - 0.1, 0.012]} />
         <meshPhysicalMaterial
@@ -355,40 +381,26 @@ function Shower({ object }: { object: SceneObject }) {
           key={side}
           size={[0.018, h, 0.018]}
           at={[side * (w / 2 - 0.02), h / 2, d / 2 - 0.015]}
-          color="#b6c0bf"
-          metalness={0.85}
-          roughness={0.2}
+          material={frame}
         />
       ))}
-      <Solid
-        size={[w, 0.018, 0.018]}
-        at={[0, h - 0.01, d / 2 - 0.015]}
-        color="#b6c0bf"
-        metalness={0.85}
-      />
-      <Solid
-        size={[0.025, h * 0.25, 0.025]}
-        at={[0, h * 0.73, -d * 0.4]}
-        color="#b6c0bf"
-        metalness={0.9}
-      />
-      <Solid
-        size={[0.18, 0.025, 0.18]}
-        at={[0, h * 0.9, -d * 0.3]}
-        color="#b6c0bf"
-        metalness={0.9}
-      />
-      <Solid
-        size={[0.018, 0.24, 0.04]}
-        at={[w * 0.3, h * 0.47, d / 2 + 0.02]}
-        color="#b6c0bf"
-        metalness={0.85}
-      />
+      <Solid size={[w, 0.018, 0.018]} at={[0, h - 0.01, d / 2 - 0.015]} material={frame} />
+      <Solid size={[0.025, h * 0.25, 0.025]} at={[0, h * 0.73, -d * 0.4]} material={frame} />
+      <Solid size={[0.18, 0.025, 0.18]} at={[0, h * 0.9, -d * 0.3]} material={frame} />
+      <Solid size={[0.018, 0.24, 0.04]} at={[w * 0.3, h * 0.47, d / 2 + 0.02]} material={frame} />
     </>
   );
 }
 
-function Table({ object, body }: { object: SceneObject; body: ThreeMaterial }) {
+function Table({
+  object,
+  body,
+  frame,
+}: {
+  object: SceneObject;
+  body: ThreeMaterial;
+  frame: ThreeMaterial;
+}) {
   const { width: w, height: h, depth: d } = object.dimensions;
   return (
     <>
@@ -399,7 +411,7 @@ function Table({ object, body }: { object: SceneObject; body: ThreeMaterial }) {
             key={`${x}:${z}`}
             size={[0.055, h - 0.055, 0.055]}
             at={[x * (w / 2 - 0.09), (h - 0.055) / 2, z * (d / 2 - 0.09)]}
-            material={body}
+            material={frame}
           />
         )),
       )}
@@ -447,27 +459,27 @@ export function RoomFixtures({
     { width: w, height: h, depth: d } = object.dimensions;
   switch (renderer) {
     case 'kitchen':
-      return <Kitchen object={object} body={body} />;
+      return <Kitchen object={object} body={body} frame={frame} />;
     case 'island':
-      return <Kitchen object={object} body={body} island />;
+      return <Kitchen object={object} body={body} frame={frame} island />;
     case 'fridge':
-      return <Refrigerator object={object} body={body} />;
+      return <Refrigerator object={object} body={body} frame={frame} />;
     case 'vanity':
-      return <Vanity object={object} body={body} />;
+      return <Vanity object={object} body={body} frame={frame} />;
     case 'toilet':
-      return <Toilet object={object} body={body} />;
+      return <Toilet object={object} body={body} frame={frame} />;
     case 'shower':
-      return <Shower object={object} />;
+      return <Shower object={object} body={body} frame={frame} />;
     case 'desk':
     case 'dining-table':
-      return <Table object={object} body={body} />;
+      return <Table object={object} body={body} frame={frame} />;
     case 'dining-chair':
       return <DiningChair object={object} body={body} frame={frame} />;
     case 'wardrobe':
     case 'bedside':
       return (
         <>
-          <Cupboard w={w} h={h} d={d} material={body} />
+          <Cupboard w={w} h={h} d={d} material={body} frame={frame} />
           <Solid size={[w, 0.025, d]} at={[0, h - 0.012, 0]} material={body} />
         </>
       );
