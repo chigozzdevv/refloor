@@ -121,7 +121,8 @@ to a clear spot. Stops follow clear room viewpoints and routes between entrances
 doorways and stair landings, and update after edits. At most three separated markers
 appear at once: floor rings are places to stand, named doorway arrows enter rooms,
 and stair arrows change levels. Route stops face the next turn. The small location
-control names the current room; Find next stop turns toward a nearby choice without
+control names the current room; Leave room walks back through a reachable doorway
+without searching for it. Find next stop turns toward a nearby choice without
 moving. Doorway trips open required doors before following a route through
 the actual colliders. Stair arrows handle the full climb or descent with one click;
 the camera follows the turn and smooths changes in height. A Stop button appears during

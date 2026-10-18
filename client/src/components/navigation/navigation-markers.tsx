@@ -7,6 +7,7 @@ import { contains } from '@refloor/engine/math';
 import type { Destination } from '@/shared/navigation/destinations';
 import { destinations, nearbyRoute, stairContinuation } from '@/shared/navigation/destinations';
 import { organizeMarkers } from '@/shared/navigation/marker-layout';
+import { roomExit } from '@/shared/navigation/room-exit';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 import { physicsSession } from '@/shared/navigation/physics-session';
 import { useProject } from '@/shared/scene/scene-store';
@@ -97,6 +98,7 @@ export function NavigationMarkers() {
   const { compiled, mode, floorId, selection, interacting } = useProject();
   const request = useNavigation((state) => state.request);
   const all = useMemo(() => destinations(compiled), [compiled]);
+  const exits = useMemo(() => new Map<string, Destination | null>(), [compiled]);
   const [visible, setVisible] = useState<Destination[]>([]);
   const elapsed = useRef(1),
     projected = useMemo(() => new Vector3(), []),
@@ -111,6 +113,7 @@ export function NavigationMarkers() {
     const floor = compiled.building.floors.find((value) => value.id === player.floorId),
       room = floor?.rooms.find((value) => contains(value.footprint, player.position)),
       continuing = stairContinuation(compiled, player);
+    if (room && !exits.has(room.id)) exits.set(room.id, roomExit(compiled, player, all));
     camera.updateMatrixWorld();
     const candidates = (continuing.length ? continuing : all)
       .filter((destination) => {
@@ -174,6 +177,7 @@ export function NavigationMarkers() {
             z: next.anchor.z,
           }
         : null,
+      room && !continuing.length ? (exits.get(room.id) ?? null) : null,
     );
     if (request || selection || interacting) return;
     const layout = organizeMarkers(
