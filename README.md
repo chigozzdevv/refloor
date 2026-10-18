@@ -45,7 +45,10 @@ the generated colliders, including entrance-to-upstairs routes, both stair types
 rotated flights. This verifies the geometry in a headless physics world. The browser
 supports an animated entrance with a draggable handle, orbit and first-person views,
 WASD/touch movement, collision-aware stairs, guided floor changes, surface/object
-inspection, day/evening lighting and render-quality selection.
+inspection, day/evening lighting and render-quality selection. The furniture library
+adds items into validated clear spaces. Drag handles or exact coordinates move and
+rotate furniture; the inspector replaces, removes and changes materials. Accepted edits
+update collision geometry and support undo/redo (also Cmd/Ctrl+Z and Shift+Cmd/Ctrl+Z).
 
 Rendering assets are self-hosted. `client/public/assets/manifest.json` records their
 source URLs, CC0 licences, authors, physical dimensions and checksums. The material

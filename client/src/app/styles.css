@@ -837,3 +837,346 @@ a {
     font-size: 8px;
   }
 }
+
+button:disabled {
+  opacity: 0.32;
+  cursor: default;
+  transform: none;
+}
+.editor-toolbar {
+  position: absolute;
+  left: 50%;
+  bottom: 80px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px 6px 6px;
+  background: #f8f7eff0;
+  border: 1px solid #fff9;
+  border-radius: 10px;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 8px 28px #25311c14;
+}
+.toolbar-divider {
+  height: 20px;
+  width: 1px;
+  background: var(--line);
+  margin: 0 3px;
+}
+.inspector {
+  max-height: calc(100dvh - 255px);
+  overflow: auto;
+  width: 286px;
+}
+.inspector h2 {
+  margin: 20px 0 8px;
+}
+.field-caption {
+  display: block;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: #7d8871;
+  margin: 18px 0 9px;
+}
+.field-caption select,
+.field-caption input {
+  letter-spacing: 0;
+}
+select,
+input[type='number'],
+input[type='text'],
+input[type='url'] {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 9px;
+  border: 1px solid #d9dece;
+  border-radius: 6px;
+  background: #fff7;
+  color: #4b5741;
+  font-size: 11px;
+  font-family: inherit;
+  outline: none;
+}
+select {
+  margin-top: 8px;
+}
+input:focus,
+select:focus {
+  border-color: #8a9d77;
+  box-shadow: 0 0 0 2px #8a9d771a;
+}
+.coordinate-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.coordinate-grid label {
+  font-size: 9px;
+  color: #8a927e;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.coordinate-grid input {
+  font-size: 10px;
+  padding: 8px 5px;
+}
+.button.compact {
+  padding: 8px 12px;
+  font-size: 10px;
+  margin-top: 10px;
+}
+.outline {
+  background: transparent;
+  border: 1px solid #bdc7af;
+}
+.edit-tools {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 17px;
+}
+.tool-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #e9ecdf;
+  color: #758369;
+  border-radius: 6px;
+  padding: 9px 12px;
+  font-size: 10px;
+}
+.tool-button.selected {
+  background: #dbe3ce;
+  color: #405733;
+}
+.inspector .helper-text,
+.helper-text {
+  font-size: 10px;
+  color: #949b89;
+  line-height: 1.7;
+}
+.finish-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.swatch {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #d7ddcb;
+}
+.swatch.selected {
+  box-shadow: 0 0 0 2px #7a8e65;
+}
+.custom-colour {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid #a9b49c;
+  cursor: pointer;
+}
+.custom-colour input {
+  width: 38px;
+  height: 38px;
+  margin: -6px;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+}
+.remove-button {
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #a2755e;
+  font-size: 10px;
+  padding: 14px 0 0;
+  margin-top: 16px;
+  border-top: 1px solid #e4e6dc;
+  width: 100%;
+}
+.library-panel {
+  position: absolute;
+  left: 103px;
+  top: 95px;
+  bottom: 155px;
+  width: 310px;
+  background: #f8f7f1f5;
+  border: 1px solid #fff9;
+  border-radius: 13px;
+  padding: 22px;
+  overflow: auto;
+  backdrop-filter: blur(22px);
+  box-shadow: 0 16px 60px #27301d15;
+}
+.library-panel h2 {
+  font-size: 23px;
+  letter-spacing: -0.8px;
+  font-weight: 500;
+  margin: 19px 0;
+}
+.library-tabs {
+  display: flex;
+  gap: 5px;
+  border-bottom: 1px solid #dce1d3;
+  padding: 10px 0;
+  margin-bottom: 9px;
+}
+.library-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  color: #929c85;
+  font-size: 10px;
+  padding: 8px;
+  border-radius: 5px;
+}
+.library-tabs button.selected {
+  background: #e7ebde;
+  color: #526444;
+}
+.room-object {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #e4e7dc;
+  border-radius: 5px;
+}
+.room-object.selected {
+  background: #e6ebdc;
+}
+.room-object > button:first-child {
+  flex: 1;
+  background: transparent;
+  color: #56624b;
+  font-size: 11px;
+  padding: 12px 8px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.room-object small {
+  color: #9aa48d;
+  text-transform: capitalize;
+  font-size: 9px;
+}
+.catalogue-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.catalogue-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 10px;
+  background: #eef0e6;
+  padding: 17px 12px 12px;
+  border: 1px solid #dfe5d5;
+  border-radius: 8px;
+  color: #7d8d6d;
+}
+.catalogue-card:hover {
+  background: #e3ead7;
+}
+.catalogue-card strong {
+  font-size: 10px;
+  font-weight: 500;
+  color: #566b43;
+}
+.catalogue-card small {
+  font-size: 9px;
+  color: #96a087;
+}
+.catalogue-card span {
+  font-size: 9px;
+  padding-top: 7px;
+  color: #6b8059;
+}
+@media (max-width: 1000px) {
+  .library-panel {
+    left: 85px;
+    width: 280px;
+  }
+  .inspector {
+    right: 18px;
+    width: 260px;
+    padding: 18px;
+  }
+  .coordinate-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .editor-toolbar {
+    bottom: 91px;
+    left: 50%;
+    z-index: 4;
+    gap: 2px;
+  }
+  .editor-toolbar .button {
+    font-size: 10px;
+    padding: 10px;
+  }
+  .walk-mode .editor-toolbar {
+    bottom: 28px;
+    left: auto;
+    right: 13px;
+    transform: none;
+  }
+  .walk-mode .viewport-note {
+    display: none;
+  }
+  .inspector,
+  .library-panel {
+    top: 130px;
+    bottom: 160px;
+    left: 15px;
+    right: 15px;
+    width: auto;
+    max-height: none;
+    z-index: 5;
+    padding: 18px;
+  }
+  .library-panel {
+    z-index: 6;
+  }
+  .inspector:has(~ .library-panel) {
+    display: none;
+  }
+  .library-panel h2 {
+    font-size: 21px;
+    margin: 13px 0;
+  }
+  .coordinate-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .orbit-mode .space-heading {
+    display: none;
+  }
+  .orbit-mode .left-rail {
+    bottom: 165px;
+  }
+  .orbit-mode .interaction-hint {
+    bottom: 67px;
+  }
+  .walk-mode .left-rail {
+    bottom: 138px;
+  }
+  .walk-pad {
+    bottom: 139px;
+  }
+  .notice {
+    bottom: 225px;
+  }
+}

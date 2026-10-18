@@ -9,6 +9,7 @@ export type CatalogueEntry = ObjectAsset & {
   modelUrl?: string;
   modelRotation?: number;
   tintMaterials?: string[];
+  tintNodes?: string[];
 };
 
 export const catalogue: CatalogueEntry[] = [
@@ -98,12 +99,13 @@ export const catalogue: CatalogueEntry[] = [
     label: 'Variegated houseplant',
     kind: 'decor',
     dimensions: { width: 0.7, height: 0.84, depth: 0.66 },
-    materials: { body: finishes.olive, frame: finishes.sand },
+    materials: { body: finishes.clay },
     behaviours: [],
     renderer: 'plant',
     description: 'Variegated leaves and a terracotta pot.',
     modelUrl: '/assets/models/potted_plant_02/potted_plant_02_1k.gltf',
-    tintMaterials: [],
+    tintMaterials: ['potted_plant_02_pot'],
+    tintNodes: ['potted_plant_02_pot'],
   },
 ];
 

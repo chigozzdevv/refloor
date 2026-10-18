@@ -74,6 +74,24 @@ export function CameraRig() {
       controls.current?.update();
     }
   }, [camera, elevation, mode]);
+  const focus = useProject((state) => state.focusRequest);
+  useEffect(() => {
+    if (!focus || mode !== 'orbit') return;
+    const object = compiled.building.objects.find((value) => value.id === focus.objectId);
+    if (!object) return;
+    const y =
+      (compiled.building.floors.find((value) => value.id === object.floorId)?.elevation ?? 0) +
+      object.position.y +
+      object.dimensions.height / 2;
+    const distance = Math.max(3, Math.max(object.dimensions.width, object.dimensions.depth) * 2.2);
+    camera.position.set(
+      object.position.x + distance,
+      y + distance * 0.75,
+      object.position.z + distance,
+    );
+    controls.current?.target.set(object.position.x, y, object.position.z);
+    controls.current?.update();
+  }, [focus?.id, mode, camera]);
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
       if (isTyping(event.target) || useProject.getState().mode !== 'walk') return;

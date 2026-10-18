@@ -1,9 +1,13 @@
 import { create } from 'zustand';
 import { createHouse } from '@refloor/blueprints';
-import { buildNavigation, compileBuilding, validatePlacement } from '@refloor/engine';
+import { buildNavigation, compileBuilding } from '@refloor/engine';
 import type { CompiledBuilding } from '@refloor/engine';
 import { physicsSession } from '@/runtime/physics/session';
 import { entryPose } from '@/runtime/physics/entry';
+import type { SceneCommand, SceneRevision } from '@refloor/scene';
+import { editDocument, reverseDocument } from '@/runtime/editing/document';
+import { findFurniturePlacement } from '@/runtime/editing/placement';
+import { editingError } from '@/runtime/editing/errors';
 
 export type ViewMode = 'entry' | 'orbit' | 'walk';
 export type Selection = { kind: 'object' | 'wall'; id: string } | null;
@@ -11,6 +15,16 @@ type ProjectState = {
   sceneReady: boolean;
   setSceneReady: (ready: boolean) => void;
   compiled: CompiledBuilding;
+  past: SceneRevision[];
+  future: SceneRevision[];
+  edit: (commands: SceneCommand[]) => boolean;
+  undo: () => void;
+  redo: () => void;
+  addFurniture: (assetId: string, roomId: string) => boolean;
+  transformMode: 'translate' | 'rotate';
+  setTransformMode: (mode: 'translate' | 'rotate') => void;
+  focusRequest: { id: string; objectId: string } | null;
+  focusObject: (id: string) => void;
   floorId: string;
   mode: ViewMode;
   selection: Selection;
@@ -42,6 +56,91 @@ export const useProject = create<ProjectState>((set, get) => ({
   sceneReady: false,
   setSceneReady: (sceneReady) => set({ sceneReady }),
   compiled: initial,
+  past: [],
+  future: [],
+  transformMode: 'translate',
+  setTransformMode: (transformMode) => set({ transformMode }),
+  focusRequest: null,
+  focusObject: (objectId) => {
+    const object = get().compiled.building.objects.find((value) => value.id === objectId);
+    if (object)
+      set({
+        mode: 'orbit',
+        floorId: object.floorId,
+        selection: { kind: 'object', id: objectId },
+        focusRequest: { id: crypto.randomUUID(), objectId },
+      });
+  },
+  edit: (commands) => {
+    const state = get();
+    try {
+      set(
+        editDocument(
+          state,
+          commands,
+          state.mode === 'walk' ? physicsSession.current?.player : undefined,
+        ),
+      );
+      const selected = get().selection;
+      if (
+        selected?.kind === 'object' &&
+        !get().compiled.building.objects.some((value) => value.id === selected.id)
+      )
+        set({ selection: null });
+      return true;
+    } catch (error) {
+      state.notify(editingError(error));
+      return false;
+    }
+  },
+  undo: () => {
+    const state = get();
+    try {
+      set({
+        ...reverseDocument(
+          state,
+          'undo',
+          state.mode === 'walk' ? physicsSession.current?.player : undefined,
+        ),
+        selection: null,
+      });
+    } catch (error) {
+      state.notify(error instanceof Error ? error.message : 'Undo is unavailable here.');
+    }
+  },
+  redo: () => {
+    const state = get();
+    try {
+      set({
+        ...reverseDocument(
+          state,
+          'redo',
+          state.mode === 'walk' ? physicsSession.current?.player : undefined,
+        ),
+        selection: null,
+      });
+    } catch (error) {
+      state.notify(error instanceof Error ? error.message : 'Redo is unavailable here.');
+    }
+  },
+  addFurniture: (assetId, roomId) => {
+    const state = get();
+    try {
+      const object = findFurniturePlacement(
+        state.compiled,
+        assetId,
+        roomId,
+        state.mode === 'walk' ? physicsSession.current?.player : undefined,
+      );
+      if (!state.edit([{ type: 'add-object', object }])) return false;
+      set({ selection: { kind: 'object', id: object.id } });
+      state.notify('Added to a clear spot. Select it to adjust its position.');
+      return true;
+    } catch (error) {
+      state.notify(error instanceof Error ? error.message : 'No clear placement was found.');
+      return false;
+    }
+  },
   floorId: 'ground',
   mode: 'entry',
   selection: null,
@@ -100,29 +199,7 @@ export const useProject = create<ProjectState>((set, get) => ({
       return false;
     }
     if (door.open === open) return true;
-    try {
-      const player = state.mode === 'walk' ? physicsSession.current?.player : undefined;
-      const result = validatePlacement(
-        state.compiled.building,
-        {
-          id: crypto.randomUUID(),
-          at: new Date().toISOString(),
-          expectedRevision: state.compiled.building.revision,
-          commands: [{ type: 'set-door', doorId: id, open }],
-        },
-        state.compiled.options,
-        player,
-      );
-      set({ compiled: result.compiled });
-      return true;
-    } catch (error) {
-      state.notify(
-        error instanceof Error
-          ? error.message
-          : 'The door cannot move while the passage is obstructed.',
-      );
-      return false;
-    }
+    return state.edit([{ type: 'set-door', doorId: id, open }]);
   },
   enterHome: () => {
     const state = get();
@@ -142,6 +219,8 @@ export const useProject = create<ProjectState>((set, get) => ({
       mode: 'entry',
       selection: null,
       travelRequest: null,
+      past: [],
+      future: [],
     });
   },
 }));

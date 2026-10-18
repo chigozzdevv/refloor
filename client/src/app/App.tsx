@@ -4,7 +4,6 @@ import {
   MoveUpRight,
   Sun,
   X,
-  Box,
   Plus,
   Rotate3D,
   SlidersHorizontal,
@@ -16,6 +15,9 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Viewport } from '@/features/viewport/Viewport';
 import { useProject } from '@/features/projects/project-store';
 import { WalkPad } from '@/features/viewport/WalkPad';
+import { Inspector } from '@/features/editor/Inspector';
+import { FurnitureLibrary } from '@/features/editor/FurnitureLibrary';
+import { EditorToolbar } from '@/features/editor/EditorToolbar';
 
 export function App() {
   const {
@@ -26,8 +28,6 @@ export function App() {
     setLighting,
     quality,
     setQuality,
-    selection,
-    select,
     createHome,
     sceneReady,
     mode,
@@ -36,10 +36,7 @@ export function App() {
     notice,
   } = useProject();
   const [newHome, setNewHome] = useState(false);
-  const object = compiled.building.objects.find((value) => value.id === selection?.id),
-    wall = compiled.building.floors
-      .flatMap((floor) => floor.walls)
-      .find((value) => value.id === selection?.id);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   return (
     <ErrorBoundary>
       <main className={`studio ${mode}-mode`}>
@@ -202,29 +199,10 @@ export function App() {
             {notice}
           </div>
         )}
-        {selection && (
-          <aside className="inspector">
-            <div className="panel-heading">
-              <span className="eyebrow">IN YOUR SPACE</span>
-              <button
-                className="icon-button"
-                onClick={() => select(null)}
-                aria-label="Close object details"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div className="object-icon">
-              <Box size={26} />
-            </div>
-            <h2>{object?.label ?? 'Interior wall'}</h2>
-            <p>
-              {object
-                ? `${object.dimensions.width} × ${object.dimensions.depth} × ${object.dimensions.height} m`
-                : `Finish: ${wall?.material.color ?? ''}`}
-            </p>
-            <span className="detail-caption">{object?.kind ?? 'Architectural surface'}</span>
-          </aside>
+        <EditorToolbar openLibrary={() => setLibraryOpen(!libraryOpen)} />
+        {mode !== 'entry' && <Inspector />}
+        {libraryOpen && mode !== 'entry' && (
+          <FurnitureLibrary key={floorId} close={() => setLibraryOpen(false)} />
         )}
         {newHome && (
           <div className="modal-backdrop" onClick={() => setNewHome(false)}>

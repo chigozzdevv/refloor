@@ -1,12 +1,13 @@
-import { useEffect, useMemo } from 'react';
-import { useGLTF } from '@react-three/drei';
-import { Box3, Color, Group, Mesh, Vector3 } from 'three';
+import { useEffect, useMemo, useCallback, useRef, useState } from 'react';
+import { TransformControls, useGLTF } from '@react-three/drei';
+import { Box3, Group, Mesh, Vector3 } from 'three';
 import type { MeshStandardMaterial } from 'three';
 import { getCatalogueEntry } from '@refloor/catalogue';
 import type { CatalogueEntry } from '@refloor/catalogue';
 import type { SceneObject } from '@refloor/scene';
 import { useProject } from '@/features/projects/project-store';
 import { CraftedFurniture } from '@/features/viewport/CraftedFurniture';
+import { useSurface } from '@/runtime/rendering/materials';
 
 function ScannedFurniture({
   object,
@@ -15,7 +16,8 @@ function ScannedFurniture({
   object: SceneObject;
   entry: CatalogueEntry & { modelUrl: string };
 }) {
-  const { scene } = useGLTF(entry.modelUrl, false);
+  const { scene } = useGLTF(entry.modelUrl, false),
+    finish = useSurface(object.materials.body!);
   const model = useMemo(() => {
     const clone = scene.clone(true),
       container = new Group();
@@ -40,12 +42,14 @@ function ScannedFurniture({
       child.receiveShadow = true;
       const materials = (Array.isArray(child.material) ? child.material : [child.material]).map(
         (source) => {
-          const material = source.clone() as MeshStandardMaterial;
-          if (
-            (!entry.tintMaterials || entry.tintMaterials.includes(material.name)) &&
-            object.materials.body?.color !== entry.materials.body?.color
-          )
-            material.color.multiply(new Color(object.materials.body?.color ?? '#ffffff'));
+          const changed =
+            JSON.stringify(object.materials.body) !== JSON.stringify(entry.materials.body);
+          const tint =
+            (!entry.tintMaterials || entry.tintMaterials.includes(source.name)) &&
+            (!entry.tintNodes || entry.tintNodes.includes(child.name));
+          const material = (
+            changed && tint ? finish.clone() : source.clone()
+          ) as MeshStandardMaterial;
           if (material.map) material.map.anisotropy = 8;
           return material;
         },
@@ -53,7 +57,7 @@ function ScannedFurniture({
       child.material = Array.isArray(child.material) ? materials : materials[0]!;
     });
     return container;
-  }, [scene, object, entry]);
+  }, [scene, object, entry, finish]);
   useEffect(
     () => () =>
       model.traverse((child) => {
@@ -73,48 +77,110 @@ function FurnitureInstance({ object }: { object: SceneObject }) {
     floorId = useProject((state) => state.floorId),
     mode = useProject((state) => state.mode),
     selection = useProject((state) => state.selection),
-    select = useProject((state) => state.select);
+    select = useProject((state) => state.select),
+    transformMode = useProject((state) => state.transformMode),
+    interacting = useProject((state) => state.interacting);
+  const group = useRef<Group>(null),
+    [target, setTarget] = useState<Group | null>(null);
+  const attach = useCallback((value: Group | null) => {
+    group.current = value;
+    setTarget(value);
+  }, []);
   const floor = compiled.building.floors.find((value) => value.id === object.floorId),
     active = compiled.building.floors.find((value) => value.id === floorId);
   const body = object.materials.body;
   if (!floor || !body) return null;
   const visible = mode !== 'orbit' || !active || floor.elevation <= active.elevation;
   return (
-    <group
-      visible={visible}
-      position={[object.position.x, floor.elevation + object.position.y, object.position.z]}
-      rotation={[0, object.rotation, 0]}
-      onClick={(event) => {
-        if (event.delta > 5) return;
-        event.stopPropagation();
-        select({ kind: 'object', id: object.id });
-      }}
-      onPointerOver={(event) => {
-        event.stopPropagation();
-        document.body.style.cursor = 'pointer';
-      }}
-      onPointerOut={() => {
-        document.body.style.cursor = '';
-      }}
-    >
-      {entry.modelUrl ? (
-        <ScannedFurniture object={object} entry={{ ...entry, modelUrl: entry.modelUrl }} />
-      ) : (
-        <CraftedFurniture object={object} renderer={entry.renderer} />
+    <>
+      <group
+        ref={attach}
+        visible={visible}
+        position={[object.position.x, floor.elevation + object.position.y, object.position.z]}
+        rotation={[0, object.rotation, 0]}
+        onClick={(event) => {
+          if (event.delta > 5 || useProject.getState().interacting) return;
+          event.stopPropagation();
+          select({ kind: 'object', id: object.id });
+        }}
+        onPointerOver={(event) => {
+          event.stopPropagation();
+          document.body.style.cursor = 'pointer';
+        }}
+        onPointerOut={() => {
+          document.body.style.cursor = '';
+        }}
+      >
+        {entry.modelUrl ? (
+          <ScannedFurniture object={object} entry={{ ...entry, modelUrl: entry.modelUrl }} />
+        ) : (
+          <CraftedFurniture object={object} renderer={entry.renderer} />
+        )}
+        {selection?.id === object.id && (
+          <mesh position={[0, 0.008, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry
+              args={[
+                Math.max(object.dimensions.width, object.dimensions.depth) / 2 + 0.08,
+                Math.max(object.dimensions.width, object.dimensions.depth) / 2 + 0.105,
+                64,
+              ]}
+            />
+            <meshBasicMaterial color="#d6ad6d" depthWrite={false} transparent opacity={0.8} />
+          </mesh>
+        )}
+      </group>
+      {mode === 'orbit' && selection?.id === object.id && target && (
+        <TransformControls
+          object={target}
+          mode={transformMode}
+          showX={transformMode === 'translate'}
+          showY={transformMode === 'rotate'}
+          showZ={transformMode === 'translate'}
+          translationSnap={0.05}
+          rotationSnap={Math.PI / 12}
+          size={0.7}
+          onMouseDown={() => useProject.getState().setInteracting(true)}
+          onMouseUp={() => {
+            const state = useProject.getState(),
+              value = group.current;
+            if (value) {
+              const room = floor.rooms.find(
+                (room) =>
+                  value.position.x >= room.footprint.x &&
+                  value.position.x <= room.footprint.x + room.footprint.width &&
+                  value.position.z >= room.footprint.z &&
+                  value.position.z <= room.footprint.z + room.footprint.depth,
+              );
+              const accepted = state.edit([
+                {
+                  type: 'move-object',
+                  objectId: object.id,
+                  roomId: room?.id ?? object.roomId,
+                  position: {
+                    x: value.position.x,
+                    y: value.position.y - floor.elevation,
+                    z: value.position.z,
+                  },
+                  rotation: value.rotation.y,
+                },
+              ]);
+              if (!accepted) {
+                value.position.set(
+                  object.position.x,
+                  floor.elevation + object.position.y,
+                  object.position.z,
+                );
+                value.rotation.set(0, object.rotation, 0);
+              }
+            }
+            state.setInteracting(false);
+          }}
+          onPointerMissed={() => {
+            if (interacting) useProject.getState().setInteracting(false);
+          }}
+        />
       )}
-      {selection?.id === object.id && (
-        <mesh position={[0, 0.008, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry
-            args={[
-              Math.max(object.dimensions.width, object.dimensions.depth) / 2 + 0.08,
-              Math.max(object.dimensions.width, object.dimensions.depth) / 2 + 0.105,
-              64,
-            ]}
-          />
-          <meshBasicMaterial color="#d6ad6d" depthWrite={false} transparent opacity={0.8} />
-        </mesh>
-      )}
-    </group>
+    </>
   );
 }
 
