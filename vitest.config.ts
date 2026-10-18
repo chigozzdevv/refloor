@@ -48,6 +48,7 @@ export default defineConfig({
     ],
   },
   test: {
+    maxWorkers: 4,
     include: [
       'packages/*/test/**/*.test.ts',
       'client/test/**/*.test.ts',

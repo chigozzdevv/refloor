@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildNavigation, entrancePoints, findPath, validateBuilding } from '@refloor/engine';
+import { buildNavigation, entrancePoints, findPath, compileBuilding } from '@refloor/engine';
 import { generateLayout } from '@refloor/server/shared/planning/layout';
 import {
   validateRequirements,
@@ -76,7 +76,7 @@ describe('Z3 house generation', () => {
       room('Upper bathroom', ['bathroom'], 1),
     ];
     const building = await generateLayout('two-storey-test', requirements);
-    const compiled = validateBuilding(building),
+    const compiled = compileBuilding(building),
       navigation = buildNavigation(compiled);
     const entrance = entrancePoints(navigation)[0]!;
     const stair = compiled.stairs[0]!;
