@@ -1,6 +1,10 @@
 import { Mesh } from 'three';
 import type { Intersection, Object3D, Raycaster } from 'three';
 
+export function isScenePointer(event: { nativeEvent: { target: EventTarget | null } }): boolean {
+  return event.nativeEvent.target instanceof HTMLCanvasElement;
+}
+
 export function isVisible(object: Object3D): boolean {
   let current: Object3D | null = object;
   while (current) {

@@ -14,8 +14,8 @@ export function Lighting() {
         environmentIntensity={day ? 0.65 : 0.12}
         environmentRotation={[0, 2.3, 0]}
       />
-      <color attach="background" args={[day ? '#e7e7df' : '#444a51']} />
-      <fog attach="fog" args={[day ? '#e7e7df' : '#444a51', 45, 140]} />
+      <color attach="background" args={[day ? '#e7e7df' : '#121922']} />
+      <fog attach="fog" args={[day ? '#e7e7df' : '#121922', 45, 140]} />
       <hemisphereLight args={['#e4ebf2', '#aa9276', day ? 0.35 : 0.08]} />
       <directionalLight
         position={[-6, 12, -6]}

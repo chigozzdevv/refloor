@@ -7,7 +7,7 @@ Describe a house, generate it with GPT-6 Luna, then enter and edit the saved spa
 `@refloor/engine` compiles those documents into meshes, colliders and walking routes,
 then checks furniture placement, door clearance and stair access. The client renders
 parameter-based starting homes with physical materials, scanned furniture, HDR daylight,
-shadows and floor-by-floor cutaway views. The Node API stores projects and reversible
+shadows and cutaway views. The Node API stores projects and reversible
 edit history in MongoDB. Luna interprets house descriptions; Z3 solves room layouts,
 and the engine validates the assembled building before it can be saved.
 
@@ -110,10 +110,19 @@ separate from `pnpm check`. Engine tests instantiate Rapier and walk a capsule t
 the generated colliders, including entrance-to-upstairs routes, both stair types and
 rotated flights. This verifies the geometry in a headless physics world. The browser
 supports an animated entrance with a draggable handle, orbit and first-person views,
-WASD/touch movement, collision-aware stairs, guided floor changes, surface/object
-inspection, day/evening lighting and render-quality selection. The furniture library
-adds items into validated clear spaces. Drag handles or exact coordinates move and
-rotate furniture; the inspector replaces, removes and changes materials. Accepted edits
+and evening lighting by default. A globe icon opens house chat, view settings, furniture,
+files and undo/redo. The scene has no persistent inspector, left toolbar, floor buttons
+or statistics overlays. Clicking an item, wall, floor or door opens a small chat anchored
+beside it. Luna interprets supported changes; the server validates commands and placement,
+and the client checks that the scene has not changed before applying them. Item chat
+can only affect the selected entity; house chat can change finishes or devices across
+the current building. Keyboard WASD, arrow keys and the right-hand movement control
+support continuous movement. Hold forward to follow the staircase, including its turn;
+release to stop and resume from the current step. Left/right arrows and the thumb control
+steer the view, while keyboard A/D strafe. The player physically climbs the steps; floor
+state follows its elevation. The furniture library adds items into validated clear spaces.
+Chat moves, rotates, resizes, recolours, replaces or removes compatible items and controls
+televisions, lights and doors. Accepted edits
 update collision geometry and support undo/redo (also Cmd/Ctrl+Z and Shift+Cmd/Ctrl+Z).
 TV controls play the included clip or a compatible direct video URL on the 3D screen;
 power, mute and volume update the actual media player. Light controls update fixture
@@ -228,6 +237,13 @@ portable copy. Use HTTPS in production and configure exact `CLIENT_ORIGINS`.
 - `GET /api/projects/:id`: load a complete editable building.
 - `PUT /api/projects/:id`: save a snapshot with `requestId`, `expectedVersion` and `building`.
 - `POST /api/projects/:id/edits`: apply `{ edit, player }` through the shared placement engine.
+- `POST /api/edits/interpret`: interpret `{ requestId, building, target, message, view, player }`
+  with Luna. Returns scoped, validated commands, their base revision and token usage. It
+  does not write a project; the client applies the commands to its current draft and uses
+  the normal save flow. `target` contains an existing entity `kind` and `id`; `view` is the
+  horizontal camera direction used for relative movement. Requests require a session,
+  use a short provider timeout without automatic retries, and are limited to twenty per
+  IP per minute. Changes still pass the engine and player-clearance checks.
 - `POST /api/projects/:id/undo` or `/redo`: restore history using `id`, `at`, `expectedRevision`
   and an optional player position (`null` when absent).
 - `POST /api/generations`: submit `{ requestId, prompt }` and receive a generation ID

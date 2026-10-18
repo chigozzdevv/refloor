@@ -1,5 +1,15 @@
 import { useState } from 'react';
-import { Armchair, BedDouble, LampCeiling, Monitor, Plus, Sprout, Table2, X } from 'lucide-react';
+import {
+  Armchair,
+  BedDouble,
+  Crosshair,
+  LampCeiling,
+  Monitor,
+  Plus,
+  Sprout,
+  Table2,
+  X,
+} from 'lucide-react';
 import { catalogue } from '@refloor/catalogue';
 import { useProject } from '@/shared/scene/scene-store';
 
@@ -12,12 +22,11 @@ export function FurniturePicker({ close }: { close: () => void }) {
   return (
     <aside className="library-panel" aria-label="Furniture library">
       <div className="panel-heading">
-        <span className="eyebrow">YOUR SPACE, YOUR WAY</span>
+        <h2>Furniture</h2>
         <button className="icon-button" onClick={close} aria-label="Close furniture library">
           <X size={18} />
         </button>
       </div>
-      <h2>A little rearranging.</h2>
       <label className="field-caption">
         ROOM
         <select
@@ -67,7 +76,7 @@ export function FurniturePicker({ close }: { close: () => void }) {
                     close();
                   }}
                 >
-                  ↗
+                  <Crosshair size={15} />
                 </button>
               </div>
             ))}
@@ -109,7 +118,6 @@ export function FurniturePicker({ close }: { close: () => void }) {
           })}
         </div>
       )}
-      <p className="helper-text">Placement keeps doors, stairs and walking routes clear.</p>
     </aside>
   );
 }

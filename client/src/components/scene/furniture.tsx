@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useCallback, useRef, useState } from 'react';
-import { TransformControls, useGLTF } from '@react-three/drei';
+import { useEffect, useMemo } from 'react';
+import { useGLTF } from '@react-three/drei';
 import { Box3, Group, Mesh, Vector3 } from 'three';
 import type { MeshStandardMaterial } from 'three';
 import { getCatalogueEntry } from '@refloor/catalogue';
@@ -10,7 +10,7 @@ import { useProject } from '@/shared/scene/scene-store';
 import { FurnitureModels } from '@/components/scene/furniture-models';
 import { useSurface } from '@/shared/scene/asset-loader';
 import { sameMaterial } from '@/shared/scene/finish';
-import { visibleGroupRaycast } from '@/shared/editor/picking';
+import { isScenePointer, visibleGroupRaycast } from '@/shared/editor/picking';
 
 function ScannedFurniture({ object, entry }: { object: SceneObject; entry: CatalogueEntry }) {
   const { scene } = useGLTF(entry.modelUrl!, false),
@@ -70,15 +70,7 @@ function FurnitureInstance({ object }: { object: SceneObject }) {
     floorId = useProject((state) => state.floorId),
     mode = useProject((state) => state.mode),
     selection = useProject((state) => state.selection),
-    select = useProject((state) => state.select),
-    transformMode = useProject((state) => state.transformMode),
-    interacting = useProject((state) => state.interacting);
-  const group = useRef<Group>(null),
-    [target, setTarget] = useState<Group | null>(null);
-  const attach = useCallback((value: Group | null) => {
-    group.current = value;
-    setTarget(value);
-  }, []);
+    select = useProject((state) => state.select);
   const floor = compiled.building.floors.find((value) => value.id === object.floorId),
     active = compiled.building.floors.find((value) => value.id === floorId);
   const body = object.materials.body;
@@ -87,13 +79,13 @@ function FurnitureInstance({ object }: { object: SceneObject }) {
   return (
     <>
       <group
-        ref={attach}
         raycast={visibleGroupRaycast}
         visible={visible}
         position={[object.position.x, floor.elevation + object.position.y, object.position.z]}
         rotation={[0, object.rotation, 0]}
         onClick={(event) => {
-          if (event.delta > 5 || useProject.getState().interacting) return;
+          if (!isScenePointer(event) || event.delta > 5 || useProject.getState().interacting)
+            return;
           event.stopPropagation();
           select({ kind: 'object', id: object.id });
         }}
@@ -112,57 +104,6 @@ function FurnitureInstance({ object }: { object: SceneObject }) {
         )}
         {selection?.id === object.id && <SelectionOutline dimensions={object.dimensions} />}
       </group>
-      {mode === 'orbit' && selection?.id === object.id && target && (
-        <TransformControls
-          object={target}
-          mode={transformMode}
-          showX={transformMode === 'translate'}
-          showY={transformMode === 'rotate'}
-          showZ={transformMode === 'translate'}
-          translationSnap={0.05}
-          rotationSnap={Math.PI / 12}
-          size={0.7}
-          onMouseDown={() => useProject.getState().setInteracting(true)}
-          onMouseUp={() => {
-            const state = useProject.getState(),
-              value = group.current;
-            if (value) {
-              const room = floor.rooms.find(
-                (room) =>
-                  value.position.x >= room.footprint.x &&
-                  value.position.x <= room.footprint.x + room.footprint.width &&
-                  value.position.z >= room.footprint.z &&
-                  value.position.z <= room.footprint.z + room.footprint.depth,
-              );
-              const accepted = state.edit([
-                {
-                  type: 'move-object',
-                  objectId: object.id,
-                  roomId: room?.id ?? object.roomId,
-                  position: {
-                    x: value.position.x,
-                    y: value.position.y - floor.elevation,
-                    z: value.position.z,
-                  },
-                  rotation: value.rotation.y,
-                },
-              ]);
-              if (!accepted) {
-                value.position.set(
-                  object.position.x,
-                  floor.elevation + object.position.y,
-                  object.position.z,
-                );
-                value.rotation.set(0, object.rotation, 0);
-              }
-            }
-            state.setInteracting(false);
-          }}
-          onPointerMissed={() => {
-            if (interacting) useProject.getState().setInteracting(false);
-          }}
-        />
-      )}
     </>
   );
 }

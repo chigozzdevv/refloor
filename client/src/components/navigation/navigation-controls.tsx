@@ -3,8 +3,8 @@ import type { ComponentRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { MathUtils, PerspectiveCamera, Vector3 } from 'three';
-import { buildNavigation, findPath } from '@refloor/engine';
-import type { Point3 } from '@refloor/engine';
+import { stairTravel } from '@/shared/navigation/stair-travel';
+import type { StairTravel } from '@/shared/navigation/stair-travel';
 import { useProject } from '@/shared/scene/scene-store';
 import { entryPose } from '@/shared/navigation/entry';
 import { physicsSession } from '@/shared/navigation/physics-session';
@@ -17,18 +17,12 @@ export function NavigationControls() {
     compiled = useProject((state) => state.compiled),
     epoch = useProject((state) => state.projectEpoch),
     mode = useProject((state) => state.mode),
-    interacting = useProject((state) => state.interacting),
-    travel = useProject((state) => state.travelRequest);
+    interacting = useProject((state) => state.interacting);
   const previous = useRef(mode),
     transition = useRef<number | null>(null),
     entry = entryPose(compiled),
-    route = useRef<{
-      points: Point3[];
-      index: number;
-      delay: number;
-      last: Point3;
-      idle: number;
-    } | null>(null);
+    route = useRef<StairTravel | null>(null),
+    previousStair = useRef<string | null>(null);
   const floor = compiled.building.floors.find((value) => value.id === floorId),
     elevation = floor?.elevation ?? 0,
     centreX = (floor?.footprint.x ?? 0) + (floor?.footprint.width ?? 12) / 2,
@@ -40,6 +34,8 @@ export function NavigationControls() {
   useEffect(() => {
     camera.rotation.order = 'YXZ';
     if (mode === 'entry') {
+      route.current = null;
+      previousStair.current = null;
       const portrait = size.width / size.height < 0.8;
       if (camera instanceof PerspectiveCamera) {
         camera.fov = portrait ? 65 : 45;
@@ -69,6 +65,7 @@ export function NavigationControls() {
       walkInput.pitch = camera.rotation.x;
     }
     walkInput.keys.clear();
+    walkInput.axis = { forward: 0, right: 0 };
     previous.current = mode;
   }, [camera, mode, compiled.building.id, epoch, size.width, size.height]);
   useEffect(() => {
@@ -111,10 +108,13 @@ export function NavigationControls() {
         event.preventDefault();
         walkInput.keys.add(event.key.toLowerCase());
       }
-      if (event.key === 'Escape') useProject.getState().setMode('orbit');
+      if (event.key === 'Escape') useProject.getState().select(null);
     };
     const up = (event: KeyboardEvent) => walkInput.keys.delete(event.key.toLowerCase()),
-      blur = () => walkInput.keys.clear();
+      blur = () => {
+        walkInput.keys.clear();
+        walkInput.axis = { forward: 0, right: 0 };
+      };
     let pointer: { x: number; y: number; moved: number } | null = null;
     const pointerDown = (event: PointerEvent) => {
       if (
@@ -156,48 +156,15 @@ export function NavigationControls() {
       window.removeEventListener('pointerup', pointerUp);
     };
   }, [gl]);
-  useEffect(() => {
-    if (!travel || mode !== 'walk') return;
-    const world = physicsSession.current,
-      state = useProject.getState();
-    if (!world) return;
-    const stair = compiled.stairs.find(
-      (value) => value.lower.floorId === travel.floorId || value.upper.floorId === travel.floorId,
-    );
-    const destination = stair?.lower.floorId === travel.floorId ? stair.lower : stair?.upper;
-    if (!destination) {
-      state.notify('This floor has no connected staircase.');
-      return;
-    }
-    const player = world.player,
-      currentFloor = compiled.building.floors.find((value) => value.id === player.floorId);
-    if (!currentFloor || Math.abs(player.position.y - currentFloor.elevation) > 0.1) {
-      state.notify('Finish this flight before choosing another floor.');
-      return;
-    }
-    const from = {
-        floorId: player.floorId,
-        position: { ...player.position, y: currentFloor.elevation },
-      },
-      path = findPath(buildNavigation(compiled), from, destination);
-    if (!path) {
-      state.notify('There is no clear route to that floor.');
-      return;
-    }
-    for (const id of path.doorIds) if (!state.setDoor(id, true)) return;
-    const next = useProject.getState().compiled,
-      opened = findPath(buildNavigation(next, 'current'), from, destination);
-    if (!opened) {
-      state.notify('Open the passage before walking to this floor.');
-      return;
-    }
-    route.current = { points: opened.points, index: 0, delay: 0.8, last: player.position, idle: 0 };
-    state.notify('Following the staircase. Use WASD to take over.');
-  }, [travel?.id]);
   useFrame((_state, delta) => {
+    camera.getWorldDirection(forward.current);
+    forward.current.y = 0;
+    forward.current.normalize();
+    walkInput.view = { x: forward.current.x, z: forward.current.z };
     if (mode !== 'walk') return;
-    if (interacting || document.activeElement?.closest('input, textarea, select, [role=dialog]')) {
+    if (interacting || document.activeElement?.closest('input, textarea, select')) {
       walkInput.keys.clear();
+      walkInput.axis = { forward: 0, right: 0 };
       route.current = null;
       return;
     }
@@ -218,58 +185,60 @@ export function NavigationControls() {
       if (transition.current >= 1.9) transition.current = null;
       return;
     }
+    const keys = walkInput.keys;
+    const f = MathUtils.clamp(
+      walkInput.axis.forward +
+        Number(keys.has('w') || keys.has('arrowup')) -
+        Number(keys.has('s') || keys.has('arrowdown')),
+      -1,
+      1,
+    );
+    const r = Number(keys.has('d')) - Number(keys.has('a'));
+    const turn = MathUtils.clamp(
+      walkInput.axis.right +
+        Number(keys.has('turn-right') || keys.has('arrowright')) -
+        Number(keys.has('turn-left') || keys.has('arrowleft')),
+      -1,
+      1,
+    );
+    walkInput.yaw -= turn * dt * 1.7;
+    if (Math.abs(r) > 0.15 || Math.abs(turn) > 0.15 || f < -0.15) route.current = null;
+    else if (f > 0.15 && !route.current) {
+      route.current = stairTravel(compiled, feet, forward.current, previousStair.current);
+      if (route.current) previousStair.current = route.current.stairId;
+    }
     let x = 0,
       z = 0;
-    const keys = walkInput.keys,
-      manual = keys.size > 0;
-    if (manual) route.current = null;
     const active = route.current;
-    if (active) {
-      active.delay -= dt;
-      if (active.delay <= 0) {
-        let point = active.points[active.index];
-        while (point && Math.hypot(point.x - feet.x, point.z - feet.z) < 0.025) {
-          active.index++;
-          point = active.points[active.index];
-        }
-        if (!point) {
-          route.current = null;
-          useProject.getState().notify('You’re here. Make yourself at home.');
-        } else {
-          const distance = Math.hypot(point.x - feet.x, point.z - feet.z);
-          x = ((point.x - feet.x) / distance) * Math.min(1.5, distance / Math.max(dt, 0.001));
-          z = ((point.z - feet.z) / distance) * Math.min(1.5, distance / Math.max(dt, 0.001));
-          const desired = Math.atan2(-x, -z),
-            difference = Math.atan2(
-              Math.sin(desired - walkInput.yaw),
-              Math.cos(desired - walkInput.yaw),
-            );
-          walkInput.yaw += difference * Math.min(1, dt * 3);
-          if (Math.hypot(feet.x - active.last.x, feet.z - active.last.z) < 0.0001)
-            active.idle += dt;
-          else active.idle = 0;
-          active.last = feet;
-          if (active.idle > 1.5) {
-            route.current = null;
-            useProject
-              .getState()
-              .notify('The path is blocked. Use the movement controls to continue.');
-          }
-        }
+    if (active && f > 0.15) {
+      let point = active.points[active.index];
+      while (point && Math.hypot(point.x - feet.x, point.z - feet.z) < 0.035) {
+        point = active.points[++active.index];
       }
-    } else {
+      if (!point) route.current = null;
+      else {
+        const distance = Math.hypot(point.x - feet.x, point.z - feet.z);
+        const speed = Math.min(1.5 * f, distance / Math.max(dt, 0.001));
+        x = ((point.x - feet.x) / distance) * speed;
+        z = ((point.z - feet.z) / distance) * speed;
+        const desired = Math.atan2(-x, -z);
+        walkInput.yaw +=
+          Math.atan2(Math.sin(desired - walkInput.yaw), Math.cos(desired - walkInput.yaw)) *
+          Math.min(1, dt * 6);
+        active.idle =
+          Math.hypot(feet.x - active.last.x, feet.z - active.last.z) < 0.0001
+            ? active.idle + dt
+            : 0;
+        active.last = feet;
+        if (active.idle > 1.5) route.current = null;
+      }
+    } else if (!active) {
       camera.rotation.set(walkInput.pitch, walkInput.yaw, 0, 'YXZ');
       camera.getWorldDirection(forward.current);
       forward.current.y = 0;
       forward.current.normalize();
       right.current.crossVectors(forward.current, new Vector3(0, 1, 0));
-      const f =
-          Number(keys.has('w') || keys.has('arrowup')) -
-          Number(keys.has('s') || keys.has('arrowdown')),
-        r =
-          Number(keys.has('d') || keys.has('arrowright')) -
-          Number(keys.has('a') || keys.has('arrowleft'));
-      const length = Math.hypot(f, r) || 1,
+      const length = Math.max(1, Math.hypot(f, r)),
         speed = keys.has('shift') ? 2.5 : 1.65;
       x = ((forward.current.x * f + right.current.x * r) / length) * speed;
       z = ((forward.current.z * f + right.current.z * r) / length) * speed;

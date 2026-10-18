@@ -8,7 +8,7 @@ import { partGeometry } from '@/shared/scene/geometry';
 import { useProject } from '@/shared/scene/scene-store';
 import { hiddenExterior } from '@/shared/scene/visibility';
 import { Door } from '@/components/objects/door';
-import { visibleMeshRaycast } from '@/shared/editor/picking';
+import { isScenePointer, visibleMeshRaycast } from '@/shared/editor/picking';
 
 export function BuildingPart({ part }: { part: MeshPart }) {
   const ref = useRef<Mesh>(null),
@@ -56,10 +56,14 @@ export function BuildingPart({ part }: { part: MeshPart }) {
       castShadow={part.role !== 'window'}
       receiveShadow
       onClick={(event) => {
-        if (event.delta > 5) return;
+        if (!isScenePointer(event) || event.delta > 5) return;
         if (wall) {
           event.stopPropagation();
-          select({ kind: 'wall', id: wall.id });
+          select({
+            kind: 'wall',
+            id: wall.id,
+            point: { x: event.point.x, y: event.point.y, z: event.point.z },
+          });
         } else if (part.role === 'slab' && floor) {
           const room = floor.rooms.find(
             (value) =>
@@ -70,7 +74,11 @@ export function BuildingPart({ part }: { part: MeshPart }) {
           );
           if (room) {
             event.stopPropagation();
-            select({ kind: 'floor', id: room.id });
+            select({
+              kind: 'floor',
+              id: room.id,
+              point: { x: event.point.x, y: event.point.y, z: event.point.z },
+            });
           }
         }
       }}

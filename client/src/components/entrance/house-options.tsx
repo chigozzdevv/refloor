@@ -18,17 +18,14 @@ export function HouseOptions({ open, close }: { open: boolean; close: () => void
         onClick={(event) => event.stopPropagation()}
       >
         <div className="panel-heading">
-          <span className="eyebrow">START WITH A SPACE</span>
+          <span>New house</span>
           <button className="icon-button" onClick={close} aria-label="Close">
             <X size={18} />
           </button>
         </div>
-        <h2>Room for possibilities.</h2>
-        <p>
-          Describe your home or choose a starting space. Every room and object is yours to change.
-        </p>
+        <p>Describe your home or choose a starting space.</p>
         <HousePrompt close={close} />
-        <span className="eyebrow">OR CHOOSE A STARTING HOME</span>
+        <span className="eyebrow">STARTING HOMES</span>
         <div className="home-dimensions">
           <label className="field-caption">
             WIDTH · M

@@ -8,6 +8,7 @@ import { Furniture } from '@/components/scene/furniture';
 import { ArchitecturalDetails } from '@/components/scene/architectural-details';
 import { NavigationControls } from '@/components/navigation/navigation-controls';
 import { PhysicsRuntime } from '@/shared/navigation/physics-runtime';
+import { SelectionChat } from '@/components/editor/selection-chat';
 
 function SceneReady() {
   const setReady = useProject((state) => state.setSceneReady);
@@ -33,7 +34,9 @@ export function World() {
       onCreated={({ gl }) => {
         gl.shadowMap.type = PCFSoftShadowMap;
       }}
-      onPointerMissed={() => select(null)}
+      onPointerMissed={(event) => {
+        if (event.target instanceof HTMLCanvasElement) select(null);
+      }}
     >
       <Suspense fallback={null}>
         <PhysicsRuntime />
@@ -42,6 +45,7 @@ export function World() {
         <Furniture />
         <ArchitecturalDetails />
         <NavigationControls />
+        <SelectionChat />
         <SceneReady />
       </Suspense>
     </Canvas>

@@ -3,9 +3,7 @@ import { ErrorBoundary } from '@/app/error-boundary';
 import { StudioRoutes } from '@/app/routes';
 import { World } from '@/components/scene/world';
 import { StudioHeader } from '@/components/ui/studio-header';
-import { StudioStatus } from '@/components/ui/studio-status';
 import { Notice } from '@/components/ui/notice';
-import { ViewSwitcher } from '@/components/navigation/view-switcher';
 import { HouseOptions } from '@/components/entrance/house-options';
 import { useProject } from '@/shared/scene/scene-store';
 import { useCommandShortcuts } from '@/shared/editor/use-command';
@@ -32,19 +30,13 @@ export function App() {
             </div>
           </div>
         )}
-        <StudioHeader openNewHome={() => setNewHome(true)} />
-        <ViewSwitcher />
-        <StudioStatus />
-        <Notice />
-        <StudioRoutes
-          libraryOpen={libraryOpen}
-          toggleLibrary={() => setLibraryOpen(!libraryOpen)}
-          closeLibrary={() => setLibraryOpen(false)}
+        <StudioHeader
+          openNewHome={() => setNewHome(true)}
+          openLibrary={() => setLibraryOpen(true)}
         />
+        <Notice />
+        <StudioRoutes libraryOpen={libraryOpen} closeLibrary={() => setLibraryOpen(false)} />
         <HouseOptions open={newHome} close={() => setNewHome(false)} />
-        <div className="north-marker">
-          N<span>↑</span>
-        </div>
       </main>
     </ErrorBoundary>
   );

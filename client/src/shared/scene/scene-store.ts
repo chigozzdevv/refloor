@@ -30,8 +30,6 @@ export type ProjectState = EditorState & {
   cutaway: boolean;
   notice: string | null;
   notify: (message: string) => void;
-  travelRequest: { id: string; floorId: string } | null;
-  setFloor: (id: string) => void;
   setWalkFloor: (id: string) => void;
   setLighting: (lighting: 'day' | 'evening') => void;
   setQuality: (quality: 'high' | 'balanced') => void;
@@ -78,28 +76,20 @@ export const useProject = create<ProjectState>((set, get, store) => ({
       focusRequest: null,
       floorId: entryPose(compiled).floorId,
       selection: null,
-      travelRequest: null,
     });
-    get().notify('Project opened. Your room and item identities have been preserved.');
+    get().notify('Space opened.');
   },
   ...createEditorState(set, get, store),
   floorId: entryPose(initial).floorId,
   mode: 'entry',
-  lighting: 'day',
+  lighting: 'evening',
   quality: 'high',
   cutaway: true,
   notice: null,
-  travelRequest: null,
   notify: (notice) => {
     if (noticeTimer) clearTimeout(noticeTimer);
     set({ notice });
     noticeTimer = setTimeout(() => set({ notice: null }), 5500);
-  },
-  setFloor: (floorId) => {
-    if (get().mode === 'walk') {
-      if (get().floorId !== floorId)
-        set({ travelRequest: { id: crypto.randomUUID(), floorId }, selection: null });
-    } else set({ floorId, mode: 'orbit', selection: null, focusRequest: null });
   },
   setWalkFloor: (floorId) => set({ floorId }),
   setLighting: (lighting) => set({ lighting }),
@@ -127,7 +117,7 @@ export const useProject = create<ProjectState>((set, get, store) => ({
         if (node) physicsSession.current.teleport(node.position);
       }
     }
-    set({ mode, selection: null, travelRequest: null, focusRequest: null });
+    set({ mode, selection: null, focusRequest: null });
   },
   setDoor: (id, open) => {
     const state = get(),
@@ -158,7 +148,6 @@ export const useProject = create<ProjectState>((set, get, store) => ({
       floorId: 'ground',
       mode: 'entry',
       selection: null,
-      travelRequest: null,
       focusRequest: null,
       past: [],
       future: [],

@@ -68,7 +68,7 @@ export function ProjectActions() {
       {open && (
         <section className="project-menu" aria-label="Project files menu">
           <div className="panel-heading">
-            <span className="eyebrow">YOUR SPACE, KEPT SAFE</span>
+            <span>Files</span>
             <button
               className="icon-button"
               aria-label="Close project files"

@@ -11,7 +11,7 @@ import { useSurface } from '@/shared/scene/asset-loader';
 import { physicsSession } from '@/shared/navigation/physics-session';
 import { activateDoor } from '@/shared/behaviours/door';
 import { hiddenExterior } from '@/shared/scene/visibility';
-import { visibleGroupRaycast, visibleMeshRaycast } from '@/shared/editor/picking';
+import { isScenePointer, visibleGroupRaycast, visibleMeshRaycast } from '@/shared/editor/picking';
 
 export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
   const pivot = useRef<Group>(null),
@@ -53,6 +53,7 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
   }, -2);
   if (source.shape !== 'box') return null;
   const down = (event: ThreeEvent<PointerEvent>) => {
+    if (!isScenePointer(event)) return;
     event.stopPropagation();
     (event.target as Element).setPointerCapture(event.pointerId);
     drag.current = { x: event.clientX, y: event.clientY, fraction: fraction.current };
@@ -96,8 +97,16 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
         castShadow
         receiveShadow
         onClick={(event) => {
+          if (!isScenePointer(event)) return;
           event.stopPropagation();
-          if (event.delta < 5) activateDoor(portal.id, !portal.open);
+          if (event.delta >= 5) return;
+          if (mode === 'entry') activateDoor(portal.id, !portal.open);
+          else
+            useProject.getState().select({
+              kind: 'door',
+              id: portal.id,
+              point: { x: event.point.x, y: event.point.y, z: event.point.z },
+            });
         }}
       />
       {[-1, 1].map((side) => (

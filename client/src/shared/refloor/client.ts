@@ -8,6 +8,7 @@ export class ProjectApiError extends Error {
     public readonly code: string,
     message: string,
     public readonly retryable = false,
+    public readonly issues: { code: string; message: string; entityId?: string | undefined }[] = [],
   ) {
     super(message);
   }
@@ -52,6 +53,7 @@ export async function request<T>(
       result.success ? result.data.error.code : 'REQUEST_FAILED',
       result.success ? result.data.error.message : 'Saved spaces could not complete the request.',
       response.status >= 500,
+      result.success ? (result.data.error.issues ?? []) : [],
     );
   }
   try {
