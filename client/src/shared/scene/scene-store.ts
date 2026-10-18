@@ -71,6 +71,7 @@ export const useProject = create<ProjectState>((set, get, store) => ({
   },
   loadProject: (compiled, remote, memory) => {
     set({
+      sceneReady: false,
       compiled,
       memory: memory ?? createEditMemory(compiled.building),
       chatPending: null,
@@ -168,6 +169,7 @@ export const useProject = create<ProjectState>((set, get, store) => ({
     const compiled = compileBuilding(createHouse(options));
     set({
       compiled,
+      sceneReady: false,
       memory: createEditMemory(compiled.building),
       chatPending: null,
       remote: null,

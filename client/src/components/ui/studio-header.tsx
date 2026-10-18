@@ -24,9 +24,11 @@ import { SavedActions } from '@/components/editor/saved-actions';
 export function StudioHeader({
   openNewHome,
   openLibrary,
+  minimal = false,
 }: {
   openNewHome: () => void;
   openLibrary: () => void;
+  minimal?: boolean;
 }) {
   const {
     compiled,
@@ -69,134 +71,136 @@ export function StudioHeader({
       <a className="wordmark" href="/" aria-label="Refloor home">
         refloor<span className="brand-dot">®</span>
       </a>
-      <div className="house-controls" ref={panel}>
-        <button
-          className="house-toggle"
-          aria-label="Edit history"
-          aria-expanded={historyOpen}
-          onClick={() => {
-            useNavigation.getState().stop();
-            useNavigation.getState().setMapOpen(false);
-            select(null);
-            setOpen(false);
-            setHistoryOpen(!historyOpen);
-          }}
-        >
-          <History size={20} strokeWidth={1.5} />
-        </button>
-        <button
-          className="house-toggle"
-          aria-label="House controls"
-          aria-expanded={open}
-          onClick={() => {
-            useNavigation.getState().stop();
-            useNavigation.getState().setMapOpen(false);
-            setHistoryOpen(false);
-            select(null);
-            setOpen(!open);
-          }}
-        >
-          <Globe2 size={22} strokeWidth={1.5} />
-        </button>
-        {historyOpen && <EditHistory close={() => setHistoryOpen(false)} />}
-        {open && (
-          <section className="house-menu" aria-label="House controls menu">
-            <div className="panel-heading">
-              <span>House</span>
-              <button
-                className="icon-button"
-                aria-label="Close house controls"
-                onClick={() => setOpen(false)}
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <ElementChat
-              key={projectEpoch}
-              target={{ kind: 'house', id: compiled.building.id }}
-              label="Whole house"
-              suggestions={['Cream walls throughout', 'Turn off all lights']}
-              close={() => setOpen(false)}
-            />
-            <div className="house-view-controls">
-              {(
-                [
-                  ['walk', 'Walk', Footprints],
-                  ['orbit', 'Overview', Rotate3D],
-                  ['entry', 'Entrance', DoorOpen],
-                ] as const
-              ).map(([value, label, Icon]) => (
+      {!minimal && (
+        <div className="house-controls" ref={panel}>
+          <button
+            className="house-toggle"
+            aria-label="Edit history"
+            aria-expanded={historyOpen}
+            onClick={() => {
+              useNavigation.getState().stop();
+              useNavigation.getState().setMapOpen(false);
+              select(null);
+              setOpen(false);
+              setHistoryOpen(!historyOpen);
+            }}
+          >
+            <History size={20} strokeWidth={1.5} />
+          </button>
+          <button
+            className="house-toggle"
+            aria-label="House controls"
+            aria-expanded={open}
+            onClick={() => {
+              useNavigation.getState().stop();
+              useNavigation.getState().setMapOpen(false);
+              setHistoryOpen(false);
+              select(null);
+              setOpen(!open);
+            }}
+          >
+            <Globe2 size={22} strokeWidth={1.5} />
+          </button>
+          {historyOpen && <EditHistory close={() => setHistoryOpen(false)} />}
+          {open && (
+            <section className="house-menu" aria-label="House controls menu">
+              <div className="panel-heading">
+                <span>House</span>
                 <button
-                  key={value}
-                  className={mode === value ? 'active' : ''}
-                  aria-label={value === 'orbit' ? 'House overview' : label}
+                  className="icon-button"
+                  aria-label="Close house controls"
+                  onClick={() => setOpen(false)}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <ElementChat
+                key={projectEpoch}
+                target={{ kind: 'house', id: compiled.building.id }}
+                label="Whole house"
+                suggestions={['Cream walls throughout', 'Turn off all lights']}
+                close={() => setOpen(false)}
+              />
+              <div className="house-view-controls">
+                {(
+                  [
+                    ['walk', 'Walk', Footprints],
+                    ['orbit', 'Overview', Rotate3D],
+                    ['entry', 'Entrance', DoorOpen],
+                  ] as const
+                ).map(([value, label, Icon]) => (
+                  <button
+                    key={value}
+                    className={mode === value ? 'active' : ''}
+                    aria-label={value === 'orbit' ? 'House overview' : label}
+                    onClick={() => {
+                      if (value === 'orbit') useNavigation.getState().resetOverview();
+                      if (value === 'walk' && mode === 'entry') enterHome();
+                      else setMode(value);
+                      setOpen(false);
+                    }}
+                  >
+                    <Icon size={16} />
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <SavedActions key={`actions:${projectEpoch}`} />
+              <div className="house-actions">
+                <button
+                  disabled={furnishing}
                   onClick={() => {
-                    if (value === 'orbit') useNavigation.getState().resetOverview();
-                    if (value === 'walk' && mode === 'entry') enterHome();
-                    else setMode(value);
+                    void complete();
+                  }}
+                >
+                  {furnishing ? (
+                    <LoaderCircle size={16} className="spinning" />
+                  ) : (
+                    <WandSparkles size={16} />
+                  )}
+                  {furnishing ? 'Furnishing…' : 'Complete furnishings'}
+                </button>
+                <button
+                  onClick={() => {
+                    if (mode === 'entry') setMode('orbit');
+                    openLibrary();
                     setOpen(false);
                   }}
                 >
-                  <Icon size={16} />
-                  {label}
+                  <Armchair size={16} />
+                  Furniture
                 </button>
-              ))}
-            </div>
-            <SavedActions key={`actions:${projectEpoch}`} />
-            <div className="house-actions">
-              <button
-                disabled={furnishing}
-                onClick={() => {
-                  void complete();
-                }}
-              >
-                {furnishing ? (
-                  <LoaderCircle size={16} className="spinning" />
-                ) : (
-                  <WandSparkles size={16} />
-                )}
-                {furnishing ? 'Furnishing…' : 'Complete furnishings'}
-              </button>
-              <button
-                onClick={() => {
-                  if (mode === 'entry') setMode('orbit');
-                  openLibrary();
-                  setOpen(false);
-                }}
-              >
-                <Armchair size={16} />
-                Furniture
-              </button>
-              <button
-                onClick={() => {
-                  openNewHome();
-                  setOpen(false);
-                }}
-              >
-                <Plus size={16} />
-                New house
-              </button>
-            </div>
-            <div className="house-utilities">
-              <ProjectActions />
-              <button
-                className="icon-button"
-                aria-label={lighting === 'evening' ? 'Switch to daylight' : 'Switch to night'}
-                onClick={() => setLighting(lighting === 'evening' ? 'day' : 'evening')}
-              >
-                {lighting === 'evening' ? <Sun size={17} /> : <Moon size={17} />}
-              </button>
-              <button
-                className="quality-button"
-                aria-label={`Render quality: ${quality}`}
-                onClick={() => setQuality(quality === 'high' ? 'balanced' : 'high')}
-              >
-                {quality === 'high' ? 'HD' : 'SD'}
-              </button>
-            </div>
-          </section>
-        )}
-      </div>
+                <button
+                  onClick={() => {
+                    openNewHome();
+                    setOpen(false);
+                  }}
+                >
+                  <Plus size={16} />
+                  New house
+                </button>
+              </div>
+              <div className="house-utilities">
+                <ProjectActions />
+                <button
+                  className="icon-button"
+                  aria-label={lighting === 'evening' ? 'Switch to daylight' : 'Switch to night'}
+                  onClick={() => setLighting(lighting === 'evening' ? 'day' : 'evening')}
+                >
+                  {lighting === 'evening' ? <Sun size={17} /> : <Moon size={17} />}
+                </button>
+                <button
+                  className="quality-button"
+                  aria-label={`Render quality: ${quality}`}
+                  onClick={() => setQuality(quality === 'high' ? 'balanced' : 'high')}
+                >
+                  {quality === 'high' ? 'HD' : 'SD'}
+                </button>
+              </div>
+            </section>
+          )}
+        </div>
+      )}
     </header>
   );
 }

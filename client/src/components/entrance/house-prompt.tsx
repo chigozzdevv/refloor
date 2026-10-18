@@ -1,28 +1,60 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowRight, LoaderCircle, Send } from 'lucide-react';
 import type { Generation } from '@refloor/scene/contracts';
 import { generationApi, persistGeneration, restoreGeneration } from '@/shared/refloor/progress';
 import type { PendingGeneration } from '@/shared/refloor/progress';
 import { useSavedProjects } from '@/shared/scene/scene-sync';
 import { GenerationProgress } from '@/components/entrance/generation-progress';
 
-export function HousePrompt({ close }: { close: () => void }) {
+export function HousePrompt({
+  close,
+  resume,
+  templates,
+  canResume,
+}: {
+  close: () => void;
+  resume: () => void;
+  templates: () => void;
+  canResume: boolean;
+}) {
   const [pending, setPending] = useState<PendingGeneration | null>(restoreGeneration);
-  const [prompt, setPrompt] = useState(
-    () =>
-      restoreGeneration()?.prompt ??
-      'A modern two-bedroom bungalow with an open living and dining area, a separate kitchen, a bathroom and a workspace. Cream walls and oak floors.',
-  );
-  const [job, setJob] = useState<Generation | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [attempt, setAttempt] = useState(0);
-  const opening = useSavedProjects((state) => state.opening);
-  const terminal = job?.status === 'complete' || job?.status === 'failed';
-  const busy = pending !== null && !terminal;
+  const [prompt, setPrompt] = useState(() => restoreGeneration()?.prompt ?? '');
+  const [job, setJob] = useState<Generation | null>(null),
+    [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0),
+    [opening, setOpening] = useState(false);
+  const openingJob = useRef<string | null>(null),
+    mounted = useRef(true),
+    completed = useRef(close);
+  completed.current = close;
+  const busy = pending !== null && job?.status !== 'failed';
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  const open = async (projectId: string) => {
+    if (opening) return;
+    setOpening(true);
+    setError(null);
+    const success = await useSavedProjects.getState().open(projectId);
+    if (!mounted.current) return;
+    setOpening(false);
+    if (success) {
+      persistGeneration(null);
+      completed.current();
+    } else
+      setError(
+        useSavedProjects.getState().error ??
+          'Your house is ready, but could not be opened. Try again.',
+      );
+  };
   useEffect(() => {
     if (!pending) return;
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let current = pending;
+    let cancelled = false,
+      timer: ReturnType<typeof setTimeout> | undefined,
+      current = pending;
     const poll = async () => {
       try {
         const next = current.jobId
@@ -48,71 +80,105 @@ export function HousePrompt({ close }: { close: () => void }) {
       clearTimeout(timer);
     };
   }, [pending, attempt]);
-
+  useEffect(() => {
+    if (job?.status !== 'complete' || !job.projectId || openingJob.current === job.id) return;
+    openingJob.current = job.id;
+    void open(job.projectId);
+  });
+  const submit = () => {
+    if (busy || prompt.trim().length < 10) return;
+    const next = { requestId: crypto.randomUUID(), prompt: prompt.trim(), jobId: null };
+    persistGeneration(next);
+    setJob(null);
+    setError(null);
+    setPending(next);
+  };
   return (
-    <form
-      className="house-prompt"
-      onSubmit={(event) => {
-        event.preventDefault();
-        const next = { requestId: crypto.randomUUID(), prompt: prompt.trim(), jobId: null };
-        persistGeneration(next);
-        setJob(null);
-        setError(null);
-        setPending(next);
-      }}
-    >
-      <label className="field-caption" htmlFor="house-description">
-        DESCRIBE YOUR HOME
-      </label>
-      <textarea
-        id="house-description"
-        value={prompt}
-        onChange={(event) => setPrompt(event.target.value)}
-        minLength={10}
-        maxLength={2000}
-        required
-        disabled={busy}
-        rows={5}
-      />
-      <p className="prompt-hint">One or two storeys. Choose your rooms, colours and finishes.</p>
+    <section className="prompt-home" aria-label="Create your house">
+      <h1>Describe the home you imagine.</h1>
+      <form
+        className="prompt-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          submit();
+        }}
+      >
+        <textarea
+          aria-label="Describe your house"
+          placeholder="A two-bedroom bungalow with cream walls, oak floors and a bright living room…"
+          value={prompt}
+          onChange={(event) => setPrompt(event.target.value)}
+          minLength={10}
+          maxLength={2000}
+          required
+          rows={3}
+          disabled={busy}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+              event.preventDefault();
+              submit();
+            }
+          }}
+        />
+        <div className="prompt-bottom">
+          <span>One or two storeys. Make it yours.</span>
+          <button
+            className="prompt-send"
+            type="submit"
+            aria-label="Generate house"
+            disabled={busy || prompt.trim().length < 10}
+          >
+            {busy ? (
+              <LoaderCircle size={20} className="spinning" />
+            ) : (
+              <Send size={20} strokeWidth={1.6} />
+            )}
+          </button>
+        </div>
+      </form>
       {pending && <GenerationProgress job={job} />}
-      {error && (
-        <p className="generation-error" role="alert">
-          {error}
+      {opening && (
+        <p className="generation-status" role="status">
+          Preparing your entrance…
         </p>
       )}
-      {error && busy && (
-        <button
-          type="button"
-          className="home-option"
-          onClick={() => {
-            setError(null);
-            setAttempt((value) => value + 1);
-          }}
-        >
-          Retry connection
-        </button>
+      {error && (
+        <div className="prompt-error" role="alert">
+          <p>{error}</p>
+          {job?.status === 'complete' && job.projectId ? (
+            <button
+              onClick={() => {
+                void open(job.projectId!);
+              }}
+              disabled={opening}
+            >
+              Open your house
+            </button>
+          ) : busy ? (
+            <button
+              onClick={() => {
+                setError(null);
+                setAttempt((value) => value + 1);
+              }}
+            >
+              Retry connection
+            </button>
+          ) : null}
+        </div>
       )}
       {!busy && (
-        <button className="home-option" type="submit">
-          <strong>{terminal ? 'Generate another house' : 'Generate my house'}</strong>
-        </button>
+        <div className="prompt-alternatives">
+          {canResume && (
+            <>
+              <button onClick={resume}>
+                Continue your space <ArrowRight size={14} />
+              </button>
+              <span />
+            </>
+          )}
+          <button onClick={templates}>Choose a starting house</button>
+        </div>
       )}
-      {job?.status === 'complete' && job.projectId && (
-        <button
-          type="button"
-          className="home-option"
-          disabled={opening}
-          onClick={async () => {
-            if (await useSavedProjects.getState().open(job.projectId!)) {
-              persistGeneration(null);
-              close();
-            } else setError(useSavedProjects.getState().error);
-          }}
-        >
-          <strong>{opening ? 'Opening…' : 'Open generated house'}</strong>
-        </button>
-      )}
-    </form>
+    </section>
   );
 }

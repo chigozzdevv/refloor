@@ -12,7 +12,9 @@ import { PhysicsRuntime } from '@/shared/navigation/physics-runtime';
 import { SelectionChat } from '@/components/editor/selection-chat';
 import { NavigationMarkers } from '@/components/navigation/navigation-markers';
 import { SelectedFloor } from '@/components/editor/selected-floor';
+import { EntranceCamera } from '@/components/entrance/entrance-camera';
 import { ActionEvents } from '@/components/scene/action-events';
+import { useExperience } from '@/shared/scene/experience-store';
 
 function SceneReady() {
   const setReady = useProject((state) => state.setSceneReady);
@@ -22,9 +24,12 @@ function SceneReady() {
 
 export function World() {
   const quality = useProject((state) => state.quality),
+    epoch = useProject((state) => state.projectEpoch),
     select = useProject((state) => state.select);
+  const stage = useExperience((state) => state.stage);
   return (
     <Canvas
+      frameloop={stage === 'prompt' ? 'demand' : 'always'}
       shadows
       camera={{ fov: 45, near: 0.08, far: 200, position: [16, 12, -8] }}
       dpr={quality === 'high' ? [1, 1.75] : 1}
@@ -50,11 +55,12 @@ export function World() {
           <Furniture />
           <ArchitecturalDetails />
           <NavigationControls />
+          <EntranceCamera />
           <ActionEvents />
           <NavigationMarkers />
           <SelectionChat />
           <SelectedFloor />
-          <SceneReady />
+          <SceneReady key={epoch} />
         </Selection>
       </Suspense>
     </Canvas>

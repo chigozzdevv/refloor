@@ -1,9 +1,16 @@
 import { useState } from 'react';
 import { MoveUpRight, X } from 'lucide-react';
 import { useProject } from '@/shared/scene/scene-store';
-import { HousePrompt } from '@/components/entrance/house-prompt';
 
-export function HouseOptions({ open, close }: { open: boolean; close: () => void }) {
+export function HouseOptions({
+  open,
+  close,
+  created,
+}: {
+  open: boolean;
+  close: () => void;
+  created: () => void;
+}) {
   const [width, setWidth] = useState(12),
     [depth, setDepth] = useState(10);
   const createHome = useProject((state) => state.createHome);
@@ -23,9 +30,7 @@ export function HouseOptions({ open, close }: { open: boolean; close: () => void
             <X size={18} />
           </button>
         </div>
-        <p>Describe your home or choose a starting space.</p>
-        <HousePrompt close={close} />
-        <span className="eyebrow">STARTING HOMES</span>
+        <p>Choose a starting space to explore and edit.</p>
         <div className="home-dimensions">
           <label className="field-caption">
             WIDTH · M
@@ -59,7 +64,7 @@ export function HouseOptions({ open, close }: { open: boolean; close: () => void
             onClick={() => {
               try {
                 createHome(storeys, width, depth);
-                close();
+                created();
               } catch {
                 useProject
                   .getState()
