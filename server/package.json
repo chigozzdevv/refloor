@@ -15,8 +15,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
-    "dev": "node --env-file-if-exists=../.env --import tsx --watch src/main.ts",
-    "start": "node --env-file-if-exists=../.env dist/main.js",
+    "dev": "node --env-file-if-exists=../.env --import tsx --watch src/server.ts",
+    "start": "node --env-file-if-exists=../.env dist/server.js",
     "db:dev": "node --env-file-if-exists=../.env --import tsx scripts/database.ts"
   },
   "dependencies": {

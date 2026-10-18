@@ -1,5 +1,5 @@
 import { createApp } from '@refloor/server/app';
-import { readConfig } from '@refloor/server/config/environment';
+import { readConfig } from '@refloor/server/shared/config/env';
 
 let app: Awaited<ReturnType<typeof createApp>> | undefined;
 try {

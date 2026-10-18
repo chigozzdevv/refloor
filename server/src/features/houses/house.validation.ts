@@ -1,6 +1,6 @@
 import { validateBuildingAssets } from '@refloor/catalogue';
 import type { Building } from '@refloor/scene';
-import { ApiError } from '@refloor/server/http/errors';
+import { ApiError } from '@refloor/server/shared/http/errors';
 
 export function validateAssets(building: Building) {
   try {

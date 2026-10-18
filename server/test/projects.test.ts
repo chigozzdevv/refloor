@@ -8,7 +8,7 @@ import type { SceneCommand } from '@refloor/scene';
 import { projectListSchema, projectSchema, projectWriteSchema } from '@refloor/contracts';
 import type { ProjectWrite } from '@refloor/contracts';
 import { createApp } from '@refloor/server/app';
-import type { ServerConfig } from '@refloor/server/config/environment';
+import type { ServerConfig } from '@refloor/server/shared/config/env';
 
 describe('MongoDB project API', () => {
   let replica: MongoMemoryReplSet;

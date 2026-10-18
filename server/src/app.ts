@@ -2,12 +2,23 @@ import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
-import type { ServerConfig } from '@refloor/server/config/environment';
-import { connectDatabase } from '@refloor/server/database/connection';
-import { ApiError, registerErrors } from '@refloor/server/http/errors';
-import { Sessions } from '@refloor/server/modules/sessions/service';
-import { Projects } from '@refloor/server/modules/projects/service';
-import { registerProjects } from '@refloor/server/modules/projects/routes';
+import type { ServerConfig } from '@refloor/server/shared/config/env';
+import { connectMongo } from '@refloor/server/shared/database/mongo';
+import { ApiError, registerErrors } from '@refloor/server/shared/http/errors';
+import { registerHealth } from '@refloor/server/shared/http/health';
+import { SessionRepository } from '@refloor/server/features/sessions/session.repo';
+import { SessionService } from '@refloor/server/features/sessions/session.service';
+import { SessionController } from '@refloor/server/features/sessions/session.controller';
+import { registerSessionRoutes } from '@refloor/server/features/sessions/session.route';
+import { HouseRepository } from '@refloor/server/features/houses/house.repo';
+import { HouseService } from '@refloor/server/features/houses/house.service';
+import { HouseController } from '@refloor/server/features/houses/house.controller';
+import { registerHouseRoutes } from '@refloor/server/features/houses/house.route';
+import { RevisionRepository } from '@refloor/server/features/edits/revision.repo';
+import { EditService } from '@refloor/server/features/edits/edit.service';
+import { UndoService } from '@refloor/server/features/edits/undo.service';
+import { EditController } from '@refloor/server/features/edits/edit.controller';
+import { registerEditRoutes } from '@refloor/server/features/edits/edit.route';
 
 export async function createApp(config: ServerConfig, logging = true) {
   const app = Fastify({
@@ -18,7 +29,7 @@ export async function createApp(config: ServerConfig, logging = true) {
     requestTimeout: 30000,
   });
   registerErrors(app);
-  const database = await connectDatabase(config.mongoUri, config.database);
+  const database = await connectMongo(config.mongoUri, config.database);
   app.addHook('onClose', async () => {
     await database.client.close();
   });
@@ -40,21 +51,19 @@ export async function createApp(config: ServerConfig, logging = true) {
       )
         throw new ApiError(403, 'ORIGIN_REJECTED', 'This origin cannot change projects.');
     });
-    const sessions = new Sessions(database, config.production);
-    registerProjects(app, new Projects(database), sessions);
-    app.post(
-      '/api/sessions',
-      { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } },
-      (request, reply) => sessions.create(request, reply),
+    const sessions = new SessionController(
+      new SessionService(new SessionRepository(database.db)),
+      config.production,
     );
-    app.get('/api/health', async (_request, reply) => {
-      try {
-        await database.db.command({ ping: 1 }, { timeoutMS: 3000 });
-        return { ready: true };
-      } catch {
-        return reply.code(503).send({ ready: false });
-      }
-    });
+    const houses = new HouseRepository(database.db);
+    const revisions = new RevisionRepository(database.client, database.db, houses);
+    registerHouseRoutes(app, new HouseController(new HouseService(houses, revisions), sessions));
+    registerEditRoutes(
+      app,
+      new EditController(new EditService(revisions), new UndoService(revisions), sessions),
+    );
+    registerSessionRoutes(app, sessions);
+    registerHealth(app, database.db);
     await app.ready();
     return app;
   } catch (error) {

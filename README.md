@@ -48,6 +48,15 @@ first, so a fresh checkout does not depend on existing build output.
 - `client`: React/Three.js browser studio. `pnpm dev` starts its local preview.
 - `server`: Fastify/Node API, MongoDB transactions and private browser sessions.
 
+The server follows the feature layout: `features/houses` owns house routes,
+controllers, services, schemas, models and repositories; `features/edits` owns commands,
+transactional revision storage and undo/redo. `features/sessions` handles private browser
+sessions. HTTP handlers stay in controllers, database queries stay in repositories, and
+services apply the scene and engine rules. `shared/config`, `shared/database` and
+`shared/http` hold infrastructure. `app.ts` wires dependencies and routes; `server.ts`
+starts the API process. Generation and asset workers will be added with their working
+implementations.
+
 Workspace packages use scoped `@refloor/*` imports. Each package's self imports
 resolve through its package exports after compilation; source aliases are configured
 for TypeScript and tests. The browser uses `@/` for app-local imports; the Node server
