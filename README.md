@@ -128,7 +128,7 @@ the current building. Drag or swipe to look around, then select a floor ring to 
 to a clear spot. Stops follow clear room viewpoints and routes between entrances,
 doorways and stair landings, and update after edits. At most three separated markers
 appear at once: floor rings are places to stand, named doorway arrows enter rooms,
-and stair arrows change levels. Route stops face the next turn. Exit dots
+and stair arrows change levels. Arrivals face a visible door, stair entrance or editable item, with the requested focal point preferred when visible. Exit dots
 remain reachable at the viewport edge; stair markers stay at the staircase rather than appearing inside unrelated rooms. The map
 shows actual walls, door swings, windows, furniture, stairs and the current room,
 position and heading. The small floor plan opens the larger view without a duplicate toolbar icon.
@@ -136,11 +136,12 @@ Choose a room on either floor to follow a validated walking route there.
 Doorway trips open required doors and close obstructing open leaves, moving clear of the swing first, before following a route through
 the actual colliders. Stair arrows handle the full climb or descent with one click;
 the camera follows the turn and smooths changes in height. A Stop button appears during
-travel; dragging, selecting an item, Escape or leaving the tab also stops it. A stair
+travel; dragging, selecting an item or Escape also stops it. Losing focus releases manual input without silently cancelling a chosen tour. A stair
 arrow can resume from the current step. House overview in the globe menu resets the
 outside view; returning to Walk preserves the previous position and viewing direction
-on that floor. The translucent bottom-right pad supports held direction arrows and a draggable centre for diagonal walking relative to the view. Near a staircase, forward movement aligns with the steps and follows the climb while held; releasing stops it. Keyboard WASD and arrow keys remain available. The player physically
-climbs the steps; floor state follows its elevation. Exterior walls, windows, entrance doors and roof are rendered, and manual walking can pass outside through an open entrance. Tour routes and the map cover the interior; roofs, terrain and window trim are not independent editable furniture. The furniture library adds items into validated clear spaces.
+on that floor. On the translucent bottom-right pad, left/right turn the camera and up/down walk forward/backward. Dragging the centre steers while walking. A nearby stairs button completes the climb or descent without requiring the stair marker to be on screen; the physical stair markers remain available. Near a staircase, forward movement aligns with the steps and follows the climb while held; releasing stops it. Keyboard WASD and arrow keys remain available. The player physically
+climbs the steps; floor state follows its elevation. Doors validate their full swing before edits and undo/redo, and walking waits briefly outside a nearby moving door. The entry arrival point stays clear of the entrance swing, and an already-open entrance offers Enter house.
+The exterior overview shows every storey, exterior wall and the complete roof; the interior cutaway is used when focusing furniture. Window frames, floor bands, roof edges, entrance canopy, paving, planting and porch lighting derive from the actual building and entrance. Exterior paving has matching physical colliders. The overview fits the whole house at phone and desktop aspect ratios. Tour routes and the map cover the interior; roof and site decoration remain architectural details. The furniture library adds items into validated clear spaces.
 Chat moves, rotates, resizes, recolours, replaces or removes compatible items and controls
 televisions, lights and doors. Accepted edits
 update collision geometry and support undo/redo (also Cmd/Ctrl+Z and Shift+Cmd/Ctrl+Z).
