@@ -6,8 +6,11 @@ import {
   lightTuning,
   validateCommandTuning,
 } from '@refloor/catalogue';
+import { applyCommands } from '@refloor/scene';
 import type { Building, Material, SceneCommand } from '@refloor/scene';
 import type { ChatTarget, LanguageEditRequest } from '@refloor/scene/chat';
+import { scopedEditMemory } from '@refloor/scene/edit-memory';
+import { restoreElement } from '@refloor/server/shared/planning/restore-element';
 
 const vector = z.strictObject({ x: z.number(), y: z.number(), z: z.number() });
 export const languagePlanSchema = z.strictObject({
@@ -29,6 +32,7 @@ export const languagePlanSchema = z.strictObject({
           'intensity',
           'light-color',
           'reset-light',
+          'restore',
           'open',
           'source',
         ]),
@@ -75,6 +79,7 @@ export function languageContext(input: LanguageEditRequest) {
     instruction: input.message,
     view: input.view,
     houseId: input.building.id,
+    context: input.context ? scopedEditMemory(input.context, input.target) : null,
     objects: input.building.objects.map(
       ({
         id,
@@ -133,9 +138,11 @@ export function languageContext(input: LanguageEditRequest) {
 }
 
 export function languageCommands(input: LanguageEditRequest, plan: LanguagePlan): SceneCommand[] {
-  const { building, target } = input;
+  let building = input.building;
+  const { target } = input;
   const commands: SceneCommand[] = [];
   for (const action of plan.actions) {
+    const offset = commands.length;
     if (target.kind !== 'house' && action.targetId !== target.id)
       throw new Error(
         'This chat can only change the selected item. Use house chat for other changes.',
@@ -161,7 +168,16 @@ export function languageCommands(input: LanguageEditRequest, plan: LanguagePlan)
         .parse(required(action.value));
       return { ...base, color };
     };
-    if (action.action === 'color' || action.action === 'finish') {
+    if (action.action === 'restore') {
+      commands.push(
+        ...restoreElement(
+          { ...input, building },
+          action.targetId,
+          required(action.value),
+          action.surface,
+        ),
+      );
+    } else if (action.action === 'color' || action.action === 'finish') {
       if (wholeHouse) {
         if (action.surface === 'floors')
           for (const item of rooms)
@@ -319,8 +335,15 @@ export function languageCommands(input: LanguageEditRequest, plan: LanguagePlan)
         commands.push({ type: 'set-light', objectId: object.id, state: tuning.defaults });
       } else throw new Error('This item does not support that action.');
     } else throw new Error('This element does not support that action.');
+    if (commands.length > offset)
+      building = applyCommands(building, {
+        id: input.requestId,
+        at: new Date().toISOString(),
+        expectedRevision: building.revision,
+        commands: commands.slice(offset),
+      }).building;
   }
   if (commands.length > 100) throw new Error('Please change fewer items at once.');
-  validateCommandTuning(building, commands);
+  validateCommandTuning(input.building, commands);
   return commands;
 }

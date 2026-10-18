@@ -27,6 +27,8 @@ export class LanguageEditService {
     )
       throw new ApiError(422, 'CHAT_LIMIT', 'This house is too large for one chat request.');
     validateAssets(input.building);
+    if (input.context && input.context.sceneId !== input.building.id)
+      throw new ApiError(422, 'CONTEXT_MISMATCH', 'Edit context belongs to another house.');
     let result: Awaited<ReturnType<Luna['edit']>>;
     try {
       result = await this.luna.edit(input);
