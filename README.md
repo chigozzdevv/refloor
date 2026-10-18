@@ -45,9 +45,11 @@ are solved from the programme. Rooms occupy two wings around a circulation hall;
 homes reserve a shared stairwell, upper-floor opening and landing access. Living and dining
 can share an open room; other uses currently need separate rooms. Unsupported requests
 and layouts that fail validation return an error rather than a substitute starting home.
-Furniture uses the shipped catalogue: kitchens have counters, bathrooms have a vanity,
-and bedrooms have a bed and storage. Appliances, sanitary fixtures and custom generated
-meshes remain to be added; this is an editable spatial prototype, not construction plans.
+Furniture uses the shipped catalogue: kitchens include a sink, hob, oven and refrigerator;
+bathrooms include a basin, toilet and shower; workspaces include a desk; bedrooms include
+a bed and wardrobe. These fittings are editable models; device actions currently cover
+televisions, lights and doors. Custom generated meshes remain to be added.
+This is an editable spatial prototype, not construction plans.
 
 The client proxies `/api` to `http://127.0.0.1:3001` during development and preview.
 If that port is occupied, set another server `PORT` and pass its URL with
@@ -111,19 +113,24 @@ the generated colliders, including entrance-to-upstairs routes, both stair types
 rotated flights. This verifies the geometry in a headless physics world. The browser
 supports an animated entrance with a draggable handle, orbit and first-person views,
 and evening lighting by default. A globe icon opens house chat, view settings, furniture,
-files and undo/redo. The scene has no persistent inspector, left toolbar, floor buttons
+files and room furnishing completion. History beside the globe provides labelled session
+changes, undo, redo and restoration before an earlier edit. Completing furnishings runs
+in a bounded browser worker, preserves the house layout, validates access and can be undone
+as one change. It upgrades legacy fittings and adds room essentials where clear space permits.
+The scene has no persistent inspector, left toolbar, floor buttons
 or statistics overlays. Clicking an item, wall, floor or door opens a small chat anchored
-beside it. Luna interprets supported changes; the server validates commands and placement,
+beside it with a speech-bubble tail and a selection outline. Luna interprets supported changes; the server validates commands and placement,
 and the client checks that the scene has not changed before applying them. Item chat
 can only affect the selected entity; house chat can change finishes or devices across
 the current building. Drag or swipe to look around, then select a floor ring to travel
 to a clear spot. Stops follow clear room viewpoints and routes between entrances,
 doorways and stair landings, and update after edits. At most three separated markers
 appear at once: floor rings are places to stand, named doorway arrows enter rooms,
-and stair arrows change levels. Route stops face the next turn. The small location
-control names the current room; Leave room walks back through a reachable doorway
-without searching for it. Find next stop turns toward a nearby choice without
-moving. Doorway trips open required doors before following a route through
+and stair arrows change levels. Route stops face the next turn. Exit and stair dots
+remain reachable at the viewport edge when their destination is out of view. The map
+shows actual rooms, furniture, stairs and the current room, position and heading.
+Choose a room on either floor to follow a validated walking route there.
+Doorway trips open required doors before following a route through
 the actual colliders. Stair arrows handle the full climb or descent with one click;
 the camera follows the turn and smooths changes in height. A Stop button appears during
 travel; dragging, selecting an item, Escape or leaving the tab also stops it. A stair

@@ -1,6 +1,7 @@
 import { useProject } from '@/shared/scene/scene-store';
 import { JourneyControls } from '@/components/navigation/journey-controls';
 import { FurniturePicker } from '@/components/editor/furniture-picker';
+import { PortalDots } from '@/components/navigation/portal-dots';
 
 export type HousePageProps = {
   libraryOpen: boolean;
@@ -12,6 +13,7 @@ export function HousePage({ libraryOpen, closeLibrary }: HousePageProps) {
   return (
     <>
       {mode === 'walk' && <JourneyControls key={projectEpoch} />}
+      <PortalDots />
       {libraryOpen && <FurniturePicker key={floorId} close={closeLibrary} />}
     </>
   );

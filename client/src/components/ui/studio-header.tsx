@@ -6,6 +6,7 @@ import {
   Globe2,
   History,
   LoaderCircle,
+  Map,
   Moon,
   Plus,
   Rotate3D,
@@ -71,10 +72,25 @@ export function StudioHeader({
       <div className="house-controls" ref={panel}>
         <button
           className="house-toggle"
+          aria-label="House map"
+          onClick={() => {
+            const navigation = useNavigation.getState();
+            navigation.stop();
+            navigation.setMapOpen(!navigation.mapOpen);
+            select(null);
+            setOpen(false);
+            setHistoryOpen(false);
+          }}
+        >
+          <Map size={19} strokeWidth={1.5} />
+        </button>
+        <button
+          className="house-toggle"
           aria-label="Edit history"
           aria-expanded={historyOpen}
           onClick={() => {
             useNavigation.getState().stop();
+            useNavigation.getState().setMapOpen(false);
             select(null);
             setOpen(false);
             setHistoryOpen(!historyOpen);
@@ -88,6 +104,7 @@ export function StudioHeader({
           aria-expanded={open}
           onClick={() => {
             useNavigation.getState().stop();
+            useNavigation.getState().setMapOpen(false);
             setHistoryOpen(false);
             select(null);
             setOpen(!open);

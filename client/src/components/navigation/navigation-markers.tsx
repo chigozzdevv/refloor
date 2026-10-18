@@ -1,14 +1,15 @@
 import { useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
-import { ArrowDown, ArrowUp, ChevronRight } from 'lucide-react';
+import { ArrowDown, ArrowUp, ChevronRight, DoorOpen } from 'lucide-react';
 import { Raycaster, Vector3 } from 'three';
 import { contains } from '@refloor/engine/math';
 import type { Destination } from '@/shared/navigation/destinations';
 import { destinations, nearbyRoute, stairContinuation } from '@/shared/navigation/destinations';
 import { organizeMarkers } from '@/shared/navigation/marker-layout';
-import { roomExit } from '@/shared/navigation/room-exit';
+import { portalPosition, tourPortals } from '@/shared/navigation/portals';
 import { useNavigation } from '@/shared/navigation/navigation-store';
+import type { PortalPin } from '@/shared/navigation/navigation-store';
 import { physicsSession } from '@/shared/navigation/physics-session';
 import { useProject } from '@/shared/scene/scene-store';
 import { isVisible } from '@/shared/editor/picking';
@@ -21,7 +22,9 @@ function Marker({ destination, primary }: { destination: Destination; primary: b
       ? destination.direction === 'up'
         ? ArrowUp
         : ArrowDown
-      : ChevronRight;
+      : destination.label === 'Leave room'
+        ? DoorOpen
+        : ChevronRight;
   const travel = () => {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     useProject.getState().select(null);
@@ -96,9 +99,9 @@ function Marker({ destination, primary }: { destination: Destination; primary: b
 
 export function NavigationMarkers() {
   const { compiled, mode, floorId, selection, interacting } = useProject();
-  const request = useNavigation((state) => state.request);
+  const { request, mapOpen } = useNavigation();
   const all = useMemo(() => destinations(compiled), [compiled]);
-  const exits = useMemo(() => new Map<string, Destination | null>(), [compiled]);
+  const portals = useMemo(() => new Map<string, Destination[]>(), [compiled]);
   const [visible, setVisible] = useState<Destination[]>([]);
   const elapsed = useRef(1),
     projected = useMemo(() => new Vector3(), []),
@@ -113,7 +116,16 @@ export function NavigationMarkers() {
     const floor = compiled.building.floors.find((value) => value.id === player.floorId),
       room = floor?.rooms.find((value) => contains(value.footprint, player.position)),
       continuing = stairContinuation(compiled, player);
-    if (room && !exits.has(room.id)) exits.set(room.id, roomExit(compiled, player, all));
+    const key = room?.id ?? player.floorId;
+    if (!portals.has(key)) portals.set(key, tourPortals(compiled, player, all));
+    const links = continuing.length ? continuing : (portals.get(key) ?? []);
+    camera.getWorldDirection(projected);
+    const heading = Math.atan2(projected.x, -projected.z),
+      location = continuing.length ? 'Stairs' : (room?.name ?? floor?.name ?? '');
+    if (request || mapOpen || interacting || selection) {
+      useNavigation.getState().setContext({ player, heading, location, edgePortals: [] });
+      return;
+    }
     camera.updateMatrixWorld();
     const candidates = (continuing.length ? continuing : all)
       .filter((destination) => {
@@ -167,19 +179,6 @@ export function NavigationMarkers() {
           destination.anchor.z - player.position.z,
         ),
       }));
-    const next = [...candidates].sort((a, b) => a.distance - b.distance)[0]?.destination;
-    useNavigation.getState().setContext(
-      continuing.length ? 'Stairs' : (room?.name ?? floor?.name ?? ''),
-      next
-        ? {
-            x: next.anchor.x,
-            y: Math.max(next.anchor.y, player.position.y + 0.45),
-            z: next.anchor.z,
-          }
-        : null,
-      room && !continuing.length ? (exits.get(room.id) ?? null) : null,
-    );
-    if (request || selection || interacting) return;
     const layout = organizeMarkers(
       candidates.flatMap(({ destination, distance }) => {
         projected
@@ -198,7 +197,28 @@ export function NavigationMarkers() {
       }),
       size.width,
       size.height,
-    ).map((value) => value.destination);
+    ).map((value) => links.find((link) => link.id === value.destination.id) ?? value.destination);
+    const edgePortals: PortalPin[] = [];
+    for (const destination of links) {
+      if (layout.some((value) => value.id === destination.id)) continue;
+      projected
+        .set(destination.anchor.x, destination.anchor.y, destination.anchor.z)
+        .project(camera);
+      const position = portalPosition(
+        ((projected.x + 1) * size.width) / 2,
+        ((1 - projected.y) * size.height) / 2,
+        projected.z > 1,
+        size.width,
+        size.height,
+      );
+      if (edgePortals.some((pin) => Math.hypot(pin.x - position.x, pin.y - position.y) < 100)) {
+        if (position.y >= 240) position.y -= 100;
+        else if (position.y + 100 <= size.height - 250) position.y += 100;
+        else position.x = position.x < size.width / 2 ? size.width - 48 : 48;
+      }
+      edgePortals.push({ destination, x: Math.round(position.x), y: Math.round(position.y) });
+    }
+    useNavigation.getState().setContext({ player, heading, location, edgePortals });
     setVisible((previous) =>
       previous.length === layout.length &&
       previous.every(
@@ -212,7 +232,7 @@ export function NavigationMarkers() {
         : layout,
     );
   });
-  if (mode !== 'walk' || request || selection || interacting) return null;
+  if (mode !== 'walk' || request || selection || interacting || mapOpen) return null;
   return visible.map((destination, index) => (
     <Marker
       key={`${compiled.building.revision}:${destination.id}`}

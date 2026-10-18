@@ -2,15 +2,23 @@ import { create } from 'zustand';
 import type { NavigationPoint, Point3 } from '@refloor/engine';
 import type { Destination } from '@/shared/navigation/destinations';
 
+export type PortalPin = { destination: Destination; x: number; y: number };
+type TourContext = {
+  location: string;
+  player: NavigationPoint;
+  heading: number;
+  edgePortals: PortalPin[];
+};
+
 type NavigationState = {
   request: { id: string; target: NavigationPoint; lookAt?: Point3; label: string } | null;
   location: string;
-  nextStop: Point3 | null;
-  exit: Destination | null;
-  lookRequest: Point3 | null;
-  setContext: (location: string, nextStop: Point3 | null, exit: Destination | null) => void;
-  look: () => void;
-  finishLook: () => void;
+  player: NavigationPoint | null;
+  heading: number;
+  edgePortals: PortalPin[];
+  mapOpen: boolean;
+  setMapOpen: (open: boolean) => void;
+  setContext: (context: TourContext) => void;
   overview: number;
   resetOverview: () => void;
   go: (target: NavigationPoint, lookAt?: Point3, label?: string) => void;
@@ -20,28 +28,34 @@ type NavigationState = {
 export const useNavigation = create<NavigationState>((set) => ({
   request: null,
   location: '',
-  nextStop: null,
-  exit: null,
-  lookRequest: null,
-  setContext: (location, nextStop, exit) =>
+  player: null,
+  heading: 0,
+  edgePortals: [],
+  mapOpen: false,
+  setMapOpen: (mapOpen) => set({ mapOpen }),
+  setContext: (context) =>
     set((state) =>
-      state.location === location &&
-      state.nextStop?.x === nextStop?.x &&
-      state.nextStop?.y === nextStop?.y &&
-      state.nextStop?.z === nextStop?.z &&
-      state.exit === exit
+      state.location === context.location &&
+      state.player?.floorId === context.player.floorId &&
+      state.player?.position.x === context.player.position.x &&
+      state.player?.position.y === context.player.position.y &&
+      state.player?.position.z === context.player.position.z &&
+      state.heading === context.heading &&
+      state.edgePortals.length === context.edgePortals.length &&
+      state.edgePortals.every(
+        (pin, index) =>
+          pin.destination === context.edgePortals[index]?.destination &&
+          pin.x === context.edgePortals[index]?.x &&
+          pin.y === context.edgePortals[index]?.y,
+      )
         ? state
-        : { location, nextStop, exit },
+        : context,
     ),
-  look: () => set((state) => ({ request: null, lookRequest: state.nextStop })),
-  finishLook: () => set({ lookRequest: null }),
   overview: 0,
-  resetOverview: () =>
-    set((state) => ({ overview: state.overview + 1, request: null, lookRequest: null })),
+  resetOverview: () => set((state) => ({ overview: state.overview + 1, request: null })),
   go: (target, lookAt, label = 'Moving') =>
     set({
-      lookRequest: null,
       request: { id: crypto.randomUUID(), target, label, ...(lookAt ? { lookAt } : {}) },
     }),
-  stop: () => set({ request: null, lookRequest: null }),
+  stop: () => set({ request: null }),
 }));

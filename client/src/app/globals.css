@@ -380,7 +380,7 @@ textarea:focus-visible,
 .walk-mode canvas:active {
   cursor: grabbing;
 }
-.tour-place,
+.journey-stop,
 .tour-hint {
   position: absolute;
   z-index: 50;
@@ -395,34 +395,12 @@ textarea:focus-visible,
   backdrop-filter: blur(12px);
   font-size: 11px;
 }
-.tour-place {
+.journey-stop {
   display: flex;
   align-items: center;
-  max-width: calc(100vw - 32px);
-}
-.tour-place > span {
-  padding: 0 12px;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  max-width: 220px;
-}
-.tour-place button {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-  border-left: 1px solid var(--line);
-}
-.tour-place .tour-exit {
-  display: flex;
-  gap: 6px;
-  padding: 0 10px;
-  width: auto;
-  border-left: 0;
-  border-right: 1px solid var(--line);
+  gap: 9px;
+  padding: 0 18px;
+  min-height: 44px;
 }
 .tour-hint {
   top: 80px;
@@ -836,6 +814,117 @@ select option {
   }
 }
 
+.tour-portals {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+.marker-edge {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+.marker-edge .marker-symbol {
+  width: 40px;
+  height: 40px;
+  border-color: #d1b886a0;
+  color: #edc379;
+}
+.marker-edge .marker-caption {
+  max-width: 88px;
+}
+.map-mini {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  z-index: 45;
+  width: 134px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 26px #0003;
+}
+.map-mini > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px 5px;
+  color: var(--muted);
+}
+.map-plan {
+  display: block;
+  width: 100%;
+  height: 100px;
+  overflow: visible;
+}
+.map-room rect {
+  fill: #26313b;
+  stroke: #ffffff25;
+  stroke-width: 0.055;
+}
+.map-room[role='button'] {
+  cursor: pointer;
+}
+.map-room[role='button']:hover rect,
+.map-room[role='button']:focus rect {
+  fill: #3d4a50;
+  stroke: #edc379;
+}
+.map-room.map-current rect {
+  fill: #806d46;
+  stroke: #edc379;
+}
+.map-room text {
+  fill: #fff8e9;
+  font-weight: 500;
+  pointer-events: none;
+}
+.map-detail,
+.map-player {
+  pointer-events: none;
+}
+.map-detail > rect {
+  fill: #e5e6df18;
+  stroke: #e5e6df35;
+  stroke-width: 0.035;
+}
+.map-detail .map-void {
+  fill: #101820;
+}
+.map-wall {
+  stroke: #c1c5c3;
+  stroke-width: 0.08;
+  stroke-linecap: round;
+}
+.map-door {
+  stroke: #627b70;
+  stroke-width: 0.13;
+}
+.map-stair rect {
+  fill: #1a242d;
+  stroke: #d1b886;
+  stroke-width: 0.07;
+}
+.map-stair line {
+  stroke: #b6a17c;
+  stroke-width: 0.05;
+}
+.map-player circle,
+.map-player path {
+  fill: #ffe1a6;
+  stroke: #101820;
+  stroke-width: 0.06;
+}
+.map-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  background: #0003;
+}
+.house-map,
 .edit-history {
   width: min(380px, calc(100vw - 32px));
   padding: 16px;
@@ -847,11 +936,23 @@ select option {
   max-height: calc(100dvh - 108px);
   overflow: auto;
 }
+.house-map {
+  position: absolute;
+  right: 24px;
+  top: 80px;
+}
+.house-map .map-plan {
+  height: min(44dvh, 330px);
+  margin: 14px 0;
+}
+.map-floors,
 .history-actions {
   display: flex;
   gap: 7px;
 }
-.history-actions button {
+.map-floors button,
+.history-actions button,
+.map-stair-action {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -862,6 +963,35 @@ select option {
   font-size: 11px;
   border: 1px solid var(--line);
   border-radius: 8px;
+}
+.map-floors button[aria-selected='true'] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.map-key {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.map-key span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.map-key i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ffe1a6;
+}
+.map-stair-action {
+  width: 100%;
+  margin-top: 15px;
+  color: var(--accent);
 }
 .edit-history {
   position: absolute;
@@ -938,4 +1068,17 @@ select option {
   left: -7px;
   top: var(--tail-y, 24px);
   transform: translateY(-50%) rotate(135deg);
+}
+@media (max-width: 600px) {
+  .house-map {
+    right: 16px;
+  }
+}
+@media (max-height: 450px) {
+  .map-mini {
+    width: 110px;
+  }
+  .map-mini .map-plan {
+    height: 68px;
+  }
 }

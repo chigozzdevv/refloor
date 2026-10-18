@@ -5,6 +5,7 @@ import { World } from '@/components/scene/world';
 import { StudioHeader } from '@/components/ui/studio-header';
 import { Notice } from '@/components/ui/notice';
 import { HouseOptions } from '@/components/entrance/house-options';
+import { HouseMap } from '@/components/navigation/house-map';
 import { useProject } from '@/shared/scene/scene-store';
 import { useCommandShortcuts } from '@/shared/editor/use-command';
 
@@ -35,6 +36,7 @@ export function App() {
           openLibrary={() => setLibraryOpen(true)}
         />
         <Notice />
+        <HouseMap />
         <StudioRoutes libraryOpen={libraryOpen} closeLibrary={() => setLibraryOpen(false)} />
         <HouseOptions open={newHome} close={() => setNewHome(false)} />
       </main>

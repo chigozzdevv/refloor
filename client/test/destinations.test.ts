@@ -33,7 +33,8 @@ describe('house navigation destinations', () => {
       createHouse({ id: 'tour-links', name: 'Tour links', storeys: 2, width: 14, depth: 12 }),
     );
     const entry = entryPose(compiled),
-      points = destinations(compiled)
+      markers = destinations(compiled),
+      points = markers
         .filter(
           (value) => value.floorId === entry.floorId && ['room', 'waypoint'].includes(value.kind),
         )
@@ -65,8 +66,7 @@ describe('house navigation destinations', () => {
     ).toBe(true);
     for (const room of compiled.building.floors.flatMap((floor) => floor.rooms))
       expect(
-        destinations(compiled).filter((value) => value.kind === 'room' && value.roomId === room.id)
-          .length,
+        markers.filter((value) => value.kind === 'room' && value.roomId === room.id).length,
       ).toBeLessThanOrEqual(2);
   });
   it('allows a short safe route around a stair corner without requiring a straight walk', () => {

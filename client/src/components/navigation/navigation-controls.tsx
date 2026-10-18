@@ -37,7 +37,7 @@ export function NavigationControls() {
     target = useRef(new Vector3());
   useEffect(() => {
     camera.rotation.order = 'YXZ';
-    useNavigation.getState().stop();
+    if (mode !== 'walk') useNavigation.getState().stop();
     route.current = null;
     if (mode === 'entry') {
       const portrait = size.width / size.height < 0.8;
@@ -111,7 +111,12 @@ export function NavigationControls() {
   }, [focus?.id, mode, camera]);
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
-      if (isTyping(event.target) || useProject.getState().mode !== 'walk') return;
+      if (
+        isTyping(event.target) ||
+        useProject.getState().mode !== 'walk' ||
+        useNavigation.getState().mapOpen
+      )
+        return;
       const key = event.key.toLowerCase();
       if (
         ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift'].includes(
@@ -218,20 +223,6 @@ export function NavigationControls() {
       return;
     }
     const keys = walkInput.keys;
-    const look = useNavigation.getState().lookRequest;
-    if (look) {
-      const yaw = Math.atan2(feet.x - look.x, feet.z - look.z),
-        pitch = MathUtils.clamp(
-          Math.atan2(look.y - camera.position.y, Math.hypot(look.x - feet.x, look.z - feet.z)),
-          -0.7,
-          0.5,
-        ),
-        angle = Math.atan2(Math.sin(yaw - walkInput.yaw), Math.cos(yaw - walkInput.yaw));
-      walkInput.yaw += MathUtils.clamp(angle, -dt * 2.4, dt * 2.4);
-      walkInput.pitch = MathUtils.damp(walkInput.pitch, pitch, 8, dt);
-      if (Math.abs(angle) < 0.03 && Math.abs(pitch - walkInput.pitch) < 0.03)
-        useNavigation.getState().finishLook();
-    }
     const f =
       Number(keys.has('w') || keys.has('arrowup')) - Number(keys.has('s') || keys.has('arrowdown'));
     const r = Number(keys.has('d')) - Number(keys.has('a'));
@@ -243,7 +234,10 @@ export function NavigationControls() {
         openable = destinationRoute(compiled, world.player, request.target, 'openable');
       if (openable?.doorIds.length) {
         if (
-          !state.edit(openable.doorIds.map((doorId) => ({ type: 'set-door', doorId, open: true })))
+          !state.edit(
+            openable.doorIds.map((doorId) => ({ type: 'set-door', doorId, open: true })),
+            { source: 'navigation' },
+          )
         )
           useNavigation.getState().stop();
         return;
