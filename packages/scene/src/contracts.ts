@@ -67,3 +67,33 @@ export type ProjectCreate = z.infer<typeof projectCreateSchema>;
 export type ProjectSave = z.infer<typeof projectSaveSchema>;
 export type ProjectEdit = z.infer<typeof projectEditSchema>;
 export type ProjectHistory = z.infer<typeof projectHistorySchema>;
+
+export const generationRequestSchema = z.strictObject({
+  requestId: requestIdSchema,
+  prompt: z.string().trim().min(10).max(2000),
+});
+export const generationUsageSchema = z.strictObject({
+  model: z.string(),
+  responseId: z.string(),
+  inputTokens: z.number().int().nonnegative(),
+  outputTokens: z.number().int().nonnegative(),
+  reasoningTokens: z.number().int().nonnegative(),
+  durationMs: z.number().nonnegative(),
+});
+export const generationSchema = z.strictObject({
+  id: requestIdSchema,
+  status: z.enum([
+    'queued',
+    'interpreting',
+    'layout',
+    'validating',
+    'saving',
+    'complete',
+    'failed',
+  ]),
+  projectId: requestIdSchema.nullable(),
+  error: z.string().nullable(),
+  usage: generationUsageSchema.nullable(),
+});
+export type Generation = z.infer<typeof generationSchema>;
+export type GenerationRequest = z.infer<typeof generationRequestSchema>;

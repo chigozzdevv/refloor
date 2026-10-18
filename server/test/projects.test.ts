@@ -9,6 +9,8 @@ import { projectListSchema, projectSchema, projectWriteSchema } from '@refloor/s
 import type { ProjectWrite } from '@refloor/scene/contracts';
 import { createApp } from '@refloor/server/app';
 import type { ServerConfig } from '@refloor/server/shared/config/env';
+import { GenerationRepository } from '@refloor/server/features/generation/generation.repo';
+import type { GenerationRecord } from '@refloor/server/features/generation/generation.model';
 
 describe('MongoDB project API', () => {
   let replica: MongoMemoryReplSet;
@@ -91,6 +93,76 @@ describe('MongoDB project API', () => {
     expect(health.json()).toEqual({ ready: true });
     expect(health.headers['cache-control']).toBe('no-store');
     expect((await app.inject('/api/projects')).statusCode).toBe(401);
+  });
+
+  it('requires a private session and a configured model for generation', async () => {
+    const payload = { requestId: randomUUID(), prompt: 'A modern two-bedroom bungalow.' };
+    expect(
+      (await app.inject({ method: 'POST', url: '/api/generations', payload })).statusCode,
+    ).toBe(401);
+    const cookies = await session();
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/generations',
+      cookies,
+      payload,
+    });
+    expect(response.statusCode).toBe(503);
+    expect(response.json().error.code).toBe('GENERATION_UNAVAILABLE');
+    expect(
+      (await app.inject({ method: 'GET', url: `/api/generations/${randomUUID()}`, cookies }))
+        .statusCode,
+    ).toBe(404);
+  });
+
+  it('persists generation jobs, prevents concurrent owner jobs and claims each job once', async () => {
+    const repository = new GenerationRepository(database.db(config.database));
+    const record: GenerationRecord = {
+      _id: randomUUID(),
+      ownerId: randomUUID(),
+      requestId: randomUUID(),
+      fingerprint: 'generation-test',
+      prompt: 'A two-bedroom bungalow.',
+      status: 'queued',
+      projectId: null,
+      error: null,
+      usage: null,
+      active: true,
+      createdAt: new Date(),
+      deadline: null,
+      expiresAt: new Date(Date.now() + 86400000),
+    };
+    expect(await repository.insert(record)).toBe(true);
+    expect(await repository.insert(record)).toBe(false);
+    expect(await repository.insert({ ...record, _id: randomUUID(), requestId: randomUUID() })).toBe(
+      false,
+    );
+    const claims = await Promise.all([repository.claim(), repository.claim()]);
+    expect(claims.filter(Boolean)).toHaveLength(1);
+    expect(claims.find(Boolean)?._id).toBe(record._id);
+    expect(await repository.find('another-owner', record._id)).toBeNull();
+    expect(
+      (
+        await new GenerationRepository(database.db(config.database)).findRequest(
+          record.ownerId,
+          record.requestId,
+        )
+      )?.status,
+    ).toBe('interpreting');
+    await repository.update(record._id, {
+      active: false,
+      status: 'failed',
+      error: 'Test job closed.',
+    });
+    expect(
+      await repository.insert({
+        ...record,
+        _id: randomUUID(),
+        requestId: randomUUID(),
+        active: false,
+        status: 'failed',
+      }),
+    ).toBe(true);
   });
 
   it('stores token hashes and reuses an unexpired browser session', async () => {

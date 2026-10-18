@@ -19,6 +19,10 @@ import { EditService } from '@refloor/server/features/edits/edit.service';
 import { UndoService } from '@refloor/server/features/edits/undo.service';
 import { EditController } from '@refloor/server/features/edits/edit.controller';
 import { registerEditRoutes } from '@refloor/server/features/edits/edit.route';
+import { GenerationRepository } from '@refloor/server/features/generation/generation.repo';
+import { GenerationService } from '@refloor/server/features/generation/generation.service';
+import { GenerationController } from '@refloor/server/features/generation/generation.controller';
+import { registerGenerationRoutes } from '@refloor/server/features/generation/generation.route';
 
 export async function createApp(config: ServerConfig, logging = true) {
   const app = Fastify({
@@ -57,7 +61,17 @@ export async function createApp(config: ServerConfig, logging = true) {
     );
     const houses = new HouseRepository(database.db);
     const revisions = new RevisionRepository(database.client, database.db, houses);
-    registerHouseRoutes(app, new HouseController(new HouseService(houses, revisions), sessions));
+    const houseService = new HouseService(houses, revisions);
+    registerHouseRoutes(app, new HouseController(houseService, sessions));
+    const generation = new GenerationService(
+      new GenerationRepository(database.db),
+      houseService,
+      config.ai,
+      (error) => app.log.error({ err: error }, 'Generation queue failed'),
+    );
+    registerGenerationRoutes(app, new GenerationController(generation, sessions));
+    app.addHook('onReady', async () => generation.start());
+    app.addHook('onClose', async () => generation.close());
     registerEditRoutes(
       app,
       new EditController(new EditService(revisions), new UndoService(revisions), sessions),

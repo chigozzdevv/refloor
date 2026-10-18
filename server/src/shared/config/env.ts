@@ -10,6 +10,8 @@ const environmentSchema = z.object({
     .regex(/^[a-zA-Z0-9_-]{1,63}$/)
     .default('refloor'),
   CLIENT_ORIGINS: z.string().default('http://127.0.0.1:5173,http://localhost:5173'),
+  OPENAI_API_KEY: z.string().optional(),
+  OPENAI_MODEL: z.literal('gpt-6-luna').default('gpt-6-luna'),
 });
 
 export type ServerConfig = {
@@ -19,6 +21,7 @@ export type ServerConfig = {
   mongoUri: string;
   database: string;
   clientOrigins: string[];
+  ai?: { apiKey: string; model: 'gpt-6-luna' };
 };
 
 export function readConfig(environment: NodeJS.ProcessEnv = process.env): ServerConfig {
@@ -43,5 +46,8 @@ export function readConfig(environment: NodeJS.ProcessEnv = process.env): Server
     mongoUri: value.MONGODB_URI,
     database: value.MONGODB_DATABASE,
     clientOrigins,
+    ...(value.OPENAI_API_KEY
+      ? { ai: { apiKey: value.OPENAI_API_KEY, model: value.OPENAI_MODEL } }
+      : {}),
   };
 }
