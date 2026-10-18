@@ -85,9 +85,13 @@ export function CameraRig() {
       object.dimensions.height / 2;
     const distance = Math.max(3, Math.max(object.dimensions.width, object.dimensions.depth) * 2.2);
     camera.position.set(
-      object.position.x + distance,
-      y + distance * 0.75,
-      object.position.z + distance,
+      object.position.x +
+        Math.sin(object.rotation) * distance +
+        Math.cos(object.rotation) * distance * 0.35,
+      y + distance * 0.65,
+      object.position.z +
+        Math.cos(object.rotation) * distance -
+        Math.sin(object.rotation) * distance * 0.35,
     );
     controls.current?.target.set(object.position.x, y, object.position.z);
     controls.current?.update();

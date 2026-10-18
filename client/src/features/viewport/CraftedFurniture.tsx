@@ -1,9 +1,13 @@
+import { useEffect, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import type { PointLight } from 'three';
 import { RoundedBox } from '@react-three/drei';
 import type { SceneObject } from '@refloor/scene';
 import type { FurnitureRenderer } from '@refloor/catalogue';
 import { finishes } from '@refloor/catalogue';
 import { useSurface } from '@/runtime/rendering/materials';
 import { useProject } from '@/features/projects/project-store';
+import { VideoScreen } from '@/features/viewport/VideoScreen';
 
 function Bed({ object }: { object: SceneObject }) {
   const body = useSurface(object.materials.body ?? finishes.linen),
@@ -121,7 +125,28 @@ function Cabinet({ object }: { object: SceneObject }) {
 
 function Pendant({ object }: { object: SceneObject }) {
   const state = object.behaviours.find((behaviour) => behaviour.kind === 'light')?.state,
-    lighting = useProject((value) => value.lighting);
+    lighting = useProject((value) => value.lighting),
+    quality = useProject((value) => value.quality),
+    compiled = useProject((value) => value.compiled),
+    mode = useProject((value) => value.mode),
+    floorId = useProject((value) => value.floorId);
+  const light = useRef<PointLight>(null),
+    dirtyUntil = useRef(0),
+    lastShadow = useRef(0);
+  useEffect(() => {
+    dirtyUntil.current = performance.now() + 1600;
+  }, [compiled, mode, floorId, quality]);
+  useFrame(() => {
+    const now = performance.now();
+    if (
+      light.current &&
+      (now < dirtyUntil.current || useProject.getState().interacting) &&
+      now - lastShadow.current > 160
+    ) {
+      light.current.shadow.needsUpdate = true;
+      lastShadow.current = now;
+    }
+  });
   const powered = state?.powered ?? false;
   return (
     <>
@@ -146,6 +171,13 @@ function Pendant({ object }: { object: SceneObject }) {
       </mesh>
       {powered && (
         <pointLight
+          ref={light}
+          castShadow={quality === 'high'}
+          shadow-mapSize={[512, 512]}
+          shadow-camera-near={0.08}
+          shadow-bias={-0.00015}
+          shadow-normalBias={0.015}
+          shadow-autoUpdate={false}
           position={[0, -0.05, 0]}
           color={state?.color ?? '#ffe6bf'}
           intensity={(state?.intensity ?? 3) * (lighting === 'day' ? 4 : 7)}
@@ -176,7 +208,7 @@ function Television({ object }: { object: SceneObject }) {
       </RoundedBox>
       <mesh name="screen" position={[0, h / 2, d / 2 + 0.001]}>
         <planeGeometry args={[w - 0.035, h - 0.035]} />
-        <meshPhysicalMaterial color="#151b19" roughness={0.12} metalness={0.15} clearcoat={1} />
+        <VideoScreen object={object} />
       </mesh>
       <mesh position={[w / 2 - 0.05, 0.013, d / 2 + 0.002]}>
         <sphereGeometry args={[0.0025, 8, 6]} />

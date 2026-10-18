@@ -49,6 +49,9 @@ inspection, day/evening lighting and render-quality selection. The furniture lib
 adds items into validated clear spaces. Drag handles or exact coordinates move and
 rotate furniture; the inspector replaces, removes and changes materials. Accepted edits
 update collision geometry and support undo/redo (also Cmd/Ctrl+Z and Shift+Cmd/Ctrl+Z).
+TV controls play the included clip or a compatible direct video URL on the 3D screen;
+power, mute and volume update the actual media player. Light controls update fixture
+emission, intensity, colour and cached local shadows in high quality mode.
 
 Rendering assets are self-hosted. `client/public/assets/manifest.json` records their
 source URLs, CC0 licences, authors, physical dimensions and checksums. The material
@@ -131,8 +134,8 @@ compliance, detailed asset silhouettes and arbitrary furniture support are outsi
 the current validation.
 
 TV, light and door commands update validated state. The browser animates door hinges
-and updates their physics colliders while they move. Playback and device controls are
-the next integration. Media
+and updates their physics colliders while they move. TV playback reports loading,
+playing, blocked autoplay and source failures. Media
 sources accept HTTP(S) URLs or `asset:` references; the backend must enforce its network-fetch policy.
 
 ## Next implementation

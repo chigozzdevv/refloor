@@ -4,6 +4,7 @@ import { catalogue, finishes, wallFinishes } from '@refloor/catalogue';
 import type { Material, SceneObject } from '@refloor/scene';
 import { useProject } from '@/features/projects/project-store';
 import { replacementCommand } from '@/runtime/editing/placement';
+import { DeviceControls } from '@/features/editor/DeviceControls';
 
 function ObjectPosition({ object }: { object: SceneObject }) {
   const edit = useProject((state) => state.edit),
@@ -135,6 +136,7 @@ export function Inspector() {
       <h2>{object?.label ?? 'Wall finish'}</h2>
       {object && (
         <>
+          <DeviceControls key={object.assetId} object={object} />
           <p>
             {object.dimensions.width} × {object.dimensions.depth} × {object.dimensions.height} m
           </p>

@@ -68,7 +68,7 @@ export const catalogue: CatalogueEntry[] = [
       {
         kind: 'television',
         screenNode: 'screen',
-        state: { powered: false, muted: true, volume: 0.35, source: null },
+        state: { powered: false, muted: true, volume: 0.35, source: 'asset:waterfall' },
       },
     ],
     renderer: 'television',

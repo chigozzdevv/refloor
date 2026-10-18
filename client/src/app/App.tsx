@@ -39,7 +39,7 @@ export function App() {
   const [libraryOpen, setLibraryOpen] = useState(false);
   return (
     <ErrorBoundary>
-      <main className={`studio ${mode}-mode`}>
+      <main className={`studio ${mode}-mode ${lighting}-lighting`}>
         <div className="viewport">
           <Viewport />
         </div>
