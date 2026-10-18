@@ -21,7 +21,7 @@ export function organizeMarkers(candidates: ProjectedMarker[], width: number, he
         value.x < width - labelWidth(value) / 2 - 8 &&
         value.y >
           (value.destination.kind === 'door' || value.destination.kind === 'stairs' ? 135 : 95) &&
-        value.y < height - 100,
+        value.y < height - 180,
     )
     .sort(
       (a, b) =>

@@ -2,13 +2,13 @@ import { create } from 'zustand';
 import type { NavigationPoint, Point3 } from '@refloor/engine';
 import type { Destination } from '@/shared/navigation/destinations';
 
-export type PortalPin = { destination: Destination; x: number; y: number };
+export type PortalPin = { destination: Destination; x: number; y: number; angle: number };
 type TourContext = {
   location: string;
   player: NavigationPoint;
   heading: number;
   edgePortals: PortalPin[];
-  stair: Destination | null;
+  stairs: Destination[];
 };
 
 type NavigationState = {
@@ -17,7 +17,7 @@ type NavigationState = {
   player: NavigationPoint | null;
   heading: number;
   edgePortals: PortalPin[];
-  stair: Destination | null;
+  stairs: Destination[];
   mapOpen: boolean;
   setMapOpen: (open: boolean) => void;
   setContext: (context: TourContext) => void;
@@ -33,7 +33,7 @@ export const useNavigation = create<NavigationState>((set) => ({
   player: null,
   heading: 0,
   edgePortals: [],
-  stair: null,
+  stairs: [],
   mapOpen: false,
   setMapOpen: (mapOpen) => set({ mapOpen }),
   setContext: (context) =>
@@ -44,14 +44,18 @@ export const useNavigation = create<NavigationState>((set) => ({
       state.player?.position.y === context.player.position.y &&
       state.player?.position.z === context.player.position.z &&
       state.heading === context.heading &&
-      state.stair?.id === context.stair?.id &&
-      state.stair?.target === context.stair?.target &&
+      state.stairs.length === context.stairs.length &&
+      state.stairs.every(
+        (stair, index) =>
+          stair.id === context.stairs[index]?.id && stair.target === context.stairs[index]?.target,
+      ) &&
       state.edgePortals.length === context.edgePortals.length &&
       state.edgePortals.every(
         (pin, index) =>
           pin.destination === context.edgePortals[index]?.destination &&
           pin.x === context.edgePortals[index]?.x &&
-          pin.y === context.edgePortals[index]?.y,
+          pin.y === context.edgePortals[index]?.y &&
+          pin.angle === context.edgePortals[index]?.angle,
       )
         ? state
         : context,

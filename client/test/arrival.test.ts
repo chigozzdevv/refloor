@@ -34,8 +34,31 @@ describe('tour arrival views', () => {
         ).toBe(true);
       }
       for (const stair of compiled.stairs) {
-        expect(arrivalView(compiled, stair.upper)?.kind).toBe('stairs');
-        expect(arrivalView(compiled, stair.lower)?.kind).toBe('stairs');
+        for (const landing of [stair.upper, stair.lower]) {
+          const stop = destinations(compiled).find(
+            (value) => value.kind === 'stairs' && value.target === landing,
+          )!;
+          const view = arrivalView(compiled, landing, stop.lookAt);
+          expect(view).not.toBeNull();
+          expect(
+            clearView(
+              compiled,
+              { ...landing.position, y: landing.position.y + 1.62 },
+              view!.point,
+              view!.kind === 'stairs' ? stair.id : view!.entityId,
+            ),
+          ).toBe(true);
+          if (
+            stop.lookAt &&
+            clearView(
+              compiled,
+              { ...landing.position, y: landing.position.y + 1.62 },
+              stop.lookAt,
+              view!.entityId,
+            )
+          )
+            expect(view!.point).toEqual(stop.lookAt);
+        }
       }
     },
   );

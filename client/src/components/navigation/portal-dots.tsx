@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, DoorOpen } from 'lucide-react';
+import { ArrowUp } from 'lucide-react';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 import { useProject } from '@/shared/scene/scene-store';
 
@@ -8,28 +8,23 @@ export function PortalDots() {
   if (mode !== 'walk' || request || mapOpen || selection) return null;
   return (
     <div className="tour-portals" aria-label="Tour exits">
-      {edgePortals.map(({ destination, x, y }) => {
-        const Icon =
-          destination.kind === 'stairs'
-            ? destination.direction === 'down'
-              ? ArrowDown
-              : ArrowUp
-            : DoorOpen;
+      {edgePortals.map(({ destination, x, y, angle }) => {
         return (
           <button
             key={destination.id}
-            className="navigation-marker marker-portal marker-edge"
+            className={`navigation-marker marker-edge ${x < 30 ? 'edge-left' : 'edge-right'}`}
             style={{ left: x, top: y }}
             aria-label={destination.label}
-            onClick={() => {
+            title={`Return to ${destination.caption ?? 'the doorway'}`}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation();
               if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
               useProject.getState().select(null);
               go(destination.target, destination.lookAt, destination.label);
             }}
           >
-            <span className="marker-symbol">
-              <Icon size={17} />
-            </span>
+            <ArrowUp size={19} strokeWidth={1.7} style={{ transform: `rotate(${angle}deg)` }} />
             <span className="marker-caption">{destination.caption ?? destination.label}</span>
           </button>
         );

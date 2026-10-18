@@ -4,6 +4,7 @@ import { contains, rotate } from '@refloor/engine/math';
 import { clearSegment } from '@refloor/engine/navigation/surfaces';
 import { roomViews } from '@/shared/navigation/viewpoints';
 import { entryPose } from '@/shared/navigation/entry';
+import { stairMarker } from '@/shared/navigation/stair-marker';
 
 export type Destination = {
   id: string;
@@ -18,6 +19,8 @@ export type Destination = {
   lookAt?: Point3;
   approach?: NavigationPoint;
   doorId?: string;
+  stairId?: string;
+  bearing?: number;
 };
 const graphs = new WeakMap<CompiledBuilding, Map<string, Navigation>>();
 
@@ -102,10 +105,11 @@ export function destinations(compiled: CompiledBuilding): Destination[] {
           floorId: floor.id,
           roomId: side.room.id,
           anchor: {
-            x: door.centre.x + normal.x * 0.3,
-            y: floor.elevation + 1.15,
-            z: door.centre.z + normal.z * 0.3,
+            x: door.centre.x + normal.x * 0.25,
+            y: floor.elevation + 1,
+            z: door.centre.z + normal.z * 0.25,
           },
+          bearing: Math.atan2(normal.x, normal.z),
           target: { floorId: floor.id, position: opposite.node.position },
           approach: { floorId: floor.id, position: side.node.position },
           lookAt: {
@@ -122,13 +126,9 @@ export function destinations(compiled: CompiledBuilding): Destination[] {
       [stair.lower, stair.upper, 'up', stair.path],
       [stair.upper, stair.lower, 'down', stair.path.toReversed()],
     ] as const) {
-      const first = path.find(
-          (point) => Math.hypot(point.x - start.position.x, point.z - start.position.z) > 0.1,
-        )!,
-        length = Math.hypot(first.x - start.position.x, first.z - start.position.z),
-        arrivalRoom = compiled.building.floors
-          .find((floor) => floor.id === target.floorId)
-          ?.rooms.find((room) => contains(room.footprint, target.position));
+      const arrivalRoom = compiled.building.floors
+        .find((floor) => floor.id === target.floorId)
+        ?.rooms.find((room) => contains(room.footprint, target.position));
       const facing = result
         .filter(
           (value) =>
@@ -136,7 +136,7 @@ export function destinations(compiled: CompiledBuilding): Destination[] {
             ((value.kind === 'door' && value.roomId === arrivalRoom?.id) || value.kind === 'room'),
         )
         .map((value) => ({
-          point: value.kind === 'door' ? value.anchor : value.target.position,
+          point: { ...value.anchor, y: target.position.y + 1.35 },
           approach: value.approach ?? value.target,
           portal: value.kind === 'door',
           distance: Math.hypot(
@@ -154,12 +154,9 @@ export function destinations(compiled: CompiledBuilding): Destination[] {
         label: direction === 'up' ? 'Go upstairs' : 'Go downstairs',
         caption: direction === 'up' ? 'Upstairs' : 'Downstairs',
         kind: 'stairs',
+        stairId: stair.id,
         floorId: start.floorId,
-        anchor: {
-          x: start.position.x + ((first.x - start.position.x) / length) * 0.45,
-          y: start.position.y + 1.35,
-          z: start.position.z + ((first.z - start.position.z) / length) * 0.45,
-        },
+        ...stairMarker(path),
         direction,
         target,
         approach: start,
@@ -280,20 +277,20 @@ export function stairContinuation(
     if (!nearest || nearest.distance > 0.75) continue;
     return (
       [
-        ['up', stair.upper, 8],
-        ['down', stair.lower, -8],
+        ['up', stair.upper, stair.path.slice(nearest.index)],
+        ['down', stair.lower, stair.path.slice(0, nearest.index + 1).reverse()],
       ] as const
-    ).map(([direction, target, offset]) => {
-      const anchor =
-        stair.path[Math.max(0, Math.min(stair.path.length - 1, nearest.index + offset))]!;
+    ).map(([direction, target, path]) => {
       return {
         id: `stairs:${stair.id}:${direction}`,
         label: direction === 'up' ? 'Go upstairs' : 'Go downstairs',
+        caption: direction === 'up' ? 'Upstairs' : 'Downstairs',
         kind: 'stairs',
+        stairId: stair.id,
         direction,
         floorId: player.floorId,
         target,
-        anchor: { ...anchor, y: anchor.y + 0.4 },
+        ...stairMarker(path),
       };
     });
   }

@@ -20,11 +20,11 @@ describe('tour marker layout', () => {
       far = marker(165, 360, 5, 1);
     expect(organizeMarkers([far, near], 320, 600)).toEqual([near]);
   });
-  it('keeps controls clear of the screen edges, header and location bar', () => {
+  it('keeps controls clear of the header, floor plan and movement pad', () => {
     const clear = marker(160, 320, 3);
     expect(
       organizeMarkers(
-        [marker(10, 320, 1), marker(160, 60, 1), marker(160, 550, 1), clear],
+        [marker(10, 320, 1), marker(160, 60, 1), marker(160, 550, 1), marker(160, 460, 1), clear],
         320,
         600,
       ),

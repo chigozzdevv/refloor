@@ -37,15 +37,19 @@ export function arrivalView(
       : Infinity;
     candidates.push({
       ...view,
-      score: priority + distance * 0.12 - (preferredDistance < 0.75 ? 1.5 : 0),
+      score: priority + distance * 0.12 - (preferredDistance < 0.75 ? 6 : 0),
     });
   };
   for (const stop of destinations(compiled)) {
     if (stop.floorId !== floor.id) continue;
     if (stop.kind === 'door' && stop.roomId === room.id)
       add(
-        { point: stop.anchor, entityId: stop.doorId!, kind: 'door' },
-        transit ? 1 : 3,
+        {
+          point: { ...stop.anchor, y: floor.elevation + 1.35 },
+          entityId: stop.doorId!,
+          kind: 'door',
+        },
+        transit ? 0 : 3,
         stop.doorId,
       );
     if (
@@ -59,7 +63,11 @@ export function arrivalView(
         'current',
       )
     )
-      add({ point: stop.anchor, entityId: stop.id, kind: 'stairs' }, 0, stop.id.split(':')[1]);
+      add(
+        { point: { ...stop.anchor, y: floor.elevation + 1.1 }, entityId: stop.id, kind: 'stairs' },
+        2,
+        stop.stairId,
+      );
     if (
       stop.kind === 'waypoint' &&
       stop.roomId === room.id &&
