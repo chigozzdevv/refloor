@@ -28,7 +28,7 @@ export function DeviceControls({ object }: { object: SceneObject }) {
                 video.muted = tv.state.muted;
                 playMedia(object.id);
               }
-              edit([
+              const accepted = edit([
                 {
                   type: 'set-television',
                   objectId: object.id,
@@ -38,6 +38,7 @@ export function DeviceControls({ object }: { object: SceneObject }) {
                   },
                 },
               ]);
+              if (!accepted && !tv.state.powered) video?.pause();
             }}
           >
             <Power size={14} />
@@ -52,9 +53,10 @@ export function DeviceControls({ object }: { object: SceneObject }) {
                 video.muted = !tv.state.muted;
                 playMedia(object.id);
               }
-              edit([
+              const accepted = edit([
                 { type: 'set-television', objectId: object.id, state: { muted: !tv.state.muted } },
               ]);
+              if (!accepted && video) video.muted = tv.state.muted;
             }}
           >
             {tv.state.muted ? <VolumeX size={14} /> : <Volume2 size={14} />}{' '}
