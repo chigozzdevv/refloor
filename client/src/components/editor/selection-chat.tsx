@@ -58,8 +58,6 @@ export function SelectionChat() {
         <ElementChat
           target={{ kind: selection.kind, id: selection.id }}
           label={context.label}
-          location={context.location}
-          object={context.object}
           suggestions={context.suggestions}
           close={() => select(null)}
         />

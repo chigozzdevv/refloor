@@ -228,49 +228,10 @@ textarea:focus-visible,
   font-size: 12px;
   margin-bottom: 7px;
 }
-.chat-identity {
-  min-width: 0;
-}
-.chat-identity > span,
-.chat-identity > small {
-  display: block;
+.chat-heading > span {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-.chat-identity > small {
-  margin-top: 3px;
-  color: var(--muted);
-  font-size: 10px;
-}
-.light-controls {
-  margin: 10px 0 12px;
-  font-size: 10px;
-}
-.light-controls label,
-.light-control-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
-.light-controls input[type='range'] {
-  width: 100%;
-  margin: 7px 0;
-  accent-color: var(--accent);
-}
-.light-control-footer {
-  color: var(--muted);
-  font-size: 9px;
-}
-.light-control-footer button {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--ink);
-}
-.light-control-footer button:disabled {
-  opacity: 0.45;
 }
 .chat-heading .icon-button {
   width: 22px;

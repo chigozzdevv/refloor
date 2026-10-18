@@ -146,10 +146,10 @@ televisions, lights and doors. Accepted edits
 update collision geometry and support undo/redo (also Cmd/Ctrl+Z and Shift+Cmd/Ctrl+Z).
 TV controls play the included clip or a compatible direct video URL on the 3D screen;
 power, mute and volume update the actual media player. Light controls update fixture
-emission, intensity, colour and cached local shadows in high quality mode. Selected lights
-have a brightness slider from 0–200%, with 100% as the catalogue default, and a reset
-button for their original power, brightness and illumination colour. Chat and typed edits
-enforce the same brightness bounds; legacy brighter values remain loadable with capped rendering.
+emission, intensity, colour and cached local shadows in high quality mode. Chat can restore
+a light's original power, brightness and illumination colour. Chat and typed edits enforce
+brightness bounds of 0–200% of the catalogue default; legacy brighter values remain loadable
+with capped rendering. Item chats show the selected item name and accept changes through text.
 
 Project files export/import the complete editable building. Import validates geometry,
 access and supported assets before replacing the open scene. Accepted changes save
