@@ -115,6 +115,30 @@ describe('MongoDB project API', () => {
     ).toBe(404);
   });
 
+  it('requires a session and a configured model for contextual chat', async () => {
+    const target = building.objects.find((object) => object.kind === 'television')!;
+    const payload = {
+      requestId: randomUUID(),
+      building,
+      target: { kind: 'object', id: target.id },
+      message: 'Turn this television on',
+      view: { x: 0, z: 1 },
+      player: null,
+    };
+    expect(
+      (await app.inject({ method: 'POST', url: '/api/edits/interpret', payload })).statusCode,
+    ).toBe(401);
+    const cookies = await session();
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/edits/interpret',
+      cookies,
+      payload,
+    });
+    expect(response.statusCode).toBe(503);
+    expect(response.json().error.code).toBe('CHAT_UNAVAILABLE');
+  });
+
   it('persists generation jobs, prevents concurrent owner jobs and claims each job once', async () => {
     const repository = new GenerationRepository(database.db(config.database));
     const record: GenerationRecord = {

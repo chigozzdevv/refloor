@@ -23,6 +23,7 @@ import { GenerationRepository } from '@refloor/server/features/generation/genera
 import { GenerationService } from '@refloor/server/features/generation/generation.service';
 import { GenerationController } from '@refloor/server/features/generation/generation.controller';
 import { registerGenerationRoutes } from '@refloor/server/features/generation/generation.route';
+import { LanguageEditService } from '@refloor/server/features/edits/language-edit.service';
 
 export async function createApp(config: ServerConfig, logging = true) {
   const app = Fastify({
@@ -74,7 +75,12 @@ export async function createApp(config: ServerConfig, logging = true) {
     app.addHook('onClose', async () => generation.close());
     registerEditRoutes(
       app,
-      new EditController(new EditService(revisions), new UndoService(revisions), sessions),
+      new EditController(
+        new EditService(revisions),
+        new UndoService(revisions),
+        sessions,
+        new LanguageEditService(config.ai),
+      ),
     );
     registerSessionRoutes(app, sessions);
     registerHealth(app, database.db);

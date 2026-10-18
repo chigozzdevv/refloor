@@ -2,6 +2,9 @@ import OpenAI from 'openai';
 import { zodTextFormat } from 'openai/helpers/zod';
 import { houseResponseSchema } from '@refloor/server/shared/planning/requirements';
 import { housePrompt } from '@refloor/server/shared/ai/house-prompt';
+import { editPrompt } from '@refloor/server/shared/ai/edit-prompt';
+import { languageContext, languagePlanSchema } from '@refloor/server/shared/planning/language-edit';
+import type { LanguageEditRequest } from '@refloor/scene/chat';
 
 export type GenerationUsage = {
   model: string;
@@ -71,5 +74,36 @@ export class Luna {
         usage,
       );
     return { requirements: { ...result.requirements, unsupported: [] }, usage };
+  }
+
+  async edit(input: LanguageEditRequest) {
+    const started = performance.now();
+    const response = await this.client.responses.parse(
+      {
+        model: this.model,
+        store: false,
+        max_output_tokens: 2400,
+        reasoning: { effort: 'low' },
+        input: [
+          { role: 'system', content: editPrompt },
+          { role: 'user', content: JSON.stringify(languageContext(input)) },
+        ],
+        text: { format: zodTextFormat(languagePlanSchema, 'house_edit') },
+      },
+      { timeout: 18000 },
+    );
+    if (response.status !== 'completed' || !response.output_parsed)
+      throw new Error('I could not finish that request. Try a shorter description.');
+    return {
+      plan: response.output_parsed,
+      usage: {
+        model: response.model,
+        responseId: response.id,
+        inputTokens: response.usage?.input_tokens ?? 0,
+        outputTokens: response.usage?.output_tokens ?? 0,
+        reasoningTokens: response.usage?.output_tokens_details.reasoning_tokens ?? 0,
+        durationMs: Math.round(performance.now() - started),
+      },
+    };
   }
 }

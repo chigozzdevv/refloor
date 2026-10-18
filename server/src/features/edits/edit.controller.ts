@@ -7,12 +7,15 @@ import {
 import type { EditService } from '@refloor/server/features/edits/edit.service';
 import type { UndoService } from '@refloor/server/features/edits/undo.service';
 import type { SessionController } from '@refloor/server/features/sessions/session.controller';
+import { languageEditRequestSchema } from '@refloor/scene/chat';
+import type { LanguageEditService } from '@refloor/server/features/edits/language-edit.service';
 
 export class EditController {
   constructor(
     private readonly edits: EditService,
     private readonly history: UndoService,
     private readonly sessions: SessionController,
+    private readonly language: LanguageEditService,
   ) {}
 
   apply = async (request: FastifyRequest) => {
@@ -25,6 +28,10 @@ export class EditController {
   };
   undo = (request: FastifyRequest) => this.restore(request, 'undo');
   redo = (request: FastifyRequest) => this.restore(request, 'redo');
+  interpret = async (request: FastifyRequest) => {
+    await this.sessions.owner(request);
+    return this.language.interpret(languageEditRequestSchema.parse(request.body));
+  };
 
   private async restore(request: FastifyRequest, kind: 'undo' | 'redo') {
     const owner = await this.sessions.owner(request);
