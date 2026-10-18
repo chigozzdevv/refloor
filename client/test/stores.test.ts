@@ -1,10 +1,48 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { fingerprintBuilding } from '@refloor/scene';
 import { compileBuilding } from '@refloor/engine';
 import { useProject } from '@/shared/scene/scene-store';
 import { createHouse } from '@refloor/catalogue/houses';
+import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
+import { physicsSession } from '@/shared/navigation/physics-session';
+import { entryPose } from '@/shared/navigation/entry';
+import { selectedContext } from '@/shared/editor/chat-context';
+
+beforeAll(initializePhysics);
 
 describe('scene and editor state integration', () => {
+  it('rejects a blocked door swing without changing its saved state or chat action', () => {
+    const previous = useProject.getState();
+    const compiled = compileBuilding(
+      createHouse({ id: 'door-state', name: 'Door state', storeys: 1 }),
+    );
+    const entry = entryPose(compiled),
+      world = new CharacterWorld(compiled, entry.threshold);
+    useProject.getState().loadProject(compiled);
+    useProject.setState({ mode: 'walk' });
+    physicsSession.current = world;
+    try {
+      expect(useProject.getState().setDoor(entry.doorId, true)).toBe(false);
+      expect(useProject.getState().notice).toContain('Step clear');
+      expect(
+        useProject.getState().compiled.doors.find((door) => door.id === entry.doorId)?.open,
+      ).toBe(false);
+      expect(
+        selectedContext(useProject.getState().compiled.building, { kind: 'door', id: entry.doorId })
+          ?.suggestions,
+      ).toEqual(['Open the door']);
+      world.teleport(entry.inside);
+      expect(useProject.getState().setDoor(entry.doorId, true)).toBe(true);
+      expect(
+        selectedContext(useProject.getState().compiled.building, { kind: 'door', id: entry.doorId })
+          ?.suggestions,
+      ).toEqual(['Close the door']);
+    } finally {
+      physicsSession.current = null;
+      world.dispose();
+      useProject.setState(previous);
+    }
+  });
   it('preserves a clarification when the chat closes and clears context when another house opens', () => {
     const state = useProject.getState(),
       target = { kind: 'object' as const, id: state.compiled.building.objects[0]!.id },

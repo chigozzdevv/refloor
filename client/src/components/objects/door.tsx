@@ -24,6 +24,7 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
     floorId = useProject((state) => state.floorId),
     selection = useProject((state) => state.selection),
     compiled = useProject((state) => state.compiled);
+  const cutaway = useProject((state) => state.cutaway);
   const material = useSurface(part.material);
   const floor = compiled.building.floors.find((value) => value.id === portal.floorId),
     active = compiled.building.floors.find((value) => value.id === floorId),
@@ -46,6 +47,7 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
       pivot.current.rotation.y = portal.rotation + portal.openingAngle * fraction.current;
       pivot.current.visible =
         mode !== 'orbit' ||
+        !cutaway ||
         !floor ||
         !active ||
         (floor.elevation <= active.elevation &&
@@ -104,7 +106,7 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
             if (!isScenePointer(event)) return;
             event.stopPropagation();
             if (event.delta >= 5) return;
-            if (mode === 'entry') activateDoor(portal.id, !portal.open);
+            if (mode === 'entry') useProject.getState().enterHome();
             else
               useProject.getState().select({
                 kind: 'door',

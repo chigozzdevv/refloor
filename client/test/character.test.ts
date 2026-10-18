@@ -31,6 +31,29 @@ function walk(world: CharacterWorld, points: Point3[]) {
 }
 
 describe('browser character runtime', () => {
+  it('waits clear of a nearby swinging door before accepting walking input', () => {
+    const building = createHouse({ id: 'swing-wait', name: 'Swing wait', storeys: 1 });
+    const initial = compileBuilding(building),
+      entry = entryPose(initial);
+    const opened = applyCommands(building, {
+      id: 'open',
+      at: '2026-10-18T12:00:00Z',
+      expectedRevision: building.revision,
+      commands: [{ type: 'set-door', doorId: entry.doorId, open: true }],
+    });
+    const world = new CharacterWorld(compileBuilding(opened.building), entry.inside);
+    try {
+      world.setDoorFraction(entry.doorId, 0.2);
+      const before = world.feet;
+      for (let frame = 0; frame < 20; frame++) world.step({ x: 0, z: 1 }, 1 / 60);
+      expect(Math.hypot(world.feet.x - before.x, world.feet.z - before.z)).toBeLessThan(0.001);
+      world.setDoorFraction(entry.doorId, 1);
+      for (let frame = 0; frame < 20; frame++) world.step({ x: 0, z: 1 }, 1 / 60);
+      expect(Math.hypot(world.feet.x - before.x, world.feet.z - before.z)).toBeGreaterThan(0.1);
+    } finally {
+      world.dispose();
+    }
+  });
   it('travels to stair destinations in both directions and resumes after stopping mid-flight', () => {
     const compiled = compileBuilding(
       createHouse({ id: 'continuous-stairs', name: 'Continuous stairs', storeys: 2 }),
@@ -160,11 +183,14 @@ describe('browser character runtime', () => {
 
   it('detects a door sweeping through the player while its final open position is clear', () => {
     const compiled = compileBuilding(createHouse({ id: 'door', name: 'Door', storeys: 1 })),
-      world = new CharacterWorld(compiled),
+      world = new CharacterWorld(compiled, entryPose(compiled).threshold),
       door = entryPose(compiled).doorId;
     try {
       expect(world.doorBlocked(door, 0.5)).toBe(true);
       expect(world.doorBlocked(door, 1)).toBe(false);
+      expect(world.canSwingDoor(door, true)).toBe(false);
+      world.teleport(entryPose(compiled).inside);
+      expect(world.canSwingDoor(door, true)).toBe(true);
     } finally {
       world.dispose();
     }

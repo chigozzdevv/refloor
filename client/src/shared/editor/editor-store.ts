@@ -9,6 +9,18 @@ import { findFurniturePlacement } from '@/shared/editor/placement';
 import { editingError } from '@/shared/editor/errors';
 import { recordChatTurn } from '@refloor/scene/edit-memory';
 import type { ChatTurn } from '@refloor/scene/edit-memory';
+import type { CompiledBuilding } from '@refloor/engine';
+
+function checkDoorSwings(before: CompiledBuilding, after: CompiledBuilding, walking: boolean) {
+  const world = walking ? physicsSession.current : null;
+  if (!world) return;
+  for (const door of after.doors)
+    if (
+      before.doors.find((value) => value.id === door.id)?.open !== door.open &&
+      !world.canSwingDoor(door.id, door.open)
+    )
+      throw new Error('Step clear of the door so it can swing fully.');
+}
 
 export type Selection = {
   kind: 'object' | 'wall' | 'floor' | 'door';
@@ -51,6 +63,7 @@ export const createEditorState: StateCreator<ProjectState, [], [], EditorState> 
     if (object)
       set({
         mode: 'orbit',
+        cutaway: true,
         floorId: object.floorId,
         selection: { kind: 'object', id: objectId },
         focusRequest: { id: crypto.randomUUID(), objectId },
@@ -59,14 +72,14 @@ export const createEditorState: StateCreator<ProjectState, [], [], EditorState> 
   edit: (commands, details) => {
     const state = get();
     try {
-      set(
-        editDocument(
-          state,
-          commands,
-          state.mode === 'walk' ? physicsSession.current?.player : undefined,
-          details,
-        ),
+      const next = editDocument(
+        state,
+        commands,
+        state.mode === 'walk' ? physicsSession.current?.player : undefined,
+        details,
       );
+      checkDoorSwings(state.compiled, next.compiled, state.mode === 'walk');
+      set(next);
       const selected = get().selection;
       if (
         selected?.kind === 'object' &&
@@ -86,14 +99,13 @@ export const createEditorState: StateCreator<ProjectState, [], [], EditorState> 
   undoTo: (id) => {
     const state = get();
     try {
-      set({
-        ...restoreBefore(
-          state,
-          id,
-          state.mode === 'walk' ? physicsSession.current?.player : undefined,
-        ),
-        selection: null,
-      });
+      const next = restoreBefore(
+        state,
+        id,
+        state.mode === 'walk' ? physicsSession.current?.player : undefined,
+      );
+      checkDoorSwings(state.compiled, next.compiled, state.mode === 'walk');
+      set({ ...next, selection: null });
       return true;
     } catch (error) {
       state.notify(error instanceof Error ? error.message : 'Undo is unavailable here.');
@@ -103,10 +115,12 @@ export const createEditorState: StateCreator<ProjectState, [], [], EditorState> 
   redo: () => {
     const state = get();
     try {
-      set({
-        ...redoChange(state, state.mode === 'walk' ? physicsSession.current?.player : undefined),
-        selection: null,
-      });
+      const next = redoChange(
+        state,
+        state.mode === 'walk' ? physicsSession.current?.player : undefined,
+      );
+      checkDoorSwings(state.compiled, next.compiled, state.mode === 'walk');
+      set({ ...next, selection: null });
     } catch (error) {
       state.notify(error instanceof Error ? error.message : 'Redo is unavailable here.');
     }

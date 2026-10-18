@@ -2,6 +2,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import type { CompiledBuilding, Point3, NavigationPoint } from '@refloor/engine';
 import { distanceToBox, rotate } from '@refloor/engine/math';
 import { entryPose } from '@/shared/navigation/entry';
+import { exteriorLayout } from '@/shared/scene/exterior';
 
 let initialized: Promise<void> | undefined;
 export function initializePhysics(): Promise<void> {
@@ -14,6 +15,7 @@ export class CharacterWorld {
   readonly capsule: RAPIER.Collider;
   readonly controller: RAPIER.KinematicCharacterController;
   private readonly colliders = new Map<string, RAPIER.Collider>();
+  private readonly doorFractions = new Map<string, number>();
   private velocityY = 0;
   private accumulator = 0;
 
@@ -39,9 +41,25 @@ export class CharacterWorld {
       });
       this.colliders.set(source.id, this.world.createCollider(desc));
     }
+    const site = exteriorLayout(compiled);
     this.world.createCollider(
-      RAPIER.ColliderDesc.cuboid(100, 0.1, 100).setTranslation(6, -0.305, 5),
+      RAPIER.ColliderDesc.cuboid(100, 0.1, 100).setTranslation(
+        site.centre.x,
+        site.ground.elevation - 0.305,
+        site.centre.z,
+      ),
     );
+    for (const paving of site.paving)
+      this.world.createCollider(
+        RAPIER.ColliderDesc.cuboid(paving.width / 2, paving.height / 2, paving.depth / 2)
+          .setTranslation(paving.position.x, paving.position.y, paving.position.z)
+          .setRotation({
+            x: 0,
+            y: Math.sin(paving.rotation / 2),
+            z: 0,
+            w: Math.cos(paving.rotation / 2),
+          }),
+      );
     const { height, radius, stepHeight } = compiled.options;
     this.body = this.world.createRigidBody(
       RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(
@@ -84,6 +102,14 @@ export class CharacterWorld {
   }
 
   step(direction: { x: number; z: number }, delta: number): void {
+    const feet = this.feet;
+    const swinging = this.compiled.doors.some(
+      (door) =>
+        Math.abs(this.doorFraction(door.id) - Number(door.open)) > 0.015 &&
+        Math.hypot(feet.x - door.hinge.x, feet.z - door.hinge.z) <
+          door.width + this.compiled.options.radius + 0.45,
+    );
+    if (swinging) direction = { x: 0, z: 0 };
     this.accumulator = Math.min(0.1, this.accumulator + delta);
     while (this.accumulator >= 1 / 60) {
       const point = this.body.translation();
@@ -141,10 +167,24 @@ export class CharacterWorld {
       return false;
     return distanceToBox(feet, pose) < this.compiled.options.radius + 0.025;
   }
+  doorFraction(id: string): number {
+    return (
+      this.doorFractions.get(id) ?? Number(this.compiled.doors.find((door) => door.id === id)?.open)
+    );
+  }
+  canSwingDoor(id: string, open: boolean): boolean {
+    const from = this.doorFraction(id),
+      to = Number(open);
+    const steps = Math.max(1, Math.ceil(Math.abs(to - from) * 40));
+    for (let step = 1; step <= steps; step++)
+      if (this.doorBlocked(id, from + ((to - from) * step) / steps)) return false;
+    return true;
+  }
   setDoorFraction(id: string, fraction: number): void {
     const pose = this.doorPose(id, fraction),
       collider = this.colliders.get(`${id}:leaf`);
     if (!pose || !collider) return;
+    this.doorFractions.set(id, fraction);
     collider.setTranslation(pose.position);
     collider.setRotation({
       x: 0,
