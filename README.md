@@ -1,6 +1,8 @@
 # Refloor
 
-Refloor turns a house description into an editable, interactive 3D building in the browser.
+Refloor is a browser studio for furnishing and exploring editable 3D houses.
+The planned generation workflow will turn house descriptions into the same validated
+building documents.
 
 `@refloor/scene` validates building documents and applies atomic, reversible commands.
 `@refloor/engine` compiles those documents into meshes, colliders and walking routes,
@@ -23,8 +25,10 @@ pnpm check
 ```
 
 `pnpm check` runs formatting, linting, type checking, compiled-package and domain tests.
-`pnpm build` emits each package to its `dist` directory. `pnpm test` builds both packages
-and runs their tests.
+`pnpm build` emits packages and the production client to their `dist` directories.
+`pnpm test` builds the workspace and runs its tests. `pnpm preview` serves a completed
+production build locally. Development and standalone type checking build shared packages
+first, so a fresh checkout does not depend on existing build output.
 
 ## Structure
 
@@ -36,7 +40,7 @@ and runs their tests.
 
 Workspace packages use scoped `@refloor/*` imports. Each package's self imports
 resolve through its package exports after compilation; source aliases are configured
-for TypeScript and tests. New application code will use `@/` for app-local imports.
+for TypeScript and tests. Application code uses `@/` for app-local imports.
 
 Tests execute the real implementation without mocked services or replacement modules.
 Their input documents describe buildings and edits; no network or model inference is
@@ -146,7 +150,6 @@ sources accept HTTP(S) URLs or `asset:` references; the backend must enforce its
 
 ## Next implementation
 
-Build the browser rendering, exploration, editing and behaviours, then the Node API,
-Astra/Z3 generation and MongoDB persistence. Redis/BullMQ is optional for background
+Build the Node API, Astra/Z3 generation and MongoDB-backed projects. Redis/BullMQ is optional for background
 jobs, and Meshy is optional for custom furniture. Catalogue assets must remain usable
 when custom generation fails. Hosting selection is deferred.

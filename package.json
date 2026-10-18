@@ -7,14 +7,16 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "dev": "pnpm --filter @refloor/client dev",
+    "dev": "pnpm build:packages && pnpm --filter @refloor/client dev",
     "build": "pnpm -r --if-present build",
-    "typecheck": "pnpm -r --if-present typecheck",
+    "typecheck": "pnpm build:packages && pnpm -r --if-present typecheck",
     "lint": "eslint packages client --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "pnpm build && vitest run",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test"
+    "check": "pnpm format:check && pnpm lint && pnpm build && pnpm -r --if-present typecheck && vitest run",
+    "build:packages": "pnpm -r --filter './packages/*' build",
+    "preview": "pnpm --filter @refloor/client preview"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
