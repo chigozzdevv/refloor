@@ -16,6 +16,7 @@
     "@react-three/postprocessing": "3.2.0",
     "@refloor/blueprints": "workspace:*",
     "@refloor/catalogue": "workspace:*",
+    "@refloor/contracts": "workspace:*",
     "@refloor/engine": "workspace:*",
     "@refloor/scene": "workspace:*",
     "lucide-react": "1.51.0",
@@ -23,7 +24,8 @@
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "three": "0.186.1",
-    "zustand": "5.0.15"
+    "zustand": "5.0.15",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@types/react": "19.3.0",

@@ -10,6 +10,8 @@ import { findFurniturePlacement } from '@/runtime/editing/placement';
 import { editingError } from '@/runtime/editing/errors';
 import { draftKey, restoreDraft } from '@/runtime/projects/draft';
 import { encodeProject } from '@/runtime/projects/files';
+import { persistRemoteLink, restoreRemoteLink } from '@/runtime/projects/remote';
+import type { RemoteLink } from '@/runtime/projects/remote';
 
 export type ViewMode = 'entry' | 'orbit' | 'walk';
 export type Selection = { kind: 'object' | 'wall' | 'floor'; id: string } | null;
@@ -22,7 +24,8 @@ type ProjectState = {
   recovery: string | null;
   saved: boolean;
   resumeSaving: () => void;
-  loadProject: (compiled: CompiledBuilding) => void;
+  remote: RemoteLink | null;
+  loadProject: (compiled: CompiledBuilding, remote?: RemoteLink) => void;
   past: SceneRevision[];
   future: SceneRevision[];
   edit: (commands: SceneCommand[]) => boolean;
@@ -69,6 +72,7 @@ export const useProject = create<ProjectState>((set, get) => ({
   saveError: restored.error,
   recovery: restored.recovery,
   saved: !!restored.compiled,
+  remote: restored.compiled ? restoreRemoteLink(initial.building.id) : null,
   resumeSaving: () => {
     try {
       localStorage.setItem(draftKey, encodeProject(get().compiled.building));
@@ -80,9 +84,10 @@ export const useProject = create<ProjectState>((set, get) => ({
       });
     }
   },
-  loadProject: (compiled) => {
+  loadProject: (compiled, remote) => {
     set({
       compiled,
+      remote: remote ?? null,
       projectEpoch: get().projectEpoch + 1,
       past: [],
       future: [],
@@ -253,6 +258,7 @@ export const useProject = create<ProjectState>((set, get) => ({
     };
     set({
       compiled: compileBuilding(createHouse(options)),
+      remote: null,
       projectEpoch: get().projectEpoch + 1,
       floorId: 'ground',
       mode: 'entry',
@@ -266,6 +272,7 @@ export const useProject = create<ProjectState>((set, get) => ({
 }));
 
 const unsubscribeDraft = useProject.subscribe((state, previous) => {
+  if (state.remote !== previous.remote) persistRemoteLink(state.remote);
   if (state.compiled.building === previous.compiled.building) return;
   if (state.recovery !== null) {
     useProject.setState({ saved: false });

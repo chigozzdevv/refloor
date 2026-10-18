@@ -151,6 +151,9 @@ importers:
       '@refloor/catalogue':
         specifier: workspace:*
         version: link:../packages/catalogue
+      '@refloor/contracts':
+        specifier: workspace:*
+        version: link:../packages/contracts
       '@refloor/engine':
         specifier: workspace:*
         version: link:../packages/engine
@@ -172,6 +175,9 @@ importers:
       three:
         specifier: 0.186.1
         version: 0.186.1
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
       zustand:
         specifier: 5.0.15
         version: 5.0.15(@types/react@19.3.0)(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))

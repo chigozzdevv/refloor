@@ -8,6 +8,7 @@ import {
   parseProjectFile,
 } from '@/runtime/projects/files';
 import { editingError } from '@/runtime/editing/errors';
+import { SavedSpaces } from '@/features/projects/SavedSpaces';
 
 export function ProjectActions() {
   const [open, setOpen] = useState(false),
@@ -81,6 +82,7 @@ export function ProjectActions() {
             <Check size={12} />
             {saved ? 'Draft saved in this browser' : 'Browser-local draft'}
           </span>
+          <SavedSpaces />
           <p>Export a project to keep a copy or open it on another device.</p>
           <button
             className="file-action"

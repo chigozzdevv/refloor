@@ -32,6 +32,10 @@ replica set and remove its temporary database after testing. Production requires
 configured MongoDB replica set or sharded cluster; standalone MongoDB cannot provide
 the transactions used by project revisions.
 
+The client proxies `/api` to `http://127.0.0.1:3001` during development and preview.
+If that port is occupied, set another server `PORT` and pass its URL with
+`REFLOOR_API_URL=http://127.0.0.1:3002 pnpm dev` (or `pnpm preview`).
+
 `pnpm check` runs formatting, linting, type checking, compiled-package and domain tests.
 `pnpm build` emits packages and the production client to their `dist` directories.
 `pnpm test` builds the workspace and runs its tests. `pnpm preview` serves a completed
@@ -81,6 +85,11 @@ Project files export/import the complete editable building. Import validates geo
 access and supported assets before replacing the open scene. Accepted changes save
 automatically to one browser-local draft; a corrupt saved draft remains available for
 recovery download. Browser drafts are local; saved API projects are stored in MongoDB.
+The project menu saves snapshots, lists saved spaces and opens complete houses from the
+API. It retains the saved project/version across reloads. Conflicting saves keep the
+local draft and offer the latest saved version or a new copy. Editing remains immediate
+in the browser; snapshot saves replace the server's active command history, while the
+current browser undo history remains available until another project is opened.
 New spaces can use one or two storeys, widths 11.5–16 m and depths 9.5–14 m.
 
 Rendering assets are self-hosted. `client/public/assets/manifest.json` records their
@@ -195,6 +204,6 @@ Invalid geometry, unsupported assets and changes that block a supplied player ar
 
 ## Next implementation
 
-Build Astra/Z3 generation and connect saved API projects to the browser. Redis/BullMQ is optional for background
+Build prompt generation with a configurable OpenAI model and Z3 layout solving. Redis/BullMQ is optional for background
 jobs, and Meshy is optional for custom furniture. Catalogue assets must remain usable
 when custom generation fails. Hosting selection is deferred.

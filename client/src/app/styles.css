@@ -1288,6 +1288,9 @@ select:focus {
 .project-actions {
   position: relative;
 }
+.topbar:has(.project-menu) {
+  z-index: 7;
+}
 .topbar-actions {
   display: flex;
   align-items: center;
@@ -1316,6 +1319,54 @@ select:focus {
   box-shadow: 0 16px 70px #1b2a1940;
   z-index: 30;
   backdrop-filter: blur(20px);
+  max-height: calc(100dvh - 110px);
+  overflow-y: auto;
+}
+.saved-list {
+  border: 1px solid #e2e7d9;
+  border-radius: 8px;
+  padding: 8px;
+  margin-bottom: 12px;
+}
+.saved-list-heading,
+.saved-confirm-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.saved-list-heading {
+  font-size: 10px;
+  color: #7a8f66;
+  padding-left: 8px;
+}
+.saved-space {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 8px;
+  border-radius: 5px;
+  text-align: left;
+  background: transparent;
+  color: #526a42;
+}
+.saved-space:hover,
+.saved-space.current {
+  background: #e7eddf;
+}
+.saved-space span {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11px;
+}
+.saved-space small {
+  color: #7a8f66;
+  font-size: 9px;
+}
+.saved-confirm-actions {
+  flex-wrap: wrap;
 }
 .project-menu h2 {
   font-size: 18px;

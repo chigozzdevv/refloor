@@ -23,6 +23,7 @@ import { ProjectActions } from '@/features/projects/ProjectActions';
 export function App() {
   const {
     compiled,
+    remote,
     floorId,
     setFloor,
     lighting,
@@ -64,7 +65,7 @@ export function App() {
           <span className="header-divider" />
           <span className="project-name">
             {compiled.building.name}
-            <span className="local-badge">BROWSER DRAFT</span>
+            <span className="local-badge">{remote ? 'SAVED SPACE' : 'BROWSER DRAFT'}</span>
           </span>
           <div className="topbar-actions">
             <ProjectActions />
