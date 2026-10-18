@@ -4,8 +4,10 @@ Refloor turns a house description into an editable, interactive 3D building in t
 
 `@refloor/scene` validates building documents and applies atomic, reversible commands.
 `@refloor/engine` compiles those documents into meshes, colliders and walking routes,
-then checks furniture placement, door clearance and stair access. The browser and
-backend are subsequent implementation batches.
+then checks furniture placement, door clearance and stair access. The client renders
+parameter-based starting homes with physical materials, scanned furniture, HDR daylight,
+shadows and floor-by-floor cutaway views. Prompt generation and the backend are still
+to be built.
 
 ## Requirements
 
@@ -16,6 +18,7 @@ backend are subsequent implementation batches.
 
 ```sh
 pnpm install --frozen-lockfile
+pnpm dev
 pnpm check
 ```
 
@@ -27,6 +30,9 @@ and runs their tests.
 
 - `packages/scene`: shared scene schemas, commands, capabilities and revisions.
 - `packages/engine`: geometry, collision bounds, placement checks and navigation.
+- `packages/catalogue`: typed furniture assets, dimensions, behaviours and finishes.
+- `packages/blueprints`: validated, parameter-based furnished starting homes.
+- `client`: React/Three.js browser studio. `pnpm dev` starts its local preview.
 
 Workspace packages use scoped `@refloor/*` imports. Each package's self imports
 resolve through its package exports after compilation; source aliases are configured
@@ -36,8 +42,14 @@ Tests execute the real implementation without mocked services or replacement mod
 Their input documents describe buildings and edits; no network or model inference is
 needed for these packages. Engine tests instantiate Rapier and walk a capsule through
 the generated colliders, including entrance-to-upstairs routes, both stair types and
-rotated flights. This verifies the geometry in a headless physics world; the browser
-movement controls and visual experience are still to be built.
+rotated flights. This verifies the geometry in a headless physics world. The browser
+currently supports orbiting, zooming, floor selection, surface/object inspection,
+day/evening lighting and render-quality selection.
+
+Rendering assets are self-hosted. `client/public/assets/manifest.json` records their
+source URLs, CC0 licences, authors, physical dimensions and checksums. The material
+maps, HDR sky and three scanned furniture models are from [Poly Haven](https://polyhaven.com/license).
+The TV clip is [BMKME's CC0 waterfall video](https://commons.wikimedia.org/wiki/File:V8.webm).
 
 ## Scene API
 

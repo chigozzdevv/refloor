@@ -5,6 +5,22 @@ export default defineConfig({
   resolve: {
     alias: [
       {
+        find: /^@refloor\/catalogue$/,
+        replacement: fileURLToPath(new URL('./packages/catalogue/src/index.ts', import.meta.url)),
+      },
+      {
+        find: /^@refloor\/catalogue\//,
+        replacement: fileURLToPath(new URL('./packages/catalogue/src/', import.meta.url)),
+      },
+      {
+        find: /^@refloor\/blueprints$/,
+        replacement: fileURLToPath(new URL('./packages/blueprints/src/index.ts', import.meta.url)),
+      },
+      {
+        find: /^@refloor\/blueprints\//,
+        replacement: fileURLToPath(new URL('./packages/blueprints/src/', import.meta.url)),
+      },
+      {
         find: /^@refloor\/engine$/,
         replacement: fileURLToPath(new URL('./packages/engine/src/index.ts', import.meta.url)),
       },

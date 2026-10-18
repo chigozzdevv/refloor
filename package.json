@@ -7,9 +7,10 @@
     "node": ">=24 <25"
   },
   "scripts": {
+    "dev": "pnpm --filter @refloor/client dev",
     "build": "pnpm -r --if-present build",
     "typecheck": "pnpm -r --if-present typecheck",
-    "lint": "eslint packages --max-warnings 0",
+    "lint": "eslint packages client --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "pnpm build && vitest run",

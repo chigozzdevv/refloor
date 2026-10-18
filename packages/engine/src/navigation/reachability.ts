@@ -73,17 +73,26 @@ export function checkReachability(navigation: Navigation): EngineIssue[] {
     const margin = compiled.options.radius + compiled.options.clearance + 0.15;
     const positions =
       object.kind === 'light' && object.position.y > compiled.options.headroom
-        ? [{ x: 0, z: 0 }]
-        : [
-            { x: 0, z: object.dimensions.depth / 2 + margin },
-            ...(object.kind === 'television'
-              ? []
-              : [
-                  { x: object.dimensions.width / 2 + margin, z: 0 },
-                  { x: -object.dimensions.width / 2 - margin, z: 0 },
-                  { x: 0, z: -object.dimensions.depth / 2 - margin },
-                ]),
-          ];
+        ? [
+            { x: 0, z: 0 },
+            ...[0.8, 1.4].flatMap((radius) =>
+              Array.from({ length: 8 }, (_, i) => ({
+                x: Math.cos((i * Math.PI) / 4) * radius,
+                z: Math.sin((i * Math.PI) / 4) * radius,
+              })),
+            ),
+          ]
+        : object.kind === 'television'
+          ? [margin, margin + 0.5, margin + 1].map((distance) => ({
+              x: 0,
+              z: object.dimensions.depth / 2 + distance,
+            }))
+          : [
+              { x: 0, z: object.dimensions.depth / 2 + margin },
+              { x: object.dimensions.width / 2 + margin, z: 0 },
+              { x: -object.dimensions.width / 2 - margin, z: 0 },
+              { x: 0, z: -object.dimensions.depth / 2 - margin },
+            ];
     const accessible = positions.some((local) => {
       const delta = rotate(local, object.rotation),
         point = {

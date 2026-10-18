@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "paths": { "@refloor/catalogue": ["./src/index.ts"], "@refloor/catalogue/*": ["./src/*.ts"] }
+  },
+  "include": ["src"]
+}
