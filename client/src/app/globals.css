@@ -102,6 +102,9 @@ textarea:focus-visible,
 }
 .house-controls {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .house-toggle,
 .project-button,
@@ -212,7 +215,7 @@ textarea:focus-visible,
 }
 .selection-chat-wrap {
   width: 252px;
-  overflow: hidden;
+  overflow: visible;
 }
 .element-chat {
   padding: 11px 12px 12px;
@@ -831,4 +834,108 @@ select option {
   .create-dialog {
     padding: 18px;
   }
+}
+
+.edit-history {
+  width: min(380px, calc(100vw - 32px));
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: var(--panel);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 16px 60px #0004;
+  max-height: calc(100dvh - 108px);
+  overflow: auto;
+}
+.history-actions {
+  display: flex;
+  gap: 7px;
+}
+.history-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex: 1;
+  min-height: 38px;
+  padding: 8px 12px;
+  font-size: 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.edit-history {
+  position: absolute;
+  top: 56px;
+  right: 0;
+  width: min(340px, calc(100vw - 32px));
+}
+.history-empty {
+  margin: 24px 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.history-list {
+  padding: 0;
+  margin: 16px 0 0;
+  list-style: none;
+}
+.history-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 13px 0;
+  border-top: 1px solid var(--line);
+}
+.history-kind {
+  padding-top: 3px;
+  color: var(--accent);
+}
+.history-list li > div {
+  flex: 1;
+  min-width: 0;
+}
+.history-list p {
+  margin: 0 0 4px;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.history-list time {
+  font-size: 10px;
+  color: var(--muted);
+}
+.selection-chat-wrap {
+  position: relative;
+}
+.selection-chat-wrap::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  z-index: -1;
+  pointer-events: none;
+}
+.selection-chat-wrap[data-tail='bottom']::after {
+  left: var(--tail-x, 24px);
+  bottom: -7px;
+  transform: translateX(-50%) rotate(45deg);
+}
+.selection-chat-wrap[data-tail='top']::after {
+  left: var(--tail-x, 24px);
+  top: -7px;
+  transform: translateX(-50%) rotate(225deg);
+}
+.selection-chat-wrap[data-tail='right']::after {
+  right: -7px;
+  top: var(--tail-y, 24px);
+  transform: translateY(-50%) rotate(-45deg);
+}
+.selection-chat-wrap[data-tail='left']::after {
+  left: -7px;
+  top: var(--tail-y, 24px);
+  transform: translateY(-50%) rotate(135deg);
 }

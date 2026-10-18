@@ -4,18 +4,18 @@ import {
   DoorOpen,
   Footprints,
   Globe2,
+  History,
   Moon,
   Plus,
-  Redo2,
   Rotate3D,
   Sun,
-  Undo2,
   X,
 } from 'lucide-react';
 import { useProject } from '@/shared/scene/scene-store';
 import { ProjectActions } from '@/components/editor/project-actions';
 import { ElementChat } from '@/components/editor/element-chat';
 import { useNavigation } from '@/shared/navigation/navigation-store';
+import { EditHistory } from '@/components/editor/edit-history';
 
 export function StudioHeader({
   openNewHome,
@@ -34,20 +34,23 @@ export function StudioHeader({
     setLighting,
     quality,
     setQuality,
-    past,
-    future,
-    undo,
-    redo,
     select,
   } = useProject();
   const [open, setOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const panel = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const outside = (event: PointerEvent) => {
-      if (event.target instanceof Node && !panel.current?.contains(event.target)) setOpen(false);
+      if (event.target instanceof Node && !panel.current?.contains(event.target)) {
+        setOpen(false);
+        setHistoryOpen(false);
+      }
     };
     const escape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') {
+        setOpen(false);
+        setHistoryOpen(false);
+      }
     };
     document.addEventListener('pointerdown', outside);
     document.addEventListener('keydown', escape);
@@ -64,16 +67,31 @@ export function StudioHeader({
       <div className="house-controls" ref={panel}>
         <button
           className="house-toggle"
+          aria-label="Edit history"
+          aria-expanded={historyOpen}
+          onClick={() => {
+            useNavigation.getState().stop();
+            select(null);
+            setOpen(false);
+            setHistoryOpen(!historyOpen);
+          }}
+        >
+          <History size={20} strokeWidth={1.5} />
+        </button>
+        <button
+          className="house-toggle"
           aria-label="House controls"
           aria-expanded={open}
           onClick={() => {
             useNavigation.getState().stop();
+            setHistoryOpen(false);
             select(null);
             setOpen(!open);
           }}
         >
           <Globe2 size={22} strokeWidth={1.5} />
         </button>
+        {historyOpen && <EditHistory close={() => setHistoryOpen(false)} />}
         {open && (
           <section className="house-menu" aria-label="House controls menu">
             <div className="panel-heading">
@@ -140,22 +158,6 @@ export function StudioHeader({
             </div>
             <div className="house-utilities">
               <ProjectActions />
-              <button
-                className="icon-button"
-                aria-label="Undo"
-                disabled={!past.length}
-                onClick={undo}
-              >
-                <Undo2 size={17} />
-              </button>
-              <button
-                className="icon-button"
-                aria-label="Redo"
-                disabled={!future.length}
-                onClick={redo}
-              >
-                <Redo2 size={17} />
-              </button>
               <button
                 className="icon-button"
                 aria-label={lighting === 'evening' ? 'Switch to daylight' : 'Switch to night'}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { MeshStandardMaterial } from 'three';
+import { Select } from '@react-three/postprocessing';
 import type { Mesh } from 'three';
 import type { MeshPart } from '@refloor/engine';
 import { useSurface } from '@/shared/scene/asset-loader';
@@ -15,6 +16,7 @@ export function BuildingPart({ part }: { part: MeshPart }) {
     camera = useThree((state) => state.camera);
   const mode = useProject((state) => state.mode),
     floorId = useProject((state) => state.floorId),
+    selection = useProject((state) => state.selection),
     select = useProject((state) => state.select);
   const compiled = useProject((state) => state.compiled);
   const geometry = useMemo(() => partGeometry(part), [part]);
@@ -42,47 +44,49 @@ export function BuildingPart({ part }: { part: MeshPart }) {
     ref.current.visible = visible;
   });
   return (
-    <mesh
-      ref={ref}
-      raycast={visibleMeshRaycast}
-      geometry={geometry}
-      material={
-        ['slab', 'stair-tread', 'stair-landing'].includes(part.role)
-          ? [material, ceiling]
-          : material
-      }
-      position={[part.collider.position.x, part.collider.position.y, part.collider.position.z]}
-      rotation={[0, part.collider.rotation, 0]}
-      castShadow={part.role !== 'window'}
-      receiveShadow
-      onClick={(event) => {
-        if (!isScenePointer(event) || event.delta > 5) return;
-        if (wall) {
-          event.stopPropagation();
-          select({
-            kind: 'wall',
-            id: wall.id,
-            point: { x: event.point.x, y: event.point.y, z: event.point.z },
-          });
-        } else if (part.role === 'slab' && floor) {
-          const room = floor.rooms.find(
-            (value) =>
-              event.point.x >= value.footprint.x &&
-              event.point.x <= value.footprint.x + value.footprint.width &&
-              event.point.z >= value.footprint.z &&
-              event.point.z <= value.footprint.z + value.footprint.depth,
-          );
-          if (room) {
+    <Select enabled={selection?.kind === 'wall' && selection.id === wall?.id}>
+      <mesh
+        ref={ref}
+        raycast={visibleMeshRaycast}
+        geometry={geometry}
+        material={
+          ['slab', 'stair-tread', 'stair-landing'].includes(part.role)
+            ? [material, ceiling]
+            : material
+        }
+        position={[part.collider.position.x, part.collider.position.y, part.collider.position.z]}
+        rotation={[0, part.collider.rotation, 0]}
+        castShadow={part.role !== 'window'}
+        receiveShadow
+        onClick={(event) => {
+          if (!isScenePointer(event) || event.delta > 5) return;
+          if (wall) {
             event.stopPropagation();
             select({
-              kind: 'floor',
-              id: room.id,
+              kind: 'wall',
+              id: wall.id,
               point: { x: event.point.x, y: event.point.y, z: event.point.z },
             });
+          } else if (part.role === 'slab' && floor) {
+            const room = floor.rooms.find(
+              (value) =>
+                event.point.x >= value.footprint.x &&
+                event.point.x <= value.footprint.x + value.footprint.width &&
+                event.point.z >= value.footprint.z &&
+                event.point.z <= value.footprint.z + value.footprint.depth,
+            );
+            if (room) {
+              event.stopPropagation();
+              select({
+                kind: 'floor',
+                id: room.id,
+                point: { x: event.point.x, y: event.point.y, z: event.point.z },
+              });
+            }
           }
-        }
-      }}
-    />
+        }}
+      />
+    </Select>
   );
 }
 

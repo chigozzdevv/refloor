@@ -5,7 +5,7 @@ import type { MeshStandardMaterial } from 'three';
 import { getCatalogueEntry } from '@refloor/catalogue';
 import type { CatalogueEntry } from '@refloor/catalogue';
 import type { SceneObject } from '@refloor/scene';
-import { SelectionOutline } from '@/components/editor/selection-outline';
+import { Select } from '@react-three/postprocessing';
 import { useProject } from '@/shared/scene/scene-store';
 import { FurnitureModels } from '@/components/scene/furniture-models';
 import { useSurface } from '@/shared/scene/asset-loader';
@@ -97,12 +97,13 @@ function FurnitureInstance({ object }: { object: SceneObject }) {
           document.body.style.cursor = '';
         }}
       >
-        {entry.modelUrl ? (
-          <ScannedFurniture object={object} entry={entry} />
-        ) : (
-          <FurnitureModels object={object} renderer={entry.renderer} />
-        )}
-        {selection?.id === object.id && <SelectionOutline dimensions={object.dimensions} />}
+        <Select enabled={selection?.kind === 'object' && selection.id === object.id}>
+          {entry.modelUrl ? (
+            <ScannedFurniture object={object} entry={entry} />
+          ) : (
+            <FurnitureModels object={object} renderer={entry.renderer} />
+          )}
+        </Select>
       </group>
     </>
   );

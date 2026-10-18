@@ -1,5 +1,5 @@
 import { Environment, SoftShadows } from '@react-three/drei';
-import { Bloom, EffectComposer, N8AO, ToneMapping } from '@react-three/postprocessing';
+import { Bloom, EffectComposer, N8AO, Outline, ToneMapping } from '@react-three/postprocessing';
 import { ToneMappingMode } from 'postprocessing';
 import { useProject } from '@/shared/scene/scene-store';
 
@@ -33,7 +33,7 @@ export function Lighting() {
         shadow-bias={-0.00008}
       />
       {quality === 'high' && <SoftShadows size={12} samples={12} focus={0.3} />}
-      <EffectComposer multisampling={quality === 'high' ? 4 : 0}>
+      <EffectComposer autoClear={false} multisampling={quality === 'high' ? 4 : 0}>
         <N8AO
           aoRadius={0.45}
           intensity={1.35}
@@ -42,6 +42,13 @@ export function Lighting() {
           halfRes
         />
         <Bloom luminanceThreshold={1.6} intensity={0.16} mipmapBlur />
+        <Outline
+          edgeStrength={4}
+          visibleEdgeColor="#edc379"
+          hiddenEdgeColor="#edc379"
+          xRay={false}
+          blur={false}
+        />
         <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
       </EffectComposer>
     </>

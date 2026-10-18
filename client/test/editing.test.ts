@@ -4,7 +4,7 @@ import { compileBuilding } from '@refloor/engine';
 import { finishes } from '@refloor/catalogue';
 import { fingerprintBuilding } from '@refloor/scene';
 import type { DocumentState } from '@/shared/editor/document';
-import { editDocument, reverseDocument } from '@/shared/editor/document';
+import { editDocument, reverseDocument, restoreBefore, redoChange } from '@/shared/editor/document';
 import { findFurniturePlacement, replacementCommand } from '@/shared/editor/placement';
 
 const initial = (): DocumentState => ({
@@ -14,6 +14,63 @@ const initial = (): DocumentState => ({
 });
 
 describe('validated browser editing', () => {
+  it('undoes a chat and later edits atomically and retains labels across redo', () => {
+    const original = initial(),
+      object = original.compiled.building.objects[0]!;
+    const painted = editDocument(
+        original,
+        [
+          {
+            type: 'set-object-material',
+            objectId: object.id,
+            slot: 'body',
+            material: finishes.olive,
+          },
+        ],
+        undefined,
+        { source: 'chat', label: 'Make the sofa green' },
+      ),
+      removed = editDocument(painted, [{ type: 'remove-object', objectId: object.id }], undefined, {
+        source: 'chat',
+        label: 'Remove the sofa',
+      }),
+      door = removed.compiled.doors.find((value) => !value.open)!,
+      travelled = editDocument(
+        removed,
+        [{ type: 'set-door', doorId: door.id, open: true }],
+        undefined,
+        { source: 'navigation' },
+      ),
+      undone = restoreBefore(travelled, painted.past[0]!.revision.id);
+    expect(fingerprintBuilding(undone.compiled.building)).toBe(
+      fingerprintBuilding(original.compiled.building),
+    );
+    const redone = redoChange(redoChange(undone));
+    expect(fingerprintBuilding(redone.compiled.building)).toBe(
+      fingerprintBuilding(travelled.compiled.building),
+    );
+    expect(
+      redone.past.filter((record) => record.source === 'chat').map((record) => record.label),
+    ).toEqual(['Make the sofa green', 'Remove the sofa']);
+  });
+
+  it('keeps the whole history unchanged if restoring an item would trap the player', () => {
+    const original = initial(),
+      sofa = original.compiled.building.objects.find((object) => object.kind === 'sofa')!,
+      removed = editDocument(original, [{ type: 'remove-object', objectId: sofa.id }], undefined, {
+        source: 'chat',
+        label: 'Remove the sofa',
+      }),
+      fingerprint = fingerprintBuilding(removed.compiled.building);
+    expect(() =>
+      restoreBefore(removed, removed.past[0]!.revision.id, {
+        floorId: sofa.floorId,
+        position: sofa.position,
+      }),
+    ).toThrow(/Move clear/);
+    expect(fingerprintBuilding(removed.compiled.building)).toBe(fingerprint);
+    expect(removed.past).toHaveLength(1);
+  });
   it('restores complete content through multiple undo and redo operations', () => {
     const original = initial(),
       object = original.compiled.building.objects[0]!;

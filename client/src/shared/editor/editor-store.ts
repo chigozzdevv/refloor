@@ -1,8 +1,10 @@
 import type { StateCreator } from 'zustand';
-import type { SceneCommand, SceneRevision } from '@refloor/scene';
+import type { SceneCommand } from '@refloor/scene';
 import type { ProjectState } from '@/shared/scene/scene-store';
 import { physicsSession } from '@/shared/navigation/physics-session';
-import { editDocument, reverseDocument } from '@/shared/editor/document';
+import { editDocument, restoreBefore, redoChange } from '@/shared/editor/document';
+import type { DocumentState } from '@/shared/editor/document';
+import type { EditDetails } from '@/shared/editor/history';
 import { findFurniturePlacement } from '@/shared/editor/placement';
 import { editingError } from '@/shared/editor/errors';
 
@@ -11,11 +13,10 @@ export type Selection = {
   id: string;
   point?: { x: number; y: number; z: number };
 } | null;
-export type EditorState = {
-  past: SceneRevision[];
-  future: SceneRevision[];
-  edit: (commands: SceneCommand[]) => boolean;
+export type EditorState = Omit<DocumentState, 'compiled'> & {
+  edit: (commands: SceneCommand[], details?: EditDetails) => boolean;
   undo: () => void;
+  undoTo: (id: string) => boolean;
   redo: () => void;
   addFurniture: (assetId: string, roomId: string) => boolean;
   focusRequest: { id: string; objectId: string } | null;
@@ -40,7 +41,7 @@ export const createEditorState: StateCreator<ProjectState, [], [], EditorState> 
         focusRequest: { id: crypto.randomUUID(), objectId },
       });
   },
-  edit: (commands) => {
+  edit: (commands, details) => {
     const state = get();
     try {
       set(
@@ -48,6 +49,7 @@ export const createEditorState: StateCreator<ProjectState, [], [], EditorState> 
           state,
           commands,
           state.mode === 'walk' ? physicsSession.current?.player : undefined,
+          details,
         ),
       );
       const selected = get().selection;
@@ -63,29 +65,31 @@ export const createEditorState: StateCreator<ProjectState, [], [], EditorState> 
     }
   },
   undo: () => {
+    const record = get().past.findLast((value) => value.source !== 'navigation');
+    if (record) get().undoTo(record.revision.id);
+  },
+  undoTo: (id) => {
     const state = get();
     try {
       set({
-        ...reverseDocument(
+        ...restoreBefore(
           state,
-          'undo',
+          id,
           state.mode === 'walk' ? physicsSession.current?.player : undefined,
         ),
         selection: null,
       });
+      return true;
     } catch (error) {
       state.notify(error instanceof Error ? error.message : 'Undo is unavailable here.');
+      return false;
     }
   },
   redo: () => {
     const state = get();
     try {
       set({
-        ...reverseDocument(
-          state,
-          'redo',
-          state.mode === 'walk' ? physicsSession.current?.player : undefined,
-        ),
+        ...redoChange(state, state.mode === 'walk' ? physicsSession.current?.player : undefined),
         selection: null,
       });
     } catch (error) {

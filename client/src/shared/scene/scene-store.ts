@@ -137,7 +137,12 @@ export const useProject = create<ProjectState>((set, get, store) => ({
   },
   enterHome: () => {
     const state = get();
-    if (state.setDoor(entryPose(state.compiled).doorId, true)) state.setMode('walk');
+    const doorId = entryPose(state.compiled).doorId;
+    if (
+      state.compiled.doors.find((door) => door.id === doorId)?.open ||
+      state.edit([{ type: 'set-door', doorId, open: true }], { source: 'navigation' })
+    )
+      state.setMode('walk');
   },
   createHome: (storeys, width, depth) => {
     const options = {

@@ -1,6 +1,7 @@
 import { Suspense, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { NoToneMapping, PCFSoftShadowMap, SRGBColorSpace } from 'three';
+import { Selection } from '@react-three/postprocessing';
 import { useProject } from '@/shared/scene/scene-store';
 import { Lighting } from '@/components/scene/lighting';
 import { Building } from '@/components/scene/building';
@@ -10,6 +11,7 @@ import { NavigationControls } from '@/components/navigation/navigation-controls'
 import { PhysicsRuntime } from '@/shared/navigation/physics-runtime';
 import { SelectionChat } from '@/components/editor/selection-chat';
 import { NavigationMarkers } from '@/components/navigation/navigation-markers';
+import { SelectedFloor } from '@/components/editor/selected-floor';
 
 function SceneReady() {
   const setReady = useProject((state) => state.setSceneReady);
@@ -40,15 +42,18 @@ export function World() {
       }}
     >
       <Suspense fallback={null}>
-        <PhysicsRuntime />
-        <Lighting />
-        <Building />
-        <Furniture />
-        <ArchitecturalDetails />
-        <NavigationControls />
-        <NavigationMarkers />
-        <SelectionChat />
-        <SceneReady />
+        <Selection>
+          <PhysicsRuntime />
+          <Lighting />
+          <Building />
+          <Furniture />
+          <ArchitecturalDetails />
+          <NavigationControls />
+          <NavigationMarkers />
+          <SelectionChat />
+          <SelectedFloor />
+          <SceneReady />
+        </Selection>
       </Suspense>
     </Canvas>
   );

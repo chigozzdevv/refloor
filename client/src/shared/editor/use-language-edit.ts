@@ -40,7 +40,10 @@ export function useLanguageEdit(target: ChatTarget) {
         result.baseRevision !== current.compiled.building.revision
       )
         throw new Error('The space changed while I was working. Please try that again.');
-      if (result.commands.length && !current.edit(result.commands))
+      if (
+        result.commands.length &&
+        !current.edit(result.commands, { source: 'chat', label: message.trim() })
+      )
         throw new Error(useProject.getState().notice ?? 'That change could not be applied.');
       setReply(result.message || 'Done.');
       return true;

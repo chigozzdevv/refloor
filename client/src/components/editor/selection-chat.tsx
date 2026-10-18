@@ -23,13 +23,24 @@ export function SelectionChat() {
           y = ((1 - point.y) * size.height) / 2;
         const width = card.current?.offsetWidth ?? 252,
           height = card.current?.offsetHeight ?? 160;
-        return [
-          Math.max(12, Math.min(size.width - width - 12, x + 18)),
-          Math.max(
+        const left = Math.max(12, Math.min(size.width - width - 12, x + 18)),
+          top = Math.max(
             76,
             Math.min(size.height - height - 18, size.width < 600 ? y - height - 18 : y - 30),
-          ),
-        ];
+          );
+        if (card.current) {
+          card.current.dataset.tail =
+            y > top + height ? 'bottom' : y < top ? 'top' : x > left + width ? 'right' : 'left';
+          card.current.style.setProperty(
+            '--tail-x',
+            `${Math.max(18, Math.min(width - 18, x - left))}px`,
+          );
+          card.current.style.setProperty(
+            '--tail-y',
+            `${Math.max(18, Math.min(height - 18, y - top))}px`,
+          );
+        }
+        return [left, top];
       }}
     >
       <div
