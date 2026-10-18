@@ -15,6 +15,7 @@ export function CameraRig() {
     controls = useRef<ComponentRef<typeof OrbitControls>>(null);
   const floorId = useProject((state) => state.floorId),
     compiled = useProject((state) => state.compiled),
+    epoch = useProject((state) => state.projectEpoch),
     mode = useProject((state) => state.mode),
     interacting = useProject((state) => state.interacting),
     travel = useProject((state) => state.travelRequest);
@@ -29,7 +30,10 @@ export function CameraRig() {
       idle: number;
     } | null>(null);
   const floor = compiled.building.floors.find((value) => value.id === floorId),
-    elevation = floor?.elevation ?? 0;
+    elevation = floor?.elevation ?? 0,
+    centreX = (floor?.footprint.x ?? 0) + (floor?.footprint.width ?? 12) / 2,
+    centreZ = (floor?.footprint.z ?? 0) + (floor?.footprint.depth ?? 10) / 2,
+    span = Math.max(floor?.footprint.width ?? 12, floor?.footprint.depth ?? 10);
   const forward = useRef(new Vector3()),
     right = useRef(new Vector3()),
     target = useRef(new Vector3());
@@ -49,8 +53,8 @@ export function CameraRig() {
       );
     }
     if (mode === 'orbit') {
-      camera.position.set(16, 12 + elevation, -8);
-      controls.current?.target.set(6, elevation + 0.5, 5);
+      camera.position.set(centreX + span * 0.85, span + elevation, centreZ - span * 1.1);
+      controls.current?.target.set(centreX, elevation + 0.5, centreZ);
       controls.current?.update();
       route.current = null;
     }
@@ -66,14 +70,14 @@ export function CameraRig() {
     }
     walkInput.keys.clear();
     previous.current = mode;
-  }, [camera, mode, compiled.building.id, size.width, size.height]);
+  }, [camera, mode, compiled.building.id, epoch, size.width, size.height]);
   useEffect(() => {
     if (mode === 'orbit') {
-      camera.position.set(16, 12 + elevation, -8);
-      controls.current?.target.set(6, elevation + 0.5, 5);
+      camera.position.set(centreX + span * 0.85, span + elevation, centreZ - span * 1.1);
+      controls.current?.target.set(centreX, elevation + 0.5, centreZ);
       controls.current?.update();
     }
-  }, [camera, elevation, mode]);
+  }, [camera, elevation, mode, centreX, centreZ, span]);
   const focus = useProject((state) => state.focusRequest);
   useEffect(() => {
     if (!focus || mode !== 'orbit') return;
@@ -282,7 +286,7 @@ export function CameraRig() {
     <OrbitControls
       ref={controls}
       makeDefault
-      target={[6, elevation + 0.5, 5]}
+      target={[centreX, elevation + 0.5, centreZ]}
       enabled={!interacting}
       minDistance={3}
       maxDistance={35}

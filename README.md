@@ -53,6 +53,12 @@ TV controls play the included clip or a compatible direct video URL on the 3D sc
 power, mute and volume update the actual media player. Light controls update fixture
 emission, intensity, colour and cached local shadows in high quality mode.
 
+Project files export/import the complete editable building. Import validates geometry,
+access and supported assets before replacing the open scene. Accepted changes save
+automatically to one browser-local draft; a corrupt saved draft remains available for
+recovery download. This is local persistence. MongoDB-backed projects are not built yet.
+New spaces can use one or two storeys, widths 11.5–16 m and depths 9.5–14 m.
+
 Rendering assets are self-hosted. `client/public/assets/manifest.json` records their
 source URLs, CC0 licences, authors, physical dimensions and checksums. The material
 maps, HDR sky and four scanned furniture models are from [Poly Haven](https://polyhaven.com/license).

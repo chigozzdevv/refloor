@@ -8,6 +8,8 @@ import type { SceneCommand, SceneRevision } from '@refloor/scene';
 import { editDocument, reverseDocument } from '@/runtime/editing/document';
 import { findFurniturePlacement } from '@/runtime/editing/placement';
 import { editingError } from '@/runtime/editing/errors';
+import { draftKey, restoreDraft } from '@/runtime/projects/draft';
+import { encodeProject } from '@/runtime/projects/files';
 
 export type ViewMode = 'entry' | 'orbit' | 'walk';
 export type Selection = { kind: 'object' | 'wall' | 'floor'; id: string } | null;
@@ -15,6 +17,12 @@ type ProjectState = {
   sceneReady: boolean;
   setSceneReady: (ready: boolean) => void;
   compiled: CompiledBuilding;
+  projectEpoch: number;
+  saveError: string | null;
+  recovery: string | null;
+  saved: boolean;
+  resumeSaving: () => void;
+  loadProject: (compiled: CompiledBuilding) => void;
   past: SceneRevision[];
   future: SceneRevision[];
   edit: (commands: SceneCommand[]) => boolean;
@@ -47,15 +55,44 @@ type ProjectState = {
   createHome: (storeys: 1 | 2, width?: number, depth?: number) => void;
 };
 
-const initial = compileBuilding(
-  createHouse({ id: 'linden-house', name: 'The Linden House', storeys: 2 }),
-);
+const restored = restoreDraft();
+const initial =
+  restored.compiled ??
+  compileBuilding(createHouse({ id: 'linden-house', name: 'The Linden House', storeys: 2 }));
 let noticeTimer: ReturnType<typeof setTimeout> | undefined;
 
 export const useProject = create<ProjectState>((set, get) => ({
   sceneReady: false,
   setSceneReady: (sceneReady) => set({ sceneReady }),
   compiled: initial,
+  projectEpoch: 0,
+  saveError: restored.error,
+  recovery: restored.recovery,
+  saved: !!restored.compiled,
+  resumeSaving: () => {
+    try {
+      localStorage.setItem(draftKey, encodeProject(get().compiled.building));
+      set({ recovery: null, saveError: null, saved: true });
+    } catch {
+      set({
+        saveError: 'Browser storage is unavailable. Export your space to keep your changes.',
+        saved: false,
+      });
+    }
+  },
+  loadProject: (compiled) => {
+    set({
+      compiled,
+      projectEpoch: get().projectEpoch + 1,
+      past: [],
+      future: [],
+      mode: 'entry',
+      floorId: entryPose(compiled).floorId,
+      selection: null,
+      travelRequest: null,
+    });
+    get().notify('Project opened. Your room and item identities have been preserved.');
+  },
   past: [],
   future: [],
   transformMode: 'translate',
@@ -141,7 +178,7 @@ export const useProject = create<ProjectState>((set, get) => ({
       return false;
     }
   },
-  floorId: 'ground',
+  floorId: entryPose(initial).floorId,
   mode: 'entry',
   selection: null,
   lighting: 'day',
@@ -215,6 +252,7 @@ export const useProject = create<ProjectState>((set, get) => ({
     };
     set({
       compiled: compileBuilding(createHouse(options)),
+      projectEpoch: get().projectEpoch + 1,
       floorId: 'ground',
       mode: 'entry',
       selection: null,
@@ -224,3 +262,21 @@ export const useProject = create<ProjectState>((set, get) => ({
     });
   },
 }));
+
+const unsubscribeDraft = useProject.subscribe((state, previous) => {
+  if (state.compiled.building === previous.compiled.building) return;
+  if (state.recovery !== null) {
+    useProject.setState({ saved: false });
+    return;
+  }
+  try {
+    localStorage.setItem(draftKey, encodeProject(state.compiled.building));
+    useProject.setState({ saved: true, saveError: null });
+  } catch {
+    useProject.setState({
+      saved: false,
+      saveError: 'Browser storage is unavailable. Export your space to keep your changes.',
+    });
+  }
+});
+if (import.meta.hot) import.meta.hot.dispose(unsubscribeDraft);

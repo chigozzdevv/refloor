@@ -5,15 +5,16 @@ import { physicsSession } from '@/runtime/physics/session';
 import { useProject } from '@/features/projects/project-store';
 
 export function PhysicsRuntime() {
-  const compiled = useProject((state) => state.compiled);
+  const compiled = useProject((state) => state.compiled),
+    epoch = useProject((state) => state.projectEpoch);
   const last = useRef<Point3 | undefined>(undefined),
-    house = useRef(compiled.building.id);
+    house = useRef(epoch);
   useEffect(() => {
     let cancelled = false,
       owned: CharacterWorld | null = null;
-    if (house.current !== compiled.building.id) {
+    if (house.current !== epoch) {
       last.current = undefined;
-      house.current = compiled.building.id;
+      house.current = epoch;
     }
     const position = last.current;
     void import('@/runtime/physics/CharacterWorld')
@@ -36,6 +37,6 @@ export function PhysicsRuntime() {
         owned.dispose();
       }
     };
-  }, [compiled]);
+  }, [compiled, epoch]);
   return null;
 }

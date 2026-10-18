@@ -18,6 +18,7 @@ import { WalkPad } from '@/features/viewport/WalkPad';
 import { Inspector } from '@/features/editor/Inspector';
 import { FurnitureLibrary } from '@/features/editor/FurnitureLibrary';
 import { EditorToolbar } from '@/features/editor/EditorToolbar';
+import { ProjectActions } from '@/features/projects/ProjectActions';
 
 export function App() {
   const {
@@ -37,6 +38,8 @@ export function App() {
   } = useProject();
   const [newHome, setNewHome] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [width, setWidth] = useState(12),
+    [depth, setDepth] = useState(10);
   return (
     <ErrorBoundary>
       <main className={`studio ${mode}-mode ${lighting}-lighting`}>
@@ -61,12 +64,17 @@ export function App() {
           <span className="header-divider" />
           <span className="project-name">
             {compiled.building.name}
-            <span className="local-badge">STUDIO</span>
+            <span className="local-badge">BROWSER DRAFT</span>
           </span>
           <div className="topbar-actions">
-            <button className="button subtle" onClick={() => setNewHome(true)}>
+            <ProjectActions />
+            <button
+              className="button subtle new-space"
+              aria-label="New space"
+              onClick={() => setNewHome(true)}
+            >
               <Plus size={15} />
-              New space
+              <span>New space</span>
             </button>
           </div>
         </header>
@@ -225,21 +233,53 @@ export function App() {
               </div>
               <h2>Room for possibilities.</h2>
               <p>Choose a starting home. Every room and object is yours to change.</p>
+              <div className="home-dimensions">
+                <label className="field-caption">
+                  WIDTH · M
+                  <input
+                    aria-label="House width"
+                    type="number"
+                    min={11.5}
+                    max={16}
+                    step={0.5}
+                    value={width}
+                    onChange={(event) => setWidth(event.target.valueAsNumber)}
+                  />
+                </label>
+                <label className="field-caption">
+                  DEPTH · M
+                  <input
+                    aria-label="House depth"
+                    type="number"
+                    min={9.5}
+                    max={14}
+                    step={0.5}
+                    value={depth}
+                    onChange={(event) => setDepth(event.target.valueAsNumber)}
+                  />
+                </label>
+              </div>
               {([1, 2] as const).map((storeys) => (
                 <button
                   key={storeys}
                   className="home-option"
                   onClick={() => {
-                    createHome(storeys);
-                    setNewHome(false);
+                    try {
+                      createHome(storeys, width, depth);
+                      setNewHome(false);
+                    } catch {
+                      useProject
+                        .getState()
+                        .notify('Choose a width from 11.5–16 m and a depth from 9.5–14 m.');
+                    }
                   }}
                 >
                   <span>
                     <strong>{storeys === 1 ? 'The Garden House' : 'The Linden House'}</strong>
                     <small>
                       {storeys === 1
-                        ? 'A light-filled bungalow · 120 m²'
-                        : 'Two storeys, room to grow · 240 m²'}
+                        ? `A light-filled bungalow · ${Math.round(width * depth)} m²`
+                        : `Two storeys, room to grow · ${Math.round(width * depth * 2)} m²`}
                     </small>
                   </span>
                   <MoveUpRight size={20} />
