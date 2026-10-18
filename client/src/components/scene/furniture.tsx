@@ -11,6 +11,7 @@ import { FurnitureModels } from '@/components/scene/furniture-models';
 import { useSurface } from '@/shared/scene/asset-loader';
 import { sameMaterial } from '@/shared/scene/finish';
 import { isScenePointer, visibleGroupRaycast } from '@/shared/editor/picking';
+import { SelectionBounds } from '@/components/editor/selection-bounds';
 
 function ScannedFurniture({ object, entry }: { object: SceneObject; entry: CatalogueEntry }) {
   const { scene } = useGLTF(entry.modelUrl!, false),
@@ -104,6 +105,9 @@ function FurnitureInstance({ object }: { object: SceneObject }) {
             <FurnitureModels object={object} renderer={entry.renderer} />
           )}
         </Select>
+        {selection?.kind === 'object' && selection.id === object.id && (
+          <SelectionBounds dimensions={object.dimensions} />
+        )}
       </group>
     </>
   );

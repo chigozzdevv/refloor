@@ -43,7 +43,7 @@ export function Lighting() {
         />
         <Bloom luminanceThreshold={1.6} intensity={0.16} mipmapBlur />
         <Outline
-          edgeStrength={4}
+          edgeStrength={6}
           visibleEdgeColor="#edc379"
           hiddenEdgeColor="#edc379"
           xRay={false}
