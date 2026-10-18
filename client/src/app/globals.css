@@ -392,6 +392,8 @@ a {
 }
 .create-dialog {
   width: 440px;
+  max-height: calc(100dvh - 40px);
+  overflow: auto;
   background: #f7f6ef;
   padding: 30px;
   border: 1px solid #fff9;
@@ -1418,6 +1420,38 @@ select:focus {
 }
 .save-error p {
   color: #967548;
+}
+.house-prompt {
+  margin-bottom: 24px;
+}
+.house-prompt textarea {
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1.5;
+}
+.house-prompt textarea:focus {
+  outline: 2px solid #a3ae88;
+  outline-offset: 2px;
+}
+.house-prompt textarea:disabled {
+  opacity: 0.65;
+}
+.prompt-hint,
+.generation-status {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.create-dialog .generation-error {
+  color: #a33e32;
+  font-size: 13px;
+  line-height: 1.5;
 }
 .home-dimensions {
   display: grid;

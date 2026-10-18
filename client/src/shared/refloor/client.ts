@@ -32,7 +32,7 @@ export async function request<T>(
   } catch {
     throw new ProjectApiError(
       'UNAVAILABLE',
-      'Saved spaces could not connect. Your browser draft is still available.',
+      'Refloor could not connect to the server. Your browser draft is still available.',
       true,
     );
   }
@@ -42,7 +42,7 @@ export async function request<T>(
   } catch {
     throw new ProjectApiError(
       'UNAVAILABLE',
-      'Saved spaces are unavailable. Your browser draft is still available.',
+      'The server is unavailable. Your browser draft is still available.',
       true,
     );
   }

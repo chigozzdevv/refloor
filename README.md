@@ -1,15 +1,15 @@
 # Refloor
 
-Refloor is a browser studio for furnishing and exploring editable 3D houses.
-The planned generation workflow will turn house descriptions into the same validated
-building documents.
+Refloor is a browser studio for generating, furnishing and exploring editable 3D houses.
+Describe a house, generate it with GPT-6 Luna, then enter and edit the saved space.
 
 `@refloor/scene` validates building documents and applies atomic, reversible commands.
 `@refloor/engine` compiles those documents into meshes, colliders and walking routes,
 then checks furniture placement, door clearance and stair access. The client renders
 parameter-based starting homes with physical materials, scanned furniture, HDR daylight,
 shadows and floor-by-floor cutaway views. The Node API stores projects and reversible
-edit history in MongoDB. Prompt generation remains to be built.
+edit history in MongoDB. Luna interprets house descriptions; Z3 solves room layouts,
+and the engine validates the assembled building before it can be saved.
 
 ## Requirements
 
@@ -31,6 +31,23 @@ use, its launcher downloads the official MongoDB binary. API tests launch an iso
 replica set and remove its temporary database after testing. Production requires a
 configured MongoDB replica set or sharded cluster; standalone MongoDB cannot provide
 the transactions used by project revisions.
+
+Set `OPENAI_API_KEY` in the root `.env` to enable generation. `OPENAI_MODEL` is
+`gpt-6-luna`; there is no fallback to another model. In **New space**, enter a description,
+choose **Generate my house**, then **Open generated house** when it is ready. The current
+space stays editable while generation runs. Completed houses appear in saved spaces.
+The API key stays on the server. Responses use Structured Outputs with storage disabled,
+a 6,000-token output limit, a 90-second provider timeout and no automatic provider retries.
+
+Generation currently supports rectangular houses with one or two storeys, 14–20 m width,
+9–24 m depth in 0.1 m increments, two to eight rooms per floor and twelve rooms total. Unspecified dimensions
+are solved from the programme. Rooms occupy two wings around a circulation hall; two-storey
+homes reserve a shared stairwell, upper-floor opening and landing access. Living and dining
+can share an open room; other uses currently need separate rooms. Unsupported requests
+and layouts that fail validation return an error rather than a substitute starting home.
+Furniture uses the shipped catalogue: kitchens have counters, bathrooms have a vanity,
+and bedrooms have a bed and storage. Appliances, sanitary fixtures and custom generated
+meshes remain to be added; this is an editable spatial prototype, not construction plans.
 
 The client proxies `/api` to `http://127.0.0.1:3001` during development and preview.
 If that port is occupied, set another server `PORT` and pass its URL with
@@ -66,11 +83,20 @@ maps and environment textures in `client/public/textures`, and the TV clip in
 The server follows the feature layout: `features/houses` owns house routes,
 controllers, services, schemas, models and repositories; `features/edits` owns commands,
 transactional revision storage and undo/redo. `features/sessions` handles private browser
-sessions. HTTP handlers stay in controllers, database queries stay in repositories, and
+sessions. `features/generation` owns session-scoped generation jobs and its worker;
+`shared/ai` contains the Luna provider and house prompt, and `shared/planning` contains
+requirements, Z3 constraints, layout assembly and furniture placement.
+HTTP handlers stay in controllers, database queries stay in repositories, and
 services apply the scene and engine rules. `shared/config`, `shared/database` and
 `shared/http` hold infrastructure. `app.ts` wires dependencies and routes; `server.ts`
-starts the API process. Generation and asset workers will be added with their working
-implementations.
+starts the API process. Planning and initial validation run in a bounded Node worker
+thread. The project service validates again before saving. MongoDB stores the queue and progress; Redis is
+not required. Each API process handles one generation at a time, and an atomic database
+claim prevents two processes from handling the same job. Interrupted in-flight jobs fail
+after three minutes instead of replaying a potentially billed model request. Queued jobs
+resume when a configured API starts. Generation records and prompts expire after one day;
+completed houses remain in project storage. Each session can have one active job, and
+submission is limited to six requests per IP per hour.
 
 Workspace packages use scoped `@refloor/*` imports. Each package's self imports
 resolve through its package exports after compilation; source aliases are configured
@@ -78,8 +104,9 @@ for TypeScript and tests. The browser uses `@/` for app-local imports; the Node 
 uses `@refloor/server/*` so compiled imports resolve without a runtime alias loader.
 
 Tests execute the real implementation without mocked services or replacement modules.
-Their input documents describe buildings and edits; no network or model inference is
-needed for these packages. Engine tests instantiate Rapier and walk a capsule through
+Their input documents describe buildings, room programmes and edits; automated tests
+run the real Z3 solver and MongoDB without spending API credits. Live Luna checks are
+separate from `pnpm check`. Engine tests instantiate Rapier and walk a capsule through
 the generated colliders, including entrance-to-upstairs routes, both stair types and
 rotated flights. This verifies the geometry in a headless physics world. The browser
 supports an animated entrance with a draggable handle, orbit and first-person views,
@@ -203,6 +230,10 @@ portable copy. Use HTTPS in production and configure exact `CLIENT_ORIGINS`.
 - `POST /api/projects/:id/edits`: apply `{ edit, player }` through the shared placement engine.
 - `POST /api/projects/:id/undo` or `/redo`: restore history using `id`, `at`, `expectedRevision`
   and an optional player position (`null` when absent).
+- `POST /api/generations`: submit `{ requestId, prompt }` and receive a generation ID
+  with HTTP 202. Reuse the same request ID and description after a connection failure.
+- `GET /api/generations/:id`: session-private progress, error, model token usage and
+  the saved `projectId` on completion. Open that project with the projects endpoint.
 - `GET /api/health`: database readiness.
 
 Snapshot saves compare document versions and preserve building identity. Typed edits

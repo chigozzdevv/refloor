@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { MoveUpRight, X } from 'lucide-react';
 import { useProject } from '@/shared/scene/scene-store';
+import { HousePrompt } from '@/components/entrance/house-prompt';
 
 export function HouseOptions({ open, close }: { open: boolean; close: () => void }) {
   const [width, setWidth] = useState(12),
@@ -23,7 +24,11 @@ export function HouseOptions({ open, close }: { open: boolean; close: () => void
           </button>
         </div>
         <h2>Room for possibilities.</h2>
-        <p>Choose a starting home. Every room and object is yours to change.</p>
+        <p>
+          Describe your home or choose a starting space. Every room and object is yours to change.
+        </p>
+        <HousePrompt close={close} />
+        <span className="eyebrow">OR CHOOSE A STARTING HOME</span>
         <div className="home-dimensions">
           <label className="field-caption">
             WIDTH · M
