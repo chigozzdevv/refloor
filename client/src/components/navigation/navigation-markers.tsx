@@ -21,10 +21,26 @@ function Marker({ destination, primary }: { destination: Destination; primary: b
         ? ArrowUp
         : ArrowDown
       : ChevronRight;
+  const travel = () => {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    useProject.getState().select(null);
+    useNavigation.getState().go(destination.target, destination.lookAt, destination.label);
+  };
   return (
     <group position={[destination.anchor.x, destination.anchor.y, destination.anchor.z]}>
       {floor && (
         <group rotation={[-Math.PI / 2, 0, 0]}>
+          <mesh
+            position={[0, 0, 0.003]}
+            userData={{ navigationMarker: true }}
+            onClick={(event) => {
+              event.stopPropagation();
+              if (event.delta < 5) travel();
+            }}
+          >
+            <circleGeometry args={[0.21, 48]} />
+            <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+          </mesh>
           <mesh raycast={() => undefined}>
             <ringGeometry args={[0.16, 0.195, 48]} />
             <meshBasicMaterial
@@ -62,9 +78,7 @@ function Marker({ destination, primary }: { destination: Destination; primary: b
           onPointerMove={(event) => event.stopPropagation()}
           onClick={(event) => {
             event.stopPropagation();
-            if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
-            useProject.getState().select(null);
-            useNavigation.getState().go(destination.target, destination.lookAt, destination.label);
+            travel();
           }}
         >
           {!floor && (
@@ -123,7 +137,11 @@ export function NavigationMarkers() {
         raycaster.set(camera.position, anchor.clone().sub(camera.position).normalize());
         raycaster.near = 0.05;
         raycaster.far = Math.max(0.05, length - 0.08);
-        if (raycaster.intersectObjects(scene.children, true).some((hit) => isVisible(hit.object)))
+        if (
+          raycaster
+            .intersectObjects(scene.children, true)
+            .some((hit) => !hit.object.userData.navigationMarker && isVisible(hit.object))
+        )
           return false;
         if (!continuing.length && floor) {
           const approach = destination.approach ?? destination.target;
