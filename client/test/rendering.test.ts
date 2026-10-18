@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three';
-import { visibleGroupRaycast, visibleMeshRaycast } from '@/shared/editor/picking';
+import { belongsToDoor, visibleGroupRaycast, visibleMeshRaycast } from '@/shared/editor/picking';
 import { createHouse } from '@refloor/catalogue/houses';
 import { getCatalogueEntry } from '@refloor/catalogue';
 import { compileBuilding } from '@refloor/engine';
@@ -8,6 +8,18 @@ import { sameMaterial } from '@/shared/scene/finish';
 import { partGeometry } from '@/shared/scene/geometry';
 
 describe('rendering contracts', () => {
+  it('recognizes a portal leaf through nested door handles without ignoring other occluders', () => {
+    const door = new Group(),
+      handle = new Mesh(new BoxGeometry(), new MeshBasicMaterial()),
+      wall = new Group();
+    door.userData.doorId = 'bedroom-door';
+    door.add(handle);
+    expect(belongsToDoor(handle, 'bedroom-door')).toBe(true);
+    expect(belongsToDoor(wall, 'bedroom-door')).toBe(false);
+    expect(belongsToDoor(wall, undefined)).toBe(false);
+    handle.geometry.dispose();
+    (handle.material as MeshBasicMaterial).dispose();
+  });
   it('preserves original scanned PBR materials after scene parsing and JSON reload', () => {
     const building = createHouse({ id: 'scanned-home', name: 'Scanned home', storeys: 1 });
     const reloaded: typeof building = JSON.parse(JSON.stringify(building));

@@ -86,6 +86,7 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
   return (
     <Select enabled={selection?.kind === 'door' && selection.id === portal.id}>
       <group
+        userData={{ doorId: portal.id }}
         ref={pivot}
         position={[portal.hinge.x, portal.hinge.y, portal.hinge.z]}
         rotation={[0, portal.rotation + portal.openingAngle * fraction.current, 0]}

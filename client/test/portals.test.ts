@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { compileBuilding } from '@refloor/engine';
 import { createHouse } from '@refloor/catalogue/houses';
-import { destinations, destinationRoute } from '@/shared/navigation/destinations';
+import { destinations } from '@/shared/navigation/destinations';
 import { portalPosition, tourPortals } from '@/shared/navigation/portals';
 
 describe('tour portal access', () => {
-  it('provides the studio exit and a real downstairs route even far from the staircase', () => {
+  it('offers a room exit without projecting the downstairs marker through bedroom walls', () => {
     const compiled = compileBuilding(
         createHouse({ id: 'studio-exit', name: 'Studio exit', storeys: 2 }),
       ),
@@ -15,11 +15,20 @@ describe('tour portal access', () => {
       portals = tourPortals(compiled, start, stops),
       downstairs = portals.find((stop) => stop.direction === 'down');
     expect(portals.some((stop) => stop.label === 'Leave room')).toBe(true);
-    expect(downstairs).toBeDefined();
-    expect(downstairs?.target.floorId).toBe('ground');
-    expect(destinationRoute(compiled, start, downstairs!.target, 'openable')?.stairIds).toEqual([
-      'staircase',
-    ]);
+    expect(downstairs).toBeUndefined();
+  });
+  it('places the downstairs portal at its actual landing', () => {
+    const compiled = compileBuilding(createHouse({ id: 'landing', name: 'Landing', storeys: 2 }));
+    const landing = compiled.stairs[0]!.upper;
+    const portals = tourPortals(compiled, landing, destinations(compiled));
+    const downstairs = portals.find((stop) => stop.direction === 'down');
+    expect(downstairs?.approach).toEqual(landing);
+    expect(
+      Math.hypot(
+        downstairs!.anchor.x - landing.position.x,
+        downstairs!.anchor.z - landing.position.z,
+      ),
+    ).toBeLessThan(0.5);
   });
   it('keeps off-screen portals inside the viewport and flips a target behind the camera', () => {
     expect(portalPosition(-800, 900, false, 320, 600)).toEqual({ x: 48, y: 350 });

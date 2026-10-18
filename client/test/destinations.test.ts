@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import type { Building } from '@refloor/scene';
 import { createHouse } from '@refloor/catalogue/houses';
 import { applyCommands } from '@refloor/scene';
 import { compileBuilding, isWalkable } from '@refloor/engine';
@@ -7,6 +9,19 @@ import { entryPose } from '@/shared/navigation/entry';
 import { clearSegment } from '@refloor/engine/navigation/surfaces';
 
 describe('house navigation destinations', () => {
+  it('provides entry and exit markers on both sides of every generated interior door', () => {
+    const building = JSON.parse(
+      readFileSync(new URL('fixtures/generated-two-storey.json', import.meta.url), 'utf8'),
+    ) as Building;
+    const compiled = compileBuilding(building),
+      markers = destinations(compiled);
+    for (const door of compiled.doors.filter((value) => value.id !== 'ground/entrance')) {
+      const sides = markers.filter((marker) => marker.doorId === door.id);
+      expect(sides, door.id).toHaveLength(2);
+      expect(new Set(sides.map((side) => side.roomId)).size).toBe(2);
+      for (const side of sides) expect(isWalkable(compiled, side.target, 'openable')).toBe(true);
+    }
+  });
   it('provides a clear next step from the entrance of a long two-storey house', () => {
     const compiled = compileBuilding(
       createHouse({ id: 'long-hall', name: 'Long hall', storeys: 2, width: 14, depth: 12 }),

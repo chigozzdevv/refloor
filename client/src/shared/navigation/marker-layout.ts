@@ -24,9 +24,11 @@ export function organizeMarkers(candidates: ProjectedMarker[], width: number, he
     )
     .sort(
       (a, b) =>
+        Number(a.destination.kind === 'room' || a.destination.kind === 'waypoint') -
+          Number(b.destination.kind === 'room' || b.destination.kind === 'waypoint') ||
         a.distance +
-        Math.abs(a.x - width / 2) / width -
-        (b.distance + Math.abs(b.x - width / 2) / width),
+          Math.abs(a.x - width / 2) / width -
+          (b.distance + Math.abs(b.x - width / 2) / width),
     );
   const result: ProjectedMarker[] = [];
   for (const candidate of ranked) {

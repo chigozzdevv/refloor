@@ -17,6 +17,7 @@ export type Destination = {
   direction?: 'up' | 'down';
   lookAt?: Point3;
   approach?: NavigationPoint;
+  doorId?: string;
 };
 const graphs = new WeakMap<CompiledBuilding, Map<string, Navigation>>();
 
@@ -33,20 +34,6 @@ export function destinations(compiled: CompiledBuilding): Destination[] {
     result: Destination[] = [];
   for (const floor of compiled.building.floors) {
     const nodes = (graph.byFloor.get(floor.id) ?? []).map((index) => graph.nodes[index]!);
-    const nearest = (point: Point3, roomId?: string, radius = Infinity) =>
-      nodes
-        .filter((node) => {
-          const room = floor.rooms.find((value) => value.id === roomId);
-          return (
-            (!room || contains(room.footprint, node.position, 0.1)) &&
-            Math.hypot(point.x - node.position.x, point.z - node.position.z) <= radius
-          );
-        })
-        .sort(
-          (a, b) =>
-            Math.hypot(a.position.x - point.x, a.position.z - point.z) -
-            Math.hypot(b.position.x - point.x, b.position.z - point.z),
-        )[0];
     for (const room of floor.rooms) {
       for (const [index, view] of roomViews(
         compiled,
@@ -70,13 +57,37 @@ export function destinations(compiled: CompiledBuilding): Destination[] {
     for (const door of compiled.doors.filter((value) => value.floorId === floor.id)) {
       const sides = [-1, 1].map((sign) => {
         const normal = rotate({ x: 0, z: sign }, door.rotation);
-        const desired = {
-          x: door.centre.x + normal.x * 1.1,
-          y: floor.elevation,
-          z: door.centre.z + normal.z * 1.1,
+        const wall = floor.walls.find((value) => value.id === door.wallId);
+        const offset = (wall?.thickness ?? 0.2) / 2 + 0.05;
+        const sample = {
+          x: door.centre.x + normal.x * offset,
+          z: door.centre.z + normal.z * offset,
         };
-        const room = floor.rooms.find((value) => contains(value.footprint, desired));
-        return room ? { room, node: nearest(desired, room.id, 0.8) } : null;
+        const room = floor.rooms.find((value) => contains(value.footprint, sample, 0.01));
+        if (!room) return null;
+        const desired = {
+          x: door.centre.x + normal.x * 0.75,
+          y: floor.elevation,
+          z: door.centre.z + normal.z * 0.75,
+        };
+        const centre = { ...door.centre, y: floor.elevation };
+        const node = nodes
+          .filter((value) => {
+            const dx = value.position.x - centre.x,
+              dz = value.position.z - centre.z;
+            return (
+              contains(room.footprint, value.position, 0.05) &&
+              dx * normal.x + dz * normal.z > offset &&
+              Math.hypot(dx, dz) < 2.2
+            );
+          })
+          .sort(
+            (a, b) =>
+              Math.hypot(a.position.x - desired.x, a.position.z - desired.z) -
+              Math.hypot(b.position.x - desired.x, b.position.z - desired.z),
+          )
+          .find((value) => clearSegment(compiled, floor.id, centre, value.position, 'openable'));
+        return { room, node };
       });
       for (const [index, side] of sides.entries()) {
         const opposite = sides[1 - index];
@@ -87,12 +98,13 @@ export function destinations(compiled: CompiledBuilding): Destination[] {
           label: `Enter ${opposite.room.name}`,
           caption: opposite.room.name,
           kind: 'door',
+          doorId: door.id,
           floorId: floor.id,
           roomId: side.room.id,
           anchor: {
-            x: door.centre.x + normal.x * 0.18,
+            x: door.centre.x + normal.x * 0.3,
             y: floor.elevation + 1.15,
-            z: door.centre.z + normal.z * 0.18,
+            z: door.centre.z + normal.z * 0.3,
           },
           target: { floorId: floor.id, position: opposite.node.position },
           approach: { floorId: floor.id, position: side.node.position },
@@ -299,6 +311,30 @@ export function destinationRoute(
   const start = { ...from, position: { ...from.position, y: floor?.elevation ?? from.position.y } };
   if (Math.abs(start.position.y - from.position.y) < 0.15 && isWalkable(compiled, start, policy))
     return findPath(graph, start, target);
+  if (floor && Math.abs(start.position.y - from.position.y) < 0.15) {
+    const physical = { ...compiled, options: { ...compiled.options, clearance: 0.005 } };
+    const candidates = (graph.byFloor.get(floor.id) ?? [])
+      .map((index) => graph.nodes[index]!)
+      .map((node) => ({
+        node,
+        distance: Math.hypot(
+          node.position.x - start.position.x,
+          node.position.z - start.position.z,
+        ),
+      }))
+      .filter((value) => value.distance <= 0.35)
+      .sort((a, b) => a.distance - b.distance);
+    for (const { node, distance } of candidates) {
+      if (!clearSegment(physical, floor.id, start.position, node.position, policy)) continue;
+      const route = findPath(graph, node, target);
+      if (route)
+        return {
+          ...route,
+          points: [start.position, ...route.points],
+          length: route.length + distance,
+        };
+    }
+  }
   for (const stair of compiled.stairs) {
     const nearest = stair.path
       .map((point, index) => ({

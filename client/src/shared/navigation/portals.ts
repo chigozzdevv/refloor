@@ -1,6 +1,7 @@
 import type { CompiledBuilding, NavigationPoint } from '@refloor/engine';
+import { contains } from '@refloor/engine/math';
 import type { Destination } from '@/shared/navigation/destinations';
-import { destinationRoute } from '@/shared/navigation/destinations';
+import { nearbyRoute } from '@/shared/navigation/destinations';
 import { roomExit } from '@/shared/navigation/room-exit';
 
 export function tourPortals(
@@ -9,11 +10,20 @@ export function tourPortals(
   stops: Destination[],
 ) {
   const exit = roomExit(compiled, player, stops);
+  const floor = compiled.building.floors.find((value) => value.id === player.floorId);
+  const room = floor?.rooms.find((value) => contains(value.footprint, player.position));
   const stair = stops
     .filter((stop) => stop.kind === 'stairs' && stop.floorId === player.floorId)
     .flatMap((stop) => {
-      const route = destinationRoute(compiled, player, stop.target, 'openable');
-      return route ? [{ stop, distance: route.length }] : [];
+      const approach = stop.approach;
+      if (!approach || !room || !contains(room.footprint, approach.position)) return [];
+      const distance = Math.hypot(
+        approach.position.x - player.position.x,
+        approach.position.z - player.position.z,
+      );
+      return distance < 3.5 && nearbyRoute(compiled, player, approach, 'current')
+        ? [{ stop, distance }]
+        : [];
     })
     .sort((a, b) => a.distance - b.distance)[0]?.stop;
   return [

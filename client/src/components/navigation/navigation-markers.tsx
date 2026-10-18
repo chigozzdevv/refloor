@@ -12,7 +12,7 @@ import { useNavigation } from '@/shared/navigation/navigation-store';
 import type { PortalPin } from '@/shared/navigation/navigation-store';
 import { physicsSession } from '@/shared/navigation/physics-session';
 import { useProject } from '@/shared/scene/scene-store';
-import { isVisible } from '@/shared/editor/picking';
+import { belongsToDoor, isVisible } from '@/shared/editor/picking';
 
 function Marker({ destination, primary }: { destination: Destination; primary: boolean }) {
   const [hovered, setHovered] = useState(false);
@@ -101,7 +101,6 @@ export function NavigationMarkers() {
   const { compiled, mode, floorId, selection, interacting } = useProject();
   const { request, mapOpen } = useNavigation();
   const all = useMemo(() => destinations(compiled), [compiled]);
-  const portals = useMemo(() => new Map<string, Destination[]>(), [compiled]);
   const [visible, setVisible] = useState<Destination[]>([]);
   const elapsed = useRef(1),
     projected = useMemo(() => new Vector3(), []),
@@ -116,9 +115,7 @@ export function NavigationMarkers() {
     const floor = compiled.building.floors.find((value) => value.id === player.floorId),
       room = floor?.rooms.find((value) => contains(value.footprint, player.position)),
       continuing = stairContinuation(compiled, player);
-    const key = room?.id ?? player.floorId;
-    if (!portals.has(key)) portals.set(key, tourPortals(compiled, player, all));
-    const links = continuing.length ? continuing : (portals.get(key) ?? []);
+    const links = continuing.length ? continuing : tourPortals(compiled, player, all);
     camera.getWorldDirection(projected);
     const heading = Math.atan2(projected.x, -projected.z),
       location = continuing.length ? 'Stairs' : (room?.name ?? floor?.name ?? '');
@@ -131,6 +128,9 @@ export function NavigationMarkers() {
       .filter((destination) => {
         if (
           destination.floorId !== floorId ||
+          (destination.kind === 'stairs' &&
+            !continuing.length &&
+            !links.some((link) => link.id === destination.id)) ||
           (!continuing.length &&
             destination.kind !== 'stairs' &&
             room &&
@@ -155,7 +155,12 @@ export function NavigationMarkers() {
         if (
           raycaster
             .intersectObjects(scene.children, true)
-            .some((hit) => !hit.object.userData.navigationMarker && isVisible(hit.object))
+            .some(
+              (hit) =>
+                !hit.object.userData.navigationMarker &&
+                !belongsToDoor(hit.object, destination.doorId) &&
+                isVisible(hit.object),
+            )
         )
           return false;
         if (!continuing.length && floor) {
@@ -200,6 +205,7 @@ export function NavigationMarkers() {
     ).map((value) => links.find((link) => link.id === value.destination.id) ?? value.destination);
     const edgePortals: PortalPin[] = [];
     for (const destination of links) {
+      if (destination.kind === 'stairs') continue;
       if (layout.some((value) => value.id === destination.id)) continue;
       projected
         .set(destination.anchor.x, destination.anchor.y, destination.anchor.z)
