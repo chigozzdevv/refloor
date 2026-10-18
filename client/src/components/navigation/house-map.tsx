@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowDown, ArrowUp, Map, Maximize2, X } from 'lucide-react';
+import { Maximize2, X } from 'lucide-react';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 import { useProject } from '@/shared/scene/scene-store';
 import { destinations, destinationRoute } from '@/shared/navigation/destinations';
@@ -16,8 +16,7 @@ export function HouseMap() {
     entry = entryPose(compiled),
     currentPlayer = mode === 'entry' ? { floorId: entry.floorId, position: entry.inside } : player,
     currentFloor = currentPlayer?.floorId ?? entry.floorId,
-    floorId = viewFloor ?? currentFloor,
-    stair = stops.find((stop) => stop.kind === 'stairs' && stop.floorId === currentFloor);
+    floorId = viewFloor ?? currentFloor;
   useEffect(() => {
     setViewFloor(null);
   }, [currentFloor, projectEpoch]);
@@ -53,7 +52,7 @@ export function HouseMap() {
     go(destination.target, destination.lookAt, destination.label);
   };
   if (!mapOpen)
-    return mode === 'walk' ? (
+    return mode !== 'entry' ? (
       <button
         className="map-mini"
         aria-label="Open house map"
@@ -63,10 +62,7 @@ export function HouseMap() {
           setMapOpen(true);
         }}
       >
-        <span>
-          <Map size={13} />
-          <Maximize2 size={12} />
-        </span>
+        <Maximize2 className="map-expand" size={13} />
         <MapPlan
           compiled={compiled}
           floorId={currentFloor}
@@ -83,23 +79,22 @@ export function HouseMap() {
         aria-label="House map"
         onPointerDown={(event) => event.stopPropagation()}
       >
-        <div className="panel-heading">
-          <span>House map</span>
+        <div className="plan-toolbar">
+          <div className="map-floors" role="tablist" aria-label="Map floors">
+            {compiled.building.floors.map((floor) => (
+              <button
+                key={floor.id}
+                role="tab"
+                aria-selected={floor.id === floorId}
+                onClick={() => setViewFloor(floor.id)}
+              >
+                {floor.name}
+              </button>
+            ))}
+          </div>
           <button className="icon-button" aria-label="Close map" onClick={() => setMapOpen(false)}>
             <X size={17} />
           </button>
-        </div>
-        <div className="map-floors" role="tablist" aria-label="Map floors">
-          {compiled.building.floors.map((floor) => (
-            <button
-              key={floor.id}
-              role="tab"
-              aria-selected={floor.id === floorId}
-              onClick={() => setViewFloor(floor.id)}
-            >
-              {floor.name}
-            </button>
-          ))}
         </div>
         <MapPlan
           compiled={compiled}
@@ -113,23 +108,6 @@ export function HouseMap() {
             if (destination) travel(destination);
           }}
         />
-        <div className="map-key">
-          <span>
-            <i />
-            You are here
-          </span>
-          <span>Choose a room to walk there</span>
-        </div>
-        {stair && (
-          <button
-            className="map-stair-action"
-            aria-label={stair.label}
-            onClick={() => travel(stair)}
-          >
-            {stair.direction === 'down' ? <ArrowDown size={16} /> : <ArrowUp size={16} />}{' '}
-            {stair.caption ?? stair.label}
-          </button>
-        )}
       </section>
     </div>
   );

@@ -54,6 +54,8 @@ This is an editable spatial prototype, not construction plans.
 The client proxies `/api` to `http://127.0.0.1:3001` during development and preview.
 If that port is occupied, set another server `PORT` and pass its URL with
 `REFLOOR_API_URL=http://127.0.0.1:3002 pnpm dev` (or `pnpm preview`).
+Local origins include both `localhost` and `127.0.0.1` on ports 5173 and 4173.
+Set `CLIENT_ORIGINS` to the exact frontend addresses for a deployment.
 
 `pnpm check` runs formatting, linting, type checking, compiled-package and domain tests.
 It also checks every shipped asset against the manifest's size and SHA-256 checksum,
@@ -128,7 +130,8 @@ doorways and stair landings, and update after edits. At most three separated mar
 appear at once: floor rings are places to stand, named doorway arrows enter rooms,
 and stair arrows change levels. Route stops face the next turn. Exit and stair dots
 remain reachable at the viewport edge when their destination is out of view. The map
-shows actual rooms, furniture, stairs and the current room, position and heading.
+shows actual walls, door swings, windows, furniture, stairs and the current room,
+position and heading. The small floor plan opens the larger view without a duplicate toolbar icon.
 Choose a room on either floor to follow a validated walking route there.
 Doorway trips open required doors before following a route through
 the actual colliders. Stair arrows handle the full climb or descent with one click;

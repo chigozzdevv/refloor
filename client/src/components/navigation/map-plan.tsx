@@ -1,5 +1,8 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CompiledBuilding, NavigationPoint } from '@refloor/engine';
 import { contains } from '@refloor/engine/math';
+import { planDoor, planRoomName, planWall } from '@/shared/navigation/floor-plan';
+import { MapFurniture } from '@/components/navigation/map-furniture';
 
 export function MapPlan({
   compiled,
@@ -14,152 +17,186 @@ export function MapPlan({
   heading: number;
   navigate?: (roomId: string) => void;
 }) {
-  const floor = compiled.building.floors.find((value) => value.id === floorId);
+  const canvas = useRef<SVGSVGElement>(null),
+    [unitsPerPixel, setUnitsPerPixel] = useState(0.05);
+  const floor = compiled.building.floors.find((value) => value.id === floorId),
+    walls = useMemo(() => floor?.walls.map((wall) => ({ wall, ...planWall(wall) })) ?? [], [floor]),
+    doors = useMemo(
+      () =>
+        compiled.doors
+          .filter((door) => door.floorId === floorId)
+          .map((door) => ({ door, ...planDoor(door) })),
+      [compiled, floorId],
+    ),
+    stairs = useMemo(() => {
+      const ids = new Set(
+        compiled.stairs
+          .filter((stair) => stair.lower.floorId === floorId || stair.upper.floorId === floorId)
+          .map((stair) => stair.id),
+      );
+      return compiled.parts.flatMap((part) =>
+        ids.has(part.entityId) &&
+        ['stair-tread', 'stair-landing'].includes(part.role) &&
+        part.collider.shape === 'box'
+          ? [{ id: part.id, collider: part.collider }]
+          : [],
+      );
+    }, [compiled, floorId]);
+  useEffect(() => {
+    const svg = canvas.current;
+    if (!svg || !floor) return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (!entry || !entry.contentRect.width || !entry.contentRect.height) return;
+      setUnitsPerPixel(
+        Math.max(
+          (floor.footprint.width + 1.3) / entry.contentRect.width,
+          (floor.footprint.depth + 1.3) / entry.contentRect.height,
+        ),
+      );
+    });
+    observer.observe(svg);
+    return () => observer.disconnect();
+  }, [floor]);
   if (!floor) return null;
   const fp = floor.footprint,
     here = player?.floorId === floorId ? player.position : null,
     current = here ? floor.rooms.find((room) => contains(room.footprint, here)) : null;
   return (
     <svg
-      className="map-plan"
-      viewBox={`${fp.x - 0.5} ${fp.z - 0.5} ${fp.width + 1} ${fp.depth + 1}`}
+      ref={canvas}
+      className={`map-plan ${navigate ? 'plan-expanded' : 'plan-compact'}`}
+      viewBox={`${fp.x - 0.65} ${fp.z - 0.65} ${fp.width + 1.3} ${fp.depth + 1.3}`}
       aria-label={`${floor.name} plan`}
     >
-      {floor.rooms.map((room) => {
-        const rect = room.footprint,
-          words = room.name.replace(/-/g, ' ').split(' '),
-          middle = Math.ceil(words.length / 2),
-          lines =
-            room.name.length > 13
-              ? [words.slice(0, middle).join(' '), words.slice(middle).join(' ')]
-              : [room.name];
-        return (
-          <g
-            key={room.id}
-            className={`map-room ${current?.id === room.id ? 'map-current' : ''}`}
-            role={navigate ? 'button' : undefined}
-            tabIndex={navigate ? 0 : undefined}
-            aria-label={
-              navigate
-                ? `Go to ${room.name}${current?.id === room.id ? ', current room' : ''}`
-                : undefined
-            }
-            onClick={navigate ? () => navigate(room.id) : undefined}
-            onKeyDown={
-              navigate
-                ? (event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      navigate(room.id);
-                    }
+      <rect className="plan-paper" x={fp.x} y={fp.z} width={fp.width} height={fp.depth} />
+      {floor.rooms.map((room) => (
+        <g
+          key={room.id}
+          className={`map-room ${current?.id === room.id ? 'map-current' : ''}`}
+          role={navigate ? 'button' : undefined}
+          tabIndex={navigate ? 0 : undefined}
+          aria-label={
+            navigate
+              ? `Go to ${room.name}${current?.id === room.id ? ', current room' : ''}`
+              : undefined
+          }
+          onClick={navigate ? () => navigate(room.id) : undefined}
+          onKeyDown={
+            navigate
+              ? (event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    navigate(room.id);
                   }
-                : undefined
-            }
-          >
-            <title>
-              {room.name}
-              {current?.id === room.id ? ' — you are here' : ''}
-            </title>
-            <rect x={rect.x} y={rect.z} width={rect.width} height={rect.depth} rx={0.07} />
-            {navigate && (
-              <text
-                x={rect.x + rect.width / 2}
-                y={rect.z + rect.depth / 2}
-                textAnchor="middle"
-                fontSize={Math.min(
-                  0.34,
-                  (rect.width / Math.max(...lines.map((line) => line.length), 8)) * 1.5,
-                )}
-              >
-                {lines.map((line, index) => (
-                  <tspan
-                    key={index}
-                    x={rect.x + rect.width / 2}
-                    dy={index ? '1.3em' : lines.length > 1 ? '-.3em' : '0'}
-                  >
-                    {line}
-                  </tspan>
-                ))}
-              </text>
-            )}
-          </g>
-        );
-      })}
-      <g className="map-detail">
-        {compiled.building.objects
-          .filter((object) => object.floorId === floor.id && object.kind !== 'light')
-          .map((object) => (
-            <rect
-              key={object.id}
-              x={object.position.x - object.dimensions.width / 2}
-              y={object.position.z - object.dimensions.depth / 2}
-              width={object.dimensions.width}
-              height={object.dimensions.depth}
-              rx={0.06}
-              transform={`rotate(${(-object.rotation * 180) / Math.PI} ${object.position.x} ${object.position.z})`}
-            />
-          ))}
-        {floor.voids.map((hole) => (
+                }
+              : undefined
+          }
+        >
+          <title>{room.name}</title>
           <rect
-            key={hole.id}
-            className="map-void"
-            x={hole.footprint.x}
-            y={hole.footprint.z}
-            width={hole.footprint.width}
-            height={hole.footprint.depth}
+            x={room.footprint.x}
+            y={room.footprint.z}
+            width={room.footprint.width}
+            height={room.footprint.depth}
+          />
+        </g>
+      ))}
+      <g className="plan-details">
+        {compiled.building.objects
+          .filter((object) => object.floorId === floorId && object.kind !== 'light')
+          .map((object) => (
+            <MapFurniture key={object.id} object={object} />
+          ))}
+        {stairs.map((part) => (
+          <rect
+            key={part.id}
+            className="plan-stair"
+            x={-part.collider.size.x / 2}
+            y={-part.collider.size.z / 2}
+            width={part.collider.size.x}
+            height={part.collider.size.z}
+            transform={`translate(${part.collider.position.x} ${part.collider.position.z}) rotate(${(-part.collider.rotation * 180) / Math.PI})`}
           />
         ))}
-        {floor.walls.map((wall) => (
-          <line
+        {walls.map(({ wall, rotation, segments }) => (
+          <g
             key={wall.id}
-            className="map-wall"
-            x1={wall.start.x}
-            y1={wall.start.z}
-            x2={wall.end.x}
-            y2={wall.end.z}
-          />
-        ))}
-        {compiled.doors
-          .filter((door) => door.floorId === floor.id)
-          .map((door) => (
-            <line
-              key={door.id}
-              className="map-door"
-              x1={door.centre.x - (Math.cos(door.rotation) * door.width) / 2}
-              y1={door.centre.z + (Math.sin(door.rotation) * door.width) / 2}
-              x2={door.centre.x + (Math.cos(door.rotation) * door.width) / 2}
-              y2={door.centre.z - (Math.sin(door.rotation) * door.width) / 2}
-            />
-          ))}
-        {compiled.stairs
-          .filter((stair) => stair.lower.floorId === floor.id || stair.upper.floorId === floor.id)
-          .map((stair) => (
-            <g key={stair.id} className="map-stair">
+            transform={`translate(${wall.start.x} ${wall.start.z}) rotate(${rotation})`}
+          >
+            {segments.map((segment, i) => (
               <rect
-                x={stair.footprint.x}
-                y={stair.footprint.z}
-                width={stair.footprint.width}
-                height={stair.footprint.depth}
+                className="plan-wall"
+                key={i}
+                x={segment.offset}
+                y={-wall.thickness / 2}
+                width={segment.length}
+                height={wall.thickness}
               />
-              {Array.from({ length: 8 }, (_, index) => (
-                <line
-                  key={index}
-                  x1={stair.footprint.x}
-                  y1={stair.footprint.z + ((index + 1) * stair.footprint.depth) / 9}
-                  x2={stair.footprint.x + stair.footprint.width}
-                  y2={stair.footprint.z + ((index + 1) * stair.footprint.depth) / 9}
-                />
+            ))}
+            {wall.openings
+              .filter((opening) => opening.kind === 'window')
+              .map((opening) => (
+                <g key={opening.id} className="plan-window">
+                  <rect
+                    x={opening.offset}
+                    y={-wall.thickness / 2}
+                    width={opening.width}
+                    height={wall.thickness}
+                  />
+                  <path d={`M ${opening.offset} 0 h ${opening.width}`} />
+                </g>
               ))}
-            </g>
-          ))}
+          </g>
+        ))}
+        {doors.map(({ door, arc, openTip }) => (
+          <g key={door.id} className="plan-door">
+            <path className="plan-door-swing" d={arc} />
+            <path d={`M ${door.hinge.x} ${door.hinge.z} L ${openTip.x} ${openTip.z}`} />
+          </g>
+        ))}
+        {floor.rooms.map((room) => {
+          const name = planRoomName(room.name),
+            words = name.split(' '),
+            middle = Math.ceil(words.length / 2),
+            lines =
+              name.length > 12
+                ? [words.slice(0, middle).join(' '), words.slice(middle).join(' ')]
+                : [name],
+            rect = room.footprint;
+          return (
+            <text
+              key={room.id}
+              className="plan-room-name"
+              x={rect.x + rect.width / 2}
+              y={rect.z + rect.depth * (room.kind === 'corridor' ? 0.8 : 0.5)}
+              textAnchor="middle"
+              fontSize={Math.min(
+                (navigate ? 12 : 7) * unitsPerPixel,
+                (rect.width - 0.5) / (Math.max(...lines.map((line) => line.length), 5) * 0.55),
+              )}
+            >
+              {lines.map((line, i) => (
+                <tspan
+                  key={i}
+                  x={rect.x + rect.width / 2}
+                  dy={i ? '1.2em' : lines.length > 1 ? '-.25em' : '0'}
+                >
+                  {line}
+                </tspan>
+              ))}
+            </text>
+          );
+        })}
       </g>
       {here && (
         <g
           className="map-player"
           transform={`translate(${here.x} ${here.z}) rotate(${(heading * 180) / Math.PI})`}
         >
-          <circle r={0.24} />
-          <path d="M 0 -.5 L .16 -.12 L -.16 -.12 Z" />
+          <path className="plan-view-cone" d="M 0 0 L -.85 -1.55 Q 0 -2.1 .85 -1.55 Z" />
+          <circle className="plan-player-halo" r={navigate ? 0.42 : 0.53} />
+          <circle r={navigate ? 0.22 : 0.29} />
+          <path className="plan-player-heading" d="M 0 -.6 L .14 -.32 H -.14 Z" />
         </g>
       )}
     </svg>
