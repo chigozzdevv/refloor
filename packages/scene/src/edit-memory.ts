@@ -121,8 +121,30 @@ export function recordChatTurn(memory: EditMemory, turn: ChatTurn): EditMemory {
   };
 }
 
-export function commandTouches(command: SceneCommand, target: EditTarget) {
+export function commandTouches(command: SceneCommand, target: EditTarget): boolean {
   if (target.kind === 'house') return true;
+  if (command.type === 'set-rules')
+    return (
+      command.rules?.some((rule) => {
+        const trigger = rule.trigger;
+        return (
+          (target.kind === 'door' && trigger.kind === 'door' && trigger.doorId === target.id) ||
+          (target.kind === 'object' && 'objectId' in trigger && trigger.objectId === target.id) ||
+          (target.kind === 'floor' &&
+            trigger.kind === 'room-enter' &&
+            trigger.roomId === target.id) ||
+          rule.actions.some((action) => commandTouches(action, target))
+        );
+      }) ?? false
+    );
+  if (command.type === 'emit-event') {
+    const event = command.event;
+    return (
+      (target.kind === 'door' && event.kind === 'door' && event.doorId === target.id) ||
+      (target.kind === 'object' && 'objectId' in event && event.objectId === target.id) ||
+      (target.kind === 'floor' && event.kind === 'room-enter' && event.roomId === target.id)
+    );
+  }
   if (target.kind === 'object')
     return 'objectId' in command
       ? command.objectId === target.id

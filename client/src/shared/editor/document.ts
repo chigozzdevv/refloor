@@ -29,6 +29,7 @@ export function editDocument(
     state.compiled.options,
     player,
   );
+  validateCommandTuning(state.compiled.building, result.revision.commands);
   return {
     compiled: result.compiled,
     memory: recordTransition(state.memory, result.building, {

@@ -37,7 +37,7 @@ const edit = (request: LanguageEditRequest, actions: LanguagePlan['actions']) =>
   id: request.requestId,
   at: '2026-10-18T12:00:00Z',
   expectedRevision: building.revision,
-  commands: languageCommands(request, { message: 'Done', actions }),
+  commands: languageCommands(request, { message: 'Done', actions, automations: [] }),
 });
 
 describe('scoped language edits', () => {
@@ -50,6 +50,7 @@ describe('scoped language edits', () => {
     expect(
       languageCommands(request, {
         message: 'Normal lighting restored.',
+        automations: [],
         actions: [action({ action: 'reset-light', targetId: light.id })],
       }),
     ).toEqual([
@@ -62,6 +63,7 @@ describe('scoped language edits', () => {
     expect(() =>
       languageCommands(request, {
         message: 'Too bright',
+        automations: [],
         actions: [action({ action: 'intensity', targetId: light.id, amount: 100 })],
       }),
     ).toThrow('200%');

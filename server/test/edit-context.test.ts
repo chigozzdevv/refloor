@@ -67,7 +67,11 @@ const action = (
   ...changes,
 });
 const restore = (input: LanguageEditRequest, value: string) =>
-  languageCommands(input, { message: 'Restored.', actions: [action(input.target.id, { value })] });
+  languageCommands(input, {
+    message: 'Restored.',
+    automations: [],
+    actions: [action(input.target.id, { value })],
+  });
 
 describe('recorded item context', () => {
   it('restores the exact original position while retaining later appearance and device settings', () => {
@@ -134,6 +138,7 @@ describe('recorded item context', () => {
     ).toEqual(televisionFor(first.building).position);
     const commands = languageCommands(input, {
       message: 'Moved.',
+      automations: [],
       actions: [
         action(tv.id, {}),
         action(tv.id, {
@@ -260,6 +265,7 @@ describe('recorded item context', () => {
       },
       commands = languageCommands(input, {
         message: 'Restored sofa.',
+        automations: [],
         actions: [action(sofa.id, { value: 'original.all' })],
       });
     expect(() =>

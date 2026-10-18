@@ -4,7 +4,7 @@ import type { LanguageEditRequest } from '@refloor/scene/chat';
 import type { ServerConfig } from '@refloor/server/shared/config/env';
 import { HouseAI } from '@refloor/server/shared/ai/house-ai';
 import { chatTargetExists, languageCommands } from '@refloor/server/shared/planning/language-edit';
-import { validateAssets } from '@refloor/server/features/houses/house.validation';
+import { validateAssets, validateTuning } from '@refloor/server/features/houses/house.validation';
 import { ApiError } from '@refloor/server/shared/http/errors';
 
 export class LanguageEditService {
@@ -66,6 +66,7 @@ export class LanguageEditService {
         input.player ?? undefined,
       );
       validateAssets(edited.building);
+      validateTuning(input.building, edited.revision.commands);
     }
     return {
       requestId: input.requestId,

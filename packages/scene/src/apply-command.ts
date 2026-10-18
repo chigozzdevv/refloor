@@ -7,6 +7,8 @@ import type { SceneObject } from '@refloor/scene/object';
 import { fingerprintBuilding, revisionSchema } from '@refloor/scene/revision';
 import type { EditResult } from '@refloor/scene/revision';
 import { parseBuilding } from '@refloor/scene/schema';
+import { conditionMatches, eventMatches, eventTargetExists } from '@refloor/scene/rules';
+import type { SceneEvent } from '@refloor/scene/rules';
 
 function objectFor(building: Building, id: string): SceneObject {
   const object = building.objects.find((value) => value.id === id);
@@ -16,6 +18,20 @@ function objectFor(building: Building, id: string): SceneObject {
 
 function execute(building: Building, command: SceneCommand): SceneCommand {
   switch (command.type) {
+    case 'set-rules': {
+      const inverse: SceneCommand = {
+        type: 'set-rules',
+        rules: building.rules ? structuredClone(building.rules) : null,
+      };
+      if (command.rules === null) delete building.rules;
+      else building.rules = structuredClone(command.rules);
+      return inverse;
+    }
+    case 'emit-event': {
+      if (!eventTargetExists(building, command.event))
+        throw new SceneError('INVALID_TARGET', 'This event has no matching item or capability');
+      return command;
+    }
     case 'add-object': {
       const ids = [
         building.id,
@@ -177,7 +193,11 @@ function execute(building: Building, command: SceneCommand): SceneCommand {
   }
 }
 
-export function applyCommands(input: unknown, request: unknown): EditResult {
+export function applyCommands(
+  input: unknown,
+  request: unknown,
+  options: { evaluateRules?: boolean } = {},
+): EditResult {
   const original = parseBuilding(input);
   const edit = editSchema.parse(request);
   if (original.revision !== edit.expectedRevision)
@@ -186,7 +206,62 @@ export function applyCommands(input: unknown, request: unknown): EditResult {
       `Expected revision ${edit.expectedRevision}, received ${original.revision}`,
     );
   const draft = structuredClone(original);
-  const inverseCommands = edit.commands.map((command) => execute(draft, command)).reverse();
+  const commands: SceneCommand[] = [...edit.commands],
+    inverseCommands: SceneCommand[] = [];
+  const fired = new Set<string>();
+  for (let index = 0; index < commands.length; index++) {
+    if (commands.length > 100)
+      throw new SceneError(
+        'UNSUPPORTED_ACTION',
+        'Saved actions exceed the limit of 100 changes in one interaction',
+      );
+    const command = commands[index]!,
+      inverse = execute(draft, command);
+    inverseCommands.unshift(inverse);
+    if (options.evaluateRules === false) continue;
+    if (command.type === 'remove-object' && draft.rules) {
+      const affected = (event: SceneEvent) =>
+        'objectId' in event && event.objectId === command.objectId;
+      const remaining = draft.rules.filter(
+        (rule) =>
+          !affected(rule.trigger) &&
+          !rule.conditions.some(affected) &&
+          !rule.actions.some(
+            (action) => 'objectId' in action && action.objectId === command.objectId,
+          ),
+      );
+      if (remaining.length !== draft.rules.length)
+        commands.splice(index + 1, 0, { type: 'set-rules', rules: remaining });
+    }
+    let event: SceneEvent | undefined;
+    if (command.type === 'emit-event') event = command.event;
+    else if (
+      command.type === 'set-door' &&
+      inverse.type === 'set-door' &&
+      inverse.open !== command.open
+    )
+      event = { kind: 'door', doorId: command.doorId, open: command.open };
+    else if (
+      (command.type === 'set-light' || command.type === 'set-television') &&
+      (inverse.type === 'set-light' || inverse.type === 'set-television') &&
+      command.state.powered !== undefined &&
+      command.state.powered !== inverse.state.powered
+    )
+      event = { kind: 'power', objectId: command.objectId, powered: command.state.powered };
+    if (!event) continue;
+    const effects = (draft.rules ?? []).flatMap((rule) => {
+      if (
+        !rule.enabled ||
+        fired.has(rule.id) ||
+        !eventMatches(rule.trigger, event!) ||
+        !rule.conditions.every((condition) => conditionMatches(draft, condition))
+      )
+        return [];
+      fired.add(rule.id);
+      return rule.actions;
+    });
+    commands.splice(index + 1, 0, ...effects);
+  }
   draft.revision += 1;
   const building = parseBuilding(draft);
   const revision = revisionSchema.parse({
@@ -197,7 +272,7 @@ export function applyCommands(input: unknown, request: unknown): EditResult {
     revision: building.revision,
     beforeFingerprint: fingerprintBuilding(original),
     afterFingerprint: fingerprintBuilding(building),
-    commands: edit.commands,
+    commands,
     inverseCommands,
   });
   return { building, revision };

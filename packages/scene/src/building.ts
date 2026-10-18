@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { floorSchema } from '@refloor/scene/floor';
 import { materialSchema } from '@refloor/scene/material';
 import { sceneObjectSchema } from '@refloor/scene/object';
+import { sceneRuleSchema } from '@refloor/scene/rules';
 import {
   coordinateSchema,
   dimensionSchema,
@@ -33,6 +34,7 @@ export const buildingModelSchema = z.strictObject({
   floors: z.array(floorSchema).min(1).max(10),
   stairs: z.array(staircaseSchema),
   objects: z.array(sceneObjectSchema),
+  rules: z.array(sceneRuleSchema).max(32).optional(),
   roof: z.strictObject({
     id: idSchema,
     kind: z.enum(['flat', 'gable']),

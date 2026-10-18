@@ -16,22 +16,30 @@ export function undoRevision(input: unknown, record: unknown, metadata: unknown)
   ) {
     throw new SceneError('REVISION_MISMATCH', 'The revision does not match the current building');
   }
-  const undone = applyCommands(building, {
-    ...edit,
-    expectedRevision: building.revision,
-    commands: revision.inverseCommands,
-  });
+  const undone = applyCommands(
+    building,
+    {
+      ...edit,
+      expectedRevision: building.revision,
+      commands: revision.inverseCommands,
+    },
+    { evaluateRules: false },
+  );
   const restored = { ...undone.building, revision: revision.parentRevision };
   if (fingerprintBuilding(restored) !== revision.beforeFingerprint)
     throw new SceneError(
       'REVISION_MISMATCH',
       'Inverse commands do not restore the recorded building',
     );
-  const replay = applyCommands(restored, {
-    ...edit,
-    expectedRevision: restored.revision,
-    commands: revision.commands,
-  });
+  const replay = applyCommands(
+    restored,
+    {
+      ...edit,
+      expectedRevision: restored.revision,
+      commands: revision.commands,
+    },
+    { evaluateRules: false },
+  );
   if (fingerprintBuilding(replay.building) !== revision.afterFingerprint)
     throw new SceneError('REVISION_MISMATCH', 'Recorded commands do not reproduce the building');
   return undone;

@@ -3,6 +3,8 @@ import { targetIdentity } from '@/shared/editor/identity';
 
 export function describeTarget(building: Building, commands: SceneCommand[]) {
   const targets = commands.map((command) => {
+    if (command.type === 'set-rules' || command.type === 'emit-event')
+      return { kind: 'house' as const, id: building.id };
     if ('objectId' in command) return { kind: 'object' as const, id: command.objectId };
     if ('wallId' in command) return { kind: 'wall' as const, id: command.wallId };
     if ('roomId' in command) return { kind: 'floor' as const, id: command.roomId };
@@ -35,6 +37,12 @@ export function describeChange(building: Building, commands: SceneCommand[]) {
     'objectId' in command ? building.objects.find((value) => value.id === command.objectId) : null;
   let label: string;
   switch (command.type) {
+    case 'set-rules':
+      label = 'Update saved actions';
+      break;
+    case 'emit-event':
+      label = 'Run saved actions';
+      break;
     case 'add-object':
       label = `Add ${command.object.label}`;
       break;

@@ -1,5 +1,6 @@
 import { buildingModelSchema } from '@refloor/scene/building';
 import type { Footprint } from '@refloor/scene/primitives';
+import { eventTargetExists } from '@refloor/scene/rules';
 
 const epsilon = 1e-6;
 
@@ -116,6 +117,7 @@ export const buildingSchema = buildingModelSchema.superRefine((building, context
     const width = object.dimensions.width * cosine + object.dimensions.depth * sine;
     const depth = object.dimensions.width * sine + object.dimensions.depth * cosine;
     if (
+      object.placement !== 'exterior' &&
       !contains(room.footprint, {
         x: object.position.x - width / 2,
         z: object.position.z - depth / 2,
@@ -124,6 +126,26 @@ export const buildingSchema = buildingModelSchema.superRefine((building, context
       })
     )
       report('Rotated object extends outside its room', op);
+    if (object.placement === 'exterior') {
+      if (object.kind !== 'light') report('Only exterior light fixtures are supported outside', op);
+      if (
+        !contains(
+          {
+            x: floor.footprint.x - 6,
+            z: floor.footprint.z - 6,
+            width: floor.footprint.width + 12,
+            depth: floor.footprint.depth + 12,
+          },
+          {
+            x: object.position.x - width / 2,
+            z: object.position.z - depth / 2,
+            width,
+            depth,
+          },
+        )
+      )
+        report('Exterior fixture extends outside the compound', op);
+    }
     if (object.position.y + object.dimensions.height > floor.height + epsilon)
       report('Object extends above its floor ceiling', op);
     const kinds = object.behaviours.map((value) => value.kind);
@@ -133,6 +155,56 @@ export const buildingSchema = buildingModelSchema.superRefine((building, context
       report('Television requires a screen behaviour', op);
     if (object.kind === 'light' && !kinds.includes('light'))
       report('Light requires a light behaviour', op);
+  });
+
+  building.rules?.forEach((rule, index) => {
+    const rp = ['rules', index];
+    register(rule.id, [...rp, 'id']);
+    if (!eventTargetExists(building, rule.trigger))
+      report('Action trigger refers to a missing item or capability', [...rp, 'trigger']);
+    for (const condition of rule.conditions)
+      if (!eventTargetExists(building, condition))
+        report('Action condition refers to a missing item or capability', [...rp, 'conditions']);
+    const added = rule.actions.flatMap((action) =>
+      action.type === 'add-object' ? [action.object.id] : [],
+    );
+    for (const action of rule.actions) {
+      if (action.type === 'set-light' || action.type === 'set-television') {
+        const object = building.objects.find((value) => value.id === action.objectId);
+        if (
+          object &&
+          !object.behaviours.some(
+            (behaviour) =>
+              behaviour.kind === (action.type === 'set-light' ? 'light' : 'television'),
+          )
+        )
+          report('Saved action requires a capability this object does not have', [
+            ...rp,
+            'actions',
+          ]);
+      }
+      if (
+        'objectId' in action &&
+        !building.objects.some((object) => object.id === action.objectId) &&
+        !added.includes(action.objectId)
+      )
+        report('Saved action refers to a missing object', [...rp, 'actions']);
+      if (
+        'doorId' in action &&
+        !eventTargetExists(building, { kind: 'door', doorId: action.doorId, open: true })
+      )
+        report('Saved action refers to a missing door', [...rp, 'actions']);
+      if (
+        'roomId' in action &&
+        !building.floors.some((floor) => floor.rooms.some((room) => room.id === action.roomId))
+      )
+        report('Saved action refers to a missing room', [...rp, 'actions']);
+      if (
+        'wallId' in action &&
+        !building.floors.some((floor) => floor.walls.some((wall) => wall.id === action.wallId))
+      )
+        report('Saved action refers to a missing wall', [...rp, 'actions']);
+    }
   });
 
   building.stairs.forEach((stair, si) => {

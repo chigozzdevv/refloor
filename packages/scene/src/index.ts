@@ -7,6 +7,14 @@ export { getObjectCapabilities } from '@refloor/scene/capability';
 export { getObjectAsset, objectAssetSchema, sceneObjectSchema } from '@refloor/scene/object';
 export { materialSchema } from '@refloor/scene/material';
 export { SceneError } from '@refloor/scene/errors';
+export {
+  sceneRuleSchema,
+  sceneEventSchema,
+  conditionMatches,
+  eventMatches,
+} from '@refloor/scene/rules';
+export type { SceneRule, SceneEvent, RuleCondition } from '@refloor/scene/rules';
+export type { SceneAction } from '@refloor/scene/action';
 export type { Building } from '@refloor/scene/building';
 export type { Floor, Wall, Door } from '@refloor/scene/floor';
 export type { Room } from '@refloor/scene/room';

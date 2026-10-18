@@ -12,6 +12,7 @@ export class EditService {
     return this.revisions.commit(ownerId, id, input.edit.id, 'edit', input, async (record) => {
       validateTuning(record.building, input.edit.commands);
       const result = validatePlacement(record.building, input.edit, {}, input.player ?? undefined);
+      validateTuning(record.building, result.revision.commands);
       validateAssets(result.building);
       return {
         building: result.building,

@@ -33,6 +33,9 @@ export function validateCommandTuning(building: Building, commands: SceneCommand
       throw new Error(`${object.label} brightness must be between 0% and 200%. Normal is 100%.`);
   };
   for (const command of commands) {
+    if (command.type === 'set-rules') {
+      for (const rule of command.rules ?? []) validateCommandTuning(building, rule.actions);
+    }
     if (command.type === 'add-object' || command.type === 'replace-object') {
       const object = command.type === 'add-object' ? command.object : command.asset;
       check(object, object.behaviours.find((item) => item.kind === 'light')?.state.intensity);

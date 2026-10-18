@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { sceneEventSchema, ruleConditionSchema } from '@refloor/scene/rules';
 import {
   assetFromCatalogue,
   catalogue,
@@ -7,46 +8,56 @@ import {
   validateCommandTuning,
 } from '@refloor/catalogue';
 import { applyCommands } from '@refloor/scene';
-import type { Building, Material, SceneCommand } from '@refloor/scene';
+import type { Building, Material, SceneCommand, SceneAction } from '@refloor/scene';
 import type { ChatTarget, LanguageEditRequest } from '@refloor/scene/chat';
 import { scopedEditMemory } from '@refloor/scene/edit-memory';
 import { restoreElement } from '@refloor/server/shared/planning/restore-element';
 
 const vector = z.strictObject({ x: z.number(), y: z.number(), z: z.number() });
+export const languageActionSchema = z.strictObject({
+  action: z.enum([
+    'move',
+    'rotate',
+    'resize',
+    'color',
+    'finish',
+    'replace',
+    'remove',
+    'power',
+    'mute',
+    'volume',
+    'intensity',
+    'light-color',
+    'reset-light',
+    'restore',
+    'open',
+    'source',
+  ]),
+  targetId: z.string(),
+  surface: z.enum(['body', 'frame', 'walls', 'floors']).nullable(),
+  vector: vector.nullable(),
+  relative: z.boolean().nullable(),
+  space: z.enum(['world', 'view']).nullable(),
+  amount: z.number().nullable(),
+  enabled: z.boolean().nullable(),
+  value: z.string().nullable(),
+});
 export const languagePlanSchema = z.strictObject({
   message: z.string().max(240),
-  actions: z
+  actions: z.array(languageActionSchema).max(20),
+  automations: z
     .array(
       z.strictObject({
-        action: z.enum([
-          'move',
-          'rotate',
-          'resize',
-          'color',
-          'finish',
-          'replace',
-          'remove',
-          'power',
-          'mute',
-          'volume',
-          'intensity',
-          'light-color',
-          'reset-light',
-          'restore',
-          'open',
-          'source',
-        ]),
-        targetId: z.string(),
-        surface: z.enum(['body', 'frame', 'walls', 'floors']).nullable(),
-        vector: vector.nullable(),
-        relative: z.boolean().nullable(),
-        space: z.enum(['world', 'view']).nullable(),
-        amount: z.number().nullable(),
-        enabled: z.boolean().nullable(),
-        value: z.string().nullable(),
+        operation: z.enum(['save', 'remove', 'enable']),
+        id: z.string().nullable(),
+        label: z.string().max(120),
+        enabled: z.boolean(),
+        trigger: sceneEventSchema.nullable(),
+        conditions: z.array(ruleConditionSchema).max(8),
+        actions: z.array(languageActionSchema).max(12),
       }),
     )
-    .max(20),
+    .max(12),
 });
 export type LanguagePlan = z.infer<typeof languagePlanSchema>;
 
@@ -79,6 +90,13 @@ export function languageContext(input: LanguageEditRequest) {
     instruction: input.message,
     view: input.view,
     houseId: input.building.id,
+    savedActions: input.building.rules ?? [],
+    supportedEvents: [
+      'door opens/closes',
+      'device powers on/off',
+      'enter a room',
+      'click an object',
+    ],
     context: input.context ? scopedEditMemory(input.context, input.target) : null,
     objects: input.building.objects.map(
       ({
@@ -93,7 +111,9 @@ export function languageContext(input: LanguageEditRequest) {
         roomId,
         materials,
         behaviours,
+        placement,
       }) => ({
+        placement: placement ?? 'interior',
         id,
         tuning: { light: lightTuning({ assetId }) },
         label,
@@ -342,6 +362,60 @@ export function languageCommands(input: LanguageEditRequest, plan: LanguagePlan)
         expectedRevision: building.revision,
         commands: commands.slice(offset),
       }).building;
+  }
+  for (const automation of plan.automations) {
+    const existing = (building.rules ?? []).find((rule) => rule.id === automation.id);
+    if (automation.id && !existing) throw new Error('That saved action no longer exists.');
+    if (automation.operation !== 'save' && !existing)
+      throw new Error('That saved action no longer exists.');
+    const trigger = automation.trigger ?? existing?.trigger;
+    if (!trigger) throw new Error('Choose what should trigger this action.');
+    const selectedTrigger =
+      target.kind === 'house' ||
+      (target.kind === 'door' && trigger.kind === 'door' && trigger.doorId === target.id) ||
+      (target.kind === 'object' && 'objectId' in trigger && trigger.objectId === target.id) ||
+      (target.kind === 'floor' && trigger.kind === 'room-enter' && trigger.roomId === target.id);
+    if (!selectedTrigger) throw new Error('Use house chat to connect actions on different items.');
+    let rules = [...(building.rules ?? [])];
+    if (automation.operation === 'remove') rules = rules.filter((rule) => rule.id !== existing!.id);
+    else if (automation.operation === 'enable')
+      rules = rules.map((rule) =>
+        rule.id === existing!.id ? { ...rule, enabled: automation.enabled } : rule,
+      );
+    else {
+      const actionBuilding = structuredClone(building);
+      delete actionBuilding.rules;
+      const actions = languageCommands(
+        { ...input, target: { kind: 'house', id: building.id }, building: actionBuilding },
+        {
+          message: '',
+          actions: automation.actions,
+          automations: [],
+        },
+      );
+      if (
+        !actions.length ||
+        actions.some((action) => action.type === 'set-rules' || action.type === 'emit-event')
+      )
+        throw new Error('A saved action needs a supported item change.');
+      const rule = {
+        id: existing?.id ?? crypto.randomUUID(),
+        label: automation.label,
+        enabled: automation.enabled,
+        trigger,
+        conditions: automation.conditions,
+        actions: actions as SceneAction[],
+      };
+      rules = [...rules.filter((item) => item.id !== rule.id), rule];
+    }
+    const command: SceneCommand = { type: 'set-rules', rules };
+    building = applyCommands(building, {
+      id: input.requestId,
+      at: new Date().toISOString(),
+      expectedRevision: building.revision,
+      commands: [command],
+    }).building;
+    commands.push(command);
   }
   if (commands.length > 100) throw new Error('Please change fewer items at once.');
   validateCommandTuning(input.building, commands);

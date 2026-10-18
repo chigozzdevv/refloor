@@ -33,6 +33,7 @@ export const sceneObjectSchema = objectAssetSchema.extend({
   id: idSchema,
   floorId: idSchema,
   roomId: idSchema,
+  placement: z.literal('exterior').optional(),
   position: positionSchema,
   rotation: coordinateSchema,
 });
