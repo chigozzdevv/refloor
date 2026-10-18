@@ -5,6 +5,7 @@ import { MongoClient } from 'mongodb';
 import { createHouse } from '@refloor/catalogue/houses';
 import { fingerprintBuilding } from '@refloor/scene';
 import type { SceneCommand } from '@refloor/scene';
+import { createEditMemory, recordChatTurn } from '@refloor/scene/edit-memory';
 import { projectListSchema, projectSchema, projectWriteSchema } from '@refloor/scene/contracts';
 import type { ProjectWrite } from '@refloor/scene/contracts';
 import { createApp } from '@refloor/server/app';
@@ -87,6 +88,73 @@ describe('MongoDB project API', () => {
     const wall = building.floors[0]!.walls[0]!;
     return { type: 'set-wall-material', wallId: wall.id, material: { ...wall.material, color } };
   }
+
+  it('persists original properties, transitions and clarification turns with saved snapshots', async () => {
+    const cookies = await session(),
+      current = await create(cookies),
+      tv = building.objects.find((object) => object.kind === 'television')!;
+    const moved = projectWriteSchema.parse(
+      (
+        await edit(cookies, current, [
+          {
+            type: 'move-object',
+            objectId: tv.id,
+            roomId: tv.roomId,
+            position: { ...tv.position, x: tv.position.x + 0.1 },
+            rotation: tv.rotation,
+          },
+        ])
+      ).json(),
+    );
+    expect(moved.project.memory?.originals.find((item) => item.id === tv.id)).toMatchObject({
+      value: tv,
+    });
+    expect(moved.project.memory?.transitions).toHaveLength(1);
+    const memory = recordChatTurn(moved.project.memory!, {
+      id: randomUUID(),
+      at: new Date().toISOString(),
+      target: { kind: 'object', id: tv.id },
+      message: 'Put it back',
+      reply: 'Original position or previous position?',
+      status: 'clarification',
+      baseRevision: moved.project.revision,
+      revisionId: null,
+    });
+    const saved = await app.inject({
+      method: 'PUT',
+      url: `/api/projects/${current.project.id}`,
+      cookies,
+      payload: {
+        requestId: randomUUID(),
+        expectedVersion: moved.project.version,
+        building: moved.project.building,
+        memory,
+      },
+    });
+    expect(saved.statusCode).toBe(200);
+    const reopened = projectSchema.parse(
+      (
+        await app.inject({ method: 'GET', url: `/api/projects/${current.project.id}`, cookies })
+      ).json(),
+    );
+    expect(reopened.memory).toEqual(memory);
+    expect(reopened.building.objects.find((item) => item.id === tv.id)?.position).toEqual({
+      ...tv.position,
+      x: tv.position.x + 0.1,
+    });
+    const wrong = await app.inject({
+      method: 'POST',
+      url: '/api/projects',
+      cookies,
+      payload: {
+        requestId: randomUUID(),
+        building,
+        memory: { ...createEditMemory(building), sceneId: 'another-home' },
+      },
+    });
+    expect(wrong.statusCode).toBe(422);
+    expect(wrong.json().error.code).toBe('CONTEXT_MISMATCH');
+  });
 
   it('rejects excessive brightness through the typed edit API without changing the project', async () => {
     const cookies = await session(),

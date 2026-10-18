@@ -5,6 +5,7 @@ import type { RevisionRepository } from '@refloor/server/features/edits/revision
 import { revisionKey } from '@refloor/server/features/edits/revision.model';
 import { validateAssets } from '@refloor/server/features/houses/house.validation';
 import { ApiError } from '@refloor/server/shared/http/errors';
+import { createEditMemory, recordTransition } from '@refloor/scene/edit-memory';
 
 export class UndoService {
   constructor(private readonly revisions: RevisionRepository) {}
@@ -44,6 +45,16 @@ export class UndoService {
       const nextId = revisionKey(id, input.id);
       return {
         building: result.building,
+        memory: recordTransition(
+          record.memory ?? createEditMemory(record.building),
+          result.building,
+          {
+            revision: result.revision,
+            kind,
+            source: 'manual',
+            label: `${kind === 'undo' ? 'Undo' : 'Redo'} change`,
+          },
+        ),
         revision: result.revision,
         past: kind === 'undo' ? record.past.slice(0, -1) : [...record.past, nextId].slice(-50),
         future:

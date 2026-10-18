@@ -1,6 +1,7 @@
 import type { SceneRevision } from '@refloor/scene';
 import type { Project, ProjectSummary, ProjectWrite } from '@refloor/scene/contracts';
 import type { HouseRecord } from '@refloor/server/features/houses/house.model';
+import { createEditMemory } from '@refloor/scene/edit-memory';
 
 export function houseSummary(record: HouseRecord): ProjectSummary {
   return {
@@ -18,7 +19,11 @@ export function houseSummary(record: HouseRecord): ProjectSummary {
 }
 
 export function houseDocument(record: HouseRecord): Project {
-  return { ...houseSummary(record), building: record.building };
+  return {
+    ...houseSummary(record),
+    building: record.building,
+    memory: record.memory ?? createEditMemory(record.building),
+  };
 }
 
 export function houseReceipt(

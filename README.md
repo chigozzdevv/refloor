@@ -151,6 +151,14 @@ a light's original power, brightness and illumination colour. Chat and typed edi
 brightness bounds of 0–200% of the catalogue default; legacy brighter values remain loadable
 with capped rendering. Item chats show the selected item name and accept changes through text.
 
+Each house keeps original item and surface properties, the latest 50 applied edit/undo/redo
+transitions and 80 conversation turns. Item chat receives its original snapshot, up to 12 related
+transitions and eight relevant turns, including clarifications and rejected requests. Follow-ups
+resolve against this context and the current scene. Restoring an original or previous property
+uses recorded values and passes normal placement checks; it preserves unrelated properties.
+The context survives chat closure, browser refresh, saved project reopening and project export/import.
+Older browser drafts recover available starting properties from their undo records.
+
 Project files export/import the complete editable building. Import validates geometry,
 access and supported assets before replacing the open scene. Accepted changes save
 automatically to one browser-local draft; a corrupt saved draft remains available for
@@ -162,6 +170,8 @@ in the browser; snapshot saves replace the server's active command history, whil
 current browser undo/redo history saves atomically with the draft and survives refreshes
 until another project is opened. History retains up to 50 changes within a 4 MB draft limit;
 invalid history is discarded without replacing a valid house.
+Original properties and chat context are saved independently of the active undo stack, including
+MongoDB snapshots. Context-only changes also mark a saved space as changed.
 New spaces can use one or two storeys, widths 11.5–16 m and depths 9.5–14 m.
 
 Rendering assets are self-hosted. `client/public/manifest.json` records their

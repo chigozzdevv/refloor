@@ -16,7 +16,7 @@ import {
   houseReceipt,
   houseSummary,
 } from '@refloor/server/features/houses/house.presenter';
-import { validateAssets } from '@refloor/server/features/houses/house.validation';
+import { validateAssets, validateMemory } from '@refloor/server/features/houses/house.validation';
 import type { RevisionRepository } from '@refloor/server/features/edits/revision.repo';
 import { ApiError } from '@refloor/server/shared/http/errors';
 import { fingerprint } from '@refloor/server/shared/database/fingerprint';
@@ -87,6 +87,7 @@ export class HouseService {
       creationId: input.requestId,
       creationFingerprint: digest,
       building: compiled.building,
+      memory: validateMemory(compiled.building, input.memory),
       version: 0,
       createdAt: now,
       updatedAt: now,
@@ -126,7 +127,13 @@ export class HouseService {
           ...input.building,
           revision: Math.max(input.building.revision, record.building.revision + 1),
         });
-        return { building: compiled.building, revision: null, past: [], future: [] };
+        return {
+          building: compiled.building,
+          memory: validateMemory(compiled.building, input.memory ?? record.memory),
+          revision: null,
+          past: [],
+          future: [],
+        };
       },
     );
   }

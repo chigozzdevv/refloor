@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Cloud, Copy, FolderOpen, RefreshCw, Save } from 'lucide-react';
 import { fingerprintBuilding } from '@refloor/scene';
+import { fingerprintEditMemory } from '@refloor/scene/edit-memory';
 import { useProject } from '@/shared/scene/scene-store';
 import { useSavedProjects } from '@/shared/scene/scene-sync';
 
 export function SavedSpaces() {
   const [expanded, setExpanded] = useState(false),
     [confirmId, setConfirmId] = useState<string | null>(null);
-  const { compiled, remote } = useProject();
+  const { compiled, memory, remote } = useProject();
   const {
     items,
     cursor,
@@ -22,7 +23,9 @@ export function SavedSpaces() {
     open,
   } = useSavedProjects();
   const digest = useMemo(() => fingerprintBuilding(compiled.building), [compiled.building]);
-  const dirty = !remote || remote.savedFingerprint !== digest;
+  const memoryDigest = useMemo(() => fingerprintEditMemory(memory), [memory]);
+  const dirty =
+    !remote || remote.savedFingerprint !== digest || remote.savedMemoryFingerprint !== memoryDigest;
   const busy = saving || opening;
   const openSpace = async (id: string) => {
     if (await open(id)) setConfirmId(null);

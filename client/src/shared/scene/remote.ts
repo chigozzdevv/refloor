@@ -7,6 +7,10 @@ export const remoteLinkSchema = z.strictObject({
   buildingId: idSchema,
   version: z.number().int().nonnegative(),
   savedFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  savedMemoryFingerprint: z
+    .string()
+    .regex(/^[a-f0-9]{64}$/)
+    .optional(),
   updatedAt: z.iso.datetime(),
 });
 export type RemoteLink = z.infer<typeof remoteLinkSchema>;

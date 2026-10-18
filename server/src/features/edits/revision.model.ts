@@ -1,4 +1,5 @@
 import type { Building, SceneRevision } from '@refloor/scene';
+import type { EditMemory } from '@refloor/scene/edit-memory';
 
 export type RevisionRecord = {
   _id: string;
@@ -12,6 +13,7 @@ export type RevisionRecord = {
 };
 export type HouseChange = {
   building: Building;
+  memory?: EditMemory;
   revision: SceneRevision | null;
   past: string[];
   future: string[];

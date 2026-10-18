@@ -12,6 +12,7 @@ import type {
 } from '@refloor/server/features/edits/revision.model';
 import { ApiError } from '@refloor/server/shared/http/errors';
 import { fingerprint } from '@refloor/server/shared/database/fingerprint';
+import { createEditMemory } from '@refloor/scene/edit-memory';
 
 function checkRequest(record: RevisionRecord, digest: string) {
   if (record.fingerprint !== digest)
@@ -61,6 +62,7 @@ export class RevisionRepository {
             const next: HouseRecord = {
               ...record,
               building: changed.building,
+              memory: changed.memory ?? record.memory ?? createEditMemory(record.building),
               past: changed.past,
               future: changed.future,
               version: record.version + 1,

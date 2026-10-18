@@ -6,6 +6,8 @@ import { ProjectApiError } from '@/shared/refloor/client';
 import { projectApi } from '@/shared/refloor/houses';
 import { parseProjectFile } from '@/shared/scene/files';
 import { useProject } from '@/shared/scene/scene-store';
+import type { EditMemory } from '@refloor/scene/edit-memory';
+import { fingerprintEditMemory } from '@refloor/scene/edit-memory';
 
 type PendingSave = {
   id: string;
@@ -13,6 +15,7 @@ type PendingSave = {
   projectId: string | null;
   version: number;
   building: Building;
+  memory: EditMemory;
   asNew: boolean;
 };
 type SavedState = {
@@ -68,6 +71,7 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
         projectId: asNew ? null : (current.remote?.id ?? null),
         version: current.remote?.version ?? 0,
         building: current.compiled.building,
+        memory: current.memory,
         asNew,
       };
     const submitted = pending;
@@ -78,8 +82,13 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
             requestId: submitted.id,
             expectedVersion: submitted.version,
             building: submitted.building,
+            memory: submitted.memory,
           })
-        : await projectApi.create({ requestId: submitted.id, building: submitted.building });
+        : await projectApi.create({
+            requestId: submitted.id,
+            building: submitted.building,
+            memory: submitted.memory,
+          });
       if (pending === submitted) pending = null;
       const state = useProject.getState();
       if (state.projectEpoch !== submitted.epoch) return;
@@ -90,6 +99,7 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
           buildingId: submitted.building.id,
           version: result.acceptedVersion,
           savedFingerprint: fingerprintBuilding(submitted.building),
+          savedMemoryFingerprint: fingerprintEditMemory(submitted.memory),
           updatedAt: result.project.updatedAt,
         },
         compiled: {
@@ -112,7 +122,9 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
         });
       else
         state.notify(
-          fingerprintBuilding(state.compiled.building) === fingerprintBuilding(submitted.building)
+          fingerprintBuilding(state.compiled.building) ===
+            fingerprintBuilding(submitted.building) &&
+            fingerprintEditMemory(state.memory) === fingerprintEditMemory(submitted.memory)
             ? 'Space saved.'
             : 'Snapshot saved. You have newer changes to save.',
         );
@@ -136,18 +148,26 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
       const current = useProject.getState();
       if (
         current.projectEpoch !== before.projectEpoch ||
-        current.compiled.building !== before.compiled.building
+        current.compiled.building !== before.compiled.building ||
+        current.memory !== before.memory
       )
         throw new Error(
           'Your current space changed while loading. Open the saved space again when ready.',
         );
-      current.loadProject(compiled, {
-        id: project.id,
-        buildingId: project.building.id,
-        version: project.version,
-        savedFingerprint: fingerprintBuilding(project.building),
-        updatedAt: project.updatedAt,
-      });
+      current.loadProject(
+        compiled,
+        {
+          id: project.id,
+          buildingId: project.building.id,
+          version: project.version,
+          savedFingerprint: fingerprintBuilding(project.building),
+          savedMemoryFingerprint: project.memory
+            ? fingerprintEditMemory(project.memory)
+            : undefined,
+          updatedAt: project.updatedAt,
+        },
+        project.memory,
+      );
       pending = null;
       set({ conflict: false });
       return true;
