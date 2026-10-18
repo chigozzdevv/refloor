@@ -5,7 +5,8 @@ import { buildNavigation, compileBuilding, findPath } from '@refloor/engine';
 import type { Point3 } from '@refloor/engine';
 import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
 import { entryPose } from '@/shared/navigation/entry';
-import { stairTravel } from '@/shared/navigation/stair-travel';
+import { destinationRoute, destinations, smoothRoute } from '@/shared/navigation/destinations';
+import { createJourney, stepJourney } from '@/shared/navigation/journey';
 
 beforeAll(initializePhysics);
 
@@ -30,7 +31,7 @@ function walk(world: CharacterWorld, points: Point3[]) {
 }
 
 describe('browser character runtime', () => {
-  it('follows the staircase in both directions from continuous forward input and resumes mid-flight', () => {
+  it('travels to stair destinations in both directions and resumes after stopping mid-flight', () => {
     const compiled = compileBuilding(
       createHouse({ id: 'continuous-stairs', name: 'Continuous stairs', storeys: 2 }),
     );
@@ -40,21 +41,67 @@ describe('browser character runtime', () => {
       y: 0,
       z: stair.lower.position.z - 0.4,
     });
+    const travel = (target: typeof stair.upper) => {
+      const path = destinationRoute(compiled, world.player, target, 'current');
+      expect(path).not.toBeNull();
+      const journey = createJourney(smoothRoute(compiled, path!.points));
+      for (let i = 0; i < 6000; i++) {
+        const status = stepJourney(world, journey, 1 / 60);
+        if (status === 'arrived') return;
+        if (status === 'blocked') throw new Error('Journey was blocked');
+      }
+      throw new Error('Journey did not arrive');
+    };
     try {
-      const up = stairTravel(compiled, world.feet, { x: 0, z: -1 });
-      expect(up).not.toBeNull();
-      walk(world, up!.points);
+      travel(stair.upper);
       expect(world.player.floorId).toBe('first');
-      const down = stairTravel(compiled, world.feet, { x: 0, z: -1 });
-      expect(down).not.toBeNull();
-      walk(world, down!.points);
+      travel(stair.lower);
       expect(world.player.floorId).toBe('ground');
       walk(world, stair.path.slice(0, 6));
-      const resumed = stairTravel(compiled, world.feet, { x: 0, z: -1 });
-      expect(resumed).not.toBeNull();
-      walk(world, resumed!.points);
+      travel(stair.upper);
       expect(world.feet.y).toBeCloseTo(stair.upper.position.y, 1);
-      expect(stairTravel(compiled, entryPose(compiled).inside, { x: 0, z: 1 })).toBeNull();
+    } finally {
+      world.dispose();
+    }
+  }, 15000);
+  it('opens the doors on a room route and follows the smoothed path through actual colliders', () => {
+    const building = createHouse({ id: 'destinations', name: 'Destinations', storeys: 1 }),
+      initial = compileBuilding(building),
+      entry = entryPose(initial),
+      from = { floorId: entry.floorId, position: entry.inside };
+    const target = destinations(initial).find(
+      (destination) =>
+        destination.kind === 'room' &&
+        destinationRoute(initial, from, destination.target, 'openable')?.doorIds.length,
+    )!;
+    expect(target).toBeDefined();
+    const proposed = destinationRoute(initial, from, target.target, 'openable')!;
+    expect(destinationRoute(initial, from, target.target, 'current')).toBeNull();
+    const opened = applyCommands(building, {
+      id: 'open-route-doors',
+      at: '2026-10-18T12:00:00Z',
+      expectedRevision: building.revision,
+      commands: proposed.doorIds.map((doorId) => ({ type: 'set-door', doorId, open: true })),
+    });
+    const compiled = compileBuilding(opened.building),
+      path = destinationRoute(compiled, from, target.target, 'current')!;
+    expect(path).not.toBeNull();
+    const journey = createJourney(smoothRoute(compiled, path.points)),
+      world = new CharacterWorld(compiled);
+    try {
+      let status = stepJourney(world, journey, 1 / 60);
+      for (let i = 0; i < 6000 && status === 'moving'; i++)
+        status = stepJourney(world, journey, 1 / 60);
+      expect(status).toBe('arrived');
+      expect(
+        Math.hypot(
+          world.feet.x - target.target.position.x,
+          world.feet.z - target.target.position.z,
+        ),
+      ).toBeLessThan(0.05);
+      const stopped = world.feet;
+      for (let i = 0; i < 60; i++) world.step({ x: 0, z: 0 }, 1 / 60);
+      expect(Math.hypot(world.feet.x - stopped.x, world.feet.z - stopped.z)).toBeLessThan(0.001);
     } finally {
       world.dispose();
     }
