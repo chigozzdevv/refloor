@@ -29,7 +29,7 @@ describe('MongoDB project API', () => {
       port: 3001,
       mongoUri: replica.getUri(),
       database: 'refloor_test',
-      clientOrigins: ['http://localhost:5173'],
+      clientOrigins: ['http://localhost:5173', 'http://localhost:4173', 'http://127.0.0.1:4173'],
     };
     database = await new MongoClient(config.mongoUri).connect();
     app = await createApp(config, false);
@@ -93,6 +93,25 @@ describe('MongoDB project API', () => {
     expect(health.json()).toEqual({ ready: true });
     expect(health.headers['cache-control']).toBe('no-store');
     expect((await app.inject('/api/projects')).statusCode).toBe(401);
+  });
+
+  it('accepts sessions from both preview addresses and rejects unrelated origins', async () => {
+    for (const origin of ['http://localhost:4173', 'http://127.0.0.1:4173']) {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/sessions',
+        headers: { origin },
+      });
+      expect(response.statusCode).toBe(200);
+      expect(response.headers['access-control-allow-origin']).toBe(origin);
+    }
+    const rejected = await app.inject({
+      method: 'POST',
+      url: '/api/sessions',
+      headers: { origin: 'https://unrelated.example' },
+    });
+    expect(rejected.statusCode).toBe(403);
+    expect(rejected.json().error.code).toBe('ORIGIN_REJECTED');
   });
 
   it('requires a private session and a configured model for generation', async () => {

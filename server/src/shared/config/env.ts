@@ -9,7 +9,11 @@ const environmentSchema = z.object({
     .string()
     .regex(/^[a-zA-Z0-9_-]{1,63}$/)
     .default('refloor'),
-  CLIENT_ORIGINS: z.string().default('http://127.0.0.1:5173,http://localhost:5173'),
+  CLIENT_ORIGINS: z
+    .string()
+    .default(
+      'http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:4173,http://localhost:4173',
+    ),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.literal('gpt-6-luna').default('gpt-6-luna'),
 });
