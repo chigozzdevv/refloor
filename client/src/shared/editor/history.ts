@@ -1,10 +1,31 @@
 import type { Building, SceneCommand, SceneRevision } from '@refloor/scene';
+import { targetIdentity } from '@/shared/editor/identity';
 
-export type EditDetails = { label?: string; source?: 'chat' | 'manual' | 'navigation' };
+export function describeTarget(building: Building, commands: SceneCommand[]) {
+  const targets = commands.map((command) => {
+    if ('objectId' in command) return { kind: 'object' as const, id: command.objectId };
+    if ('wallId' in command) return { kind: 'wall' as const, id: command.wallId };
+    if ('roomId' in command) return { kind: 'floor' as const, id: command.roomId };
+    if ('doorId' in command) return { kind: 'door' as const, id: command.doorId };
+    return { kind: 'object' as const, id: command.object.id };
+  });
+  const first = targets[0];
+  if (!first || targets.some((target) => target.id !== first.id || target.kind !== first.kind))
+    return undefined;
+  const identity = targetIdentity(building, first);
+  return identity ? `${identity.label} · ${identity.location}` : undefined;
+}
+
+export type EditDetails = {
+  label?: string;
+  target?: string | undefined;
+  source?: 'chat' | 'manual' | 'navigation';
+};
 export type HistoryRecord = {
   revision: SceneRevision;
   label: string;
   source: 'chat' | 'manual' | 'navigation';
+  target?: string | undefined;
 };
 
 export function describeChange(building: Building, commands: SceneCommand[]) {

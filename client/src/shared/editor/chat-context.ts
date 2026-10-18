@@ -1,8 +1,11 @@
 import type { Building } from '@refloor/scene';
 import type { Selection } from '@/shared/editor/editor-store';
+import { targetIdentity } from '@/shared/editor/identity';
 
 export function selectedContext(building: Building, selection: Selection) {
   if (!selection) return null;
+  const identity = targetIdentity(building, selection, selection.point);
+  if (!identity) return null;
   for (const floor of building.floors) {
     if (selection.kind === 'object') {
       const object = building.objects.find(
@@ -12,10 +15,10 @@ export function selectedContext(building: Building, selection: Selection) {
         const tv = object.behaviours.find((value) => value.kind === 'television'),
           light = object.behaviours.find((value) => value.kind === 'light');
         return {
-          label: object.label,
+          ...identity,
           position: {
             x: object.position.x,
-            y: floor.elevation + object.position.y + object.dimensions.height,
+            y: floor.elevation + object.position.y + object.dimensions.height / 2,
             z: object.position.z,
           },
           suggestions: tv
@@ -31,7 +34,7 @@ export function selectedContext(building: Building, selection: Selection) {
       const wall = floor.walls.find((item) => item.id === selection.id);
       if (wall)
         return {
-          label: 'Wall',
+          ...identity,
           position: selection.point ?? {
             x: (wall.start.x + wall.end.x) / 2,
             y: floor.elevation + 1.5,
@@ -45,7 +48,7 @@ export function selectedContext(building: Building, selection: Selection) {
       const room = floor.rooms.find((item) => item.id === selection.id);
       if (room)
         return {
-          label: `${room.name} floor`,
+          ...identity,
           position: selection.point ?? {
             x: room.footprint.x + room.footprint.width / 2,
             y: floor.elevation,
@@ -61,7 +64,7 @@ export function selectedContext(building: Building, selection: Selection) {
         .find((item) => item.kind === 'door' && item.id === selection.id);
       if (door?.kind === 'door')
         return {
-          label: 'Door',
+          ...identity,
           position: selection.point ?? { x: 0, y: floor.elevation + 1, z: 0 },
           suggestions: [door.state.open ? 'Close the door' : 'Open the door'],
           object: null,

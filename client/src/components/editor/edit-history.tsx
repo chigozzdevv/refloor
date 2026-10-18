@@ -34,6 +34,7 @@ export function EditHistory({ close }: { close: () => void }) {
             </span>
             <div>
               <p>{record.label}</p>
+              {record.target && <small className="history-target">{record.target}</small>}
               <time dateTime={record.revision.at}>
                 {new Date(record.revision.at).toLocaleTimeString([], {
                   hour: '2-digit',

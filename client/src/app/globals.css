@@ -228,10 +228,20 @@ textarea:focus-visible,
   font-size: 12px;
   margin-bottom: 7px;
 }
-.chat-heading > span {
+.chat-identity {
+  min-width: 0;
+}
+.chat-identity > span,
+.chat-identity > small {
+  display: block;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+.chat-identity > small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
 }
 .chat-heading .icon-button {
   width: 22px;
@@ -1075,6 +1085,13 @@ select option {
 .history-list time {
   font-size: 10px;
   color: var(--muted);
+}
+.history-target {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
 }
 .selection-chat-wrap {
   position: relative;

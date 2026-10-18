@@ -5,6 +5,7 @@ import { useProject } from '@/shared/scene/scene-store';
 import { physicsSession } from '@/shared/navigation/physics-session';
 import { walkInput } from '@/shared/navigation/input';
 import { editingError } from '@/shared/editor/errors';
+import { targetIdentity } from '@/shared/editor/identity';
 
 export function useLanguageEdit(target: ChatTarget) {
   const [busy, setBusy] = useState(false),
@@ -40,9 +41,14 @@ export function useLanguageEdit(target: ChatTarget) {
         result.baseRevision !== current.compiled.building.revision
       )
         throw new Error('The space changed while I was working. Please try that again.');
+      const identity = targetIdentity(before.compiled.building, target);
       if (
         result.commands.length &&
-        !current.edit(result.commands, { source: 'chat', label: message.trim() })
+        !current.edit(result.commands, {
+          source: 'chat',
+          label: message.trim(),
+          target: identity ? `${identity.label} · ${identity.location}` : undefined,
+        })
       )
         throw new Error(useProject.getState().notice ?? 'That change could not be applied.');
       setReply(result.message || 'Done.');

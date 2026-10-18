@@ -1,7 +1,7 @@
 import { undoRevision } from '@refloor/scene';
 import type { SceneCommand } from '@refloor/scene';
 import type { EditDetails, HistoryRecord } from '@/shared/editor/history';
-import { describeChange } from '@/shared/editor/history';
+import { describeChange, describeTarget } from '@/shared/editor/history';
 import { isPlayerPositionValid, validateBuilding, validatePlacement } from '@refloor/engine';
 import type { CompiledBuilding, NavigationPoint } from '@refloor/engine';
 
@@ -32,6 +32,7 @@ export function editDocument(
         revision: result.revision,
         label: details?.label ?? describeChange(state.compiled.building, commands),
         source: details?.source ?? 'manual',
+        target: details?.target ?? describeTarget(state.compiled.building, commands),
       },
     ].slice(-50),
     future: [],

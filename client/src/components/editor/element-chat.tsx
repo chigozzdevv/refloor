@@ -6,11 +6,13 @@ import { useLanguageEdit } from '@/shared/editor/use-language-edit';
 export function ElementChat({
   target,
   label,
+  location,
   suggestions,
   close,
 }: {
   target: ChatTarget;
   label: string;
+  location?: string;
   suggestions: string[];
   close?: () => void;
 }) {
@@ -27,7 +29,10 @@ export function ElementChat({
       onClick={(event) => event.stopPropagation()}
     >
       <div className="chat-heading">
-        <span>{label}</span>
+        <div className="chat-identity">
+          <span title={label}>{label}</span>
+          {location && <small title={location}>{location}</small>}
+        </div>
         {close && (
           <button className="icon-button" aria-label="Close chat" onClick={close}>
             <X size={14} />
