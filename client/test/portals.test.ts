@@ -1,10 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import { compileBuilding } from '@refloor/engine';
 import { createHouse } from '@refloor/catalogue/houses';
-import { destinations } from '@/shared/navigation/destinations';
-import { portalPosition, tourPortals } from '@/shared/navigation/portals';
+import { destinations, stairContinuation } from '@/shared/navigation/destinations';
+import { portalPosition, stairForView, tourPortals } from '@/shared/navigation/portals';
 
 describe('tour portal access', () => {
+  it('keeps the selected stair direction while travelling between floors', () => {
+    const compiled = compileBuilding(
+      createHouse({ id: 'mid-flight', name: 'Mid-flight', storeys: 2 }),
+    );
+    const stair = compiled.stairs[0]!,
+      player = {
+        floorId: stair.lower.floorId,
+        position: stair.path[Math.floor(stair.path.length / 2)]!,
+      };
+    const links = stairContinuation(compiled, player);
+    expect(links).toHaveLength(2);
+    expect(stairForView(links, player, { x: 0, y: 0, z: 1 }, 'Go downstairs')?.direction).toBe(
+      'down',
+    );
+  });
   it('offers a room exit without projecting the downstairs marker through bedroom walls', () => {
     const compiled = compileBuilding(
         createHouse({ id: 'studio-exit', name: 'Studio exit', storeys: 2 }),

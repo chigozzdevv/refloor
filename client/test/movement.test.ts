@@ -5,6 +5,7 @@ import {
   joystickVector,
   movementInput,
   resetWalkInput,
+  turningInput,
   walkInput,
 } from '@/shared/navigation/input';
 import { advanceStairAssist, stairAssist } from '@/shared/navigation/stair-assist';
@@ -14,22 +15,27 @@ beforeAll(initializePhysics);
 afterEach(resetWalkInput);
 
 describe('walk pad input', () => {
-  it('supports diagonals without increasing walking speed and has a centre dead zone', () => {
+  it('steers while moving forward and has a centre dead zone', () => {
     expect(joystickVector(2, -2, 40)).toEqual({ x: 0, y: 0 });
     walkInput.pad = joystickVector(100, -100, 40);
     expect(walkInput.pad.x).toBeGreaterThan(0);
     expect(walkInput.pad.y).toBeGreaterThan(0);
-    expect(Math.hypot(...Object.values(movementInput()))).toBeCloseTo(1);
+    expect(movementInput().x).toBe(0);
+    expect(movementInput().y).toBeGreaterThan(0);
+    expect(turningInput()).toBeGreaterThan(0);
     walkInput.keys.add('w');
     walkInput.keys.add('d');
     expect(Math.hypot(...Object.values(movementInput()))).toBeCloseTo(1);
     resetWalkInput();
     expect(movementInput()).toEqual({ x: 0, y: 0 });
   });
-  it('maps pad arrows relative to the view independently of keyboard turning', () => {
+  it('turns in place from the pad and combines it with keyboard turning', () => {
     walkInput.pad = { x: -1, y: 0 };
     walkInput.keys.add('arrowright');
-    expect(movementInput()).toEqual({ x: -1, y: 0 });
+    expect(movementInput()).toEqual({ x: 0, y: 0 });
+    expect(turningInput()).toBe(0);
+    walkInput.keys.clear();
+    expect(turningInput()).toBe(-1);
   });
 });
 

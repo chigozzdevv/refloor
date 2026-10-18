@@ -1,9 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import type { ComponentRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { MathUtils, PerspectiveCamera, Vector3 } from 'three';
-import type { CompiledBuilding } from '@refloor/engine';
+import type { CompiledBuilding, Point3 } from '@refloor/engine';
 import type { SceneCommand } from '@refloor/scene';
 import { smoothRoute } from '@/shared/navigation/destinations';
 import { createJourney, stepJourney } from '@/shared/navigation/journey';
@@ -12,21 +12,30 @@ import { useNavigation } from '@/shared/navigation/navigation-store';
 import { useProject } from '@/shared/scene/scene-store';
 import { entryPose } from '@/shared/navigation/entry';
 import { physicsSession } from '@/shared/navigation/physics-session';
-import { isTyping, movementInput, resetWalkInput, walkInput } from '@/shared/navigation/input';
+import {
+  isTyping,
+  movementInput,
+  resetWalkInput,
+  turningInput,
+  walkInput,
+} from '@/shared/navigation/input';
 import { advanceStairAssist, stairAssist } from '@/shared/navigation/stair-assist';
 import type { StairAssist } from '@/shared/navigation/stair-assist';
 import { doorRoute } from '@/shared/navigation/door-route';
+import { arrivalView } from '@/shared/navigation/arrival';
+import { exteriorCamera } from '@/shared/scene/exterior';
 
 export function NavigationControls() {
   const { camera, gl, size } = useThree(),
     controls = useRef<ComponentRef<typeof OrbitControls>>(null);
-  const floorId = useProject((state) => state.floorId),
-    compiled = useProject((state) => state.compiled),
+  const compiled = useProject((state) => state.compiled),
     epoch = useProject((state) => state.projectEpoch),
     mode = useProject((state) => state.mode),
     interacting = useProject((state) => state.interacting),
     selection = useProject((state) => state.selection);
   const overview = useNavigation((state) => state.overview);
+  const outside = exteriorCamera(compiled, size.width / size.height);
+  const exteriorPosition = outside.position;
   const previous = useRef(mode),
     stairs = useRef<StairAssist | null>(null),
     transition = useRef<number | null>(null),
@@ -36,12 +45,12 @@ export function NavigationControls() {
       compiled: CompiledBuilding;
       journey: Journey;
       doors: SceneCommand[];
+      lookAt: Point3 | undefined;
     } | null>(null);
-  const floor = compiled.building.floors.find((value) => value.id === floorId),
-    elevation = floor?.elevation ?? 0,
-    centreX = (floor?.footprint.x ?? 0) + (floor?.footprint.width ?? 12) / 2,
-    centreZ = (floor?.footprint.z ?? 0) + (floor?.footprint.depth ?? 10) / 2,
-    span = Math.max(floor?.footprint.width ?? 12, floor?.footprint.depth ?? 10);
+  const entryFacing = useMemo(
+    () => arrivalView(compiled, { floorId: entry.floorId, position: entry.inside })?.point,
+    [compiled],
+  );
   const forward = useRef(new Vector3()),
     right = useRef(new Vector3()),
     target = useRef(new Vector3());
@@ -63,8 +72,12 @@ export function NavigationControls() {
       );
     }
     if (mode === 'orbit') {
-      camera.position.set(centreX + span * 0.85, span + elevation, centreZ - span * 1.1);
-      controls.current?.target.set(centreX, elevation + 0.5, centreZ);
+      if (camera instanceof PerspectiveCamera) {
+        camera.fov = 45;
+        camera.updateProjectionMatrix();
+      }
+      camera.position.set(exteriorPosition.x, exteriorPosition.y, exteriorPosition.z);
+      controls.current?.target.set(outside.target.x, outside.target.y, outside.target.z);
       controls.current?.update();
       route.current = null;
     }
@@ -90,11 +103,21 @@ export function NavigationControls() {
   }, [camera, mode, compiled.building.id, epoch, size.width, size.height]);
   useEffect(() => {
     if (mode === 'orbit') {
-      camera.position.set(centreX + span * 0.85, span + elevation, centreZ - span * 1.1);
-      controls.current?.target.set(centreX, elevation + 0.5, centreZ);
+      camera.position.set(exteriorPosition.x, exteriorPosition.y, exteriorPosition.z);
+      controls.current?.target.set(outside.target.x, outside.target.y, outside.target.z);
       controls.current?.update();
     }
-  }, [camera, elevation, mode, centreX, centreZ, span, overview]);
+  }, [
+    camera,
+    mode,
+    exteriorPosition.x,
+    exteriorPosition.y,
+    exteriorPosition.z,
+    outside.target.x,
+    outside.target.y,
+    outside.target.z,
+    overview,
+  ]);
   useEffect(() => {
     if (selection || interacting) useNavigation.getState().stop();
   }, [selection, interacting]);
@@ -147,7 +170,6 @@ export function NavigationControls() {
     const up = (event: KeyboardEvent) => walkInput.keys.delete(event.key.toLowerCase()),
       blur = () => {
         resetWalkInput();
-        useNavigation.getState().stop();
         pointerUp();
       };
     let pointer: { id: number; x: number; y: number; dragging: boolean } | null = null;
@@ -232,11 +254,21 @@ export function NavigationControls() {
     if (transition.current !== null) {
       transition.current += dt;
       const t = MathUtils.smootherstep(transition.current, 0.5, 1.9);
-      target.current.set(feet.x, feet.y + 1.62, feet.z);
-      camera.position
-        .set(entry.outside.x, entry.outside.y, entry.outside.z)
-        .lerp(target.current, t);
-      camera.lookAt(feet.x + entry.normal.x * 5, feet.y + 0.9, feet.z + entry.normal.z * 5);
+      target.current.set(entry.threshold.x, entry.threshold.y + 1.62, entry.threshold.z);
+      if (t < 0.65)
+        camera.position
+          .set(entry.outside.x, entry.outside.y, entry.outside.z)
+          .lerp(target.current, t / 0.65);
+      else
+        camera.position
+          .copy(target.current)
+          .lerp(new Vector3(feet.x, feet.y + 1.62, feet.z), (t - 0.65) / 0.35);
+      const facing = entryFacing;
+      camera.lookAt(
+        MathUtils.lerp(feet.x + entry.normal.x * 5, facing?.x ?? feet.x + entry.normal.x * 5, t),
+        MathUtils.lerp(feet.y + 0.9, facing?.y ?? feet.y + 0.9, t),
+        MathUtils.lerp(feet.z + entry.normal.z * 5, facing?.z ?? feet.z + entry.normal.z * 5, t),
+      );
       walkInput.yaw = camera.rotation.y;
       walkInput.pitch = camera.rotation.x;
       if (transition.current >= 1.9) transition.current = null;
@@ -246,7 +278,7 @@ export function NavigationControls() {
     const input = movementInput(),
       f = input.y,
       r = input.x;
-    const turn = Number(keys.has('arrowright')) - Number(keys.has('arrowleft'));
+    const turn = turningInput();
     walkInput.yaw -= turn * dt * 1.7;
     const request = useNavigation.getState().request;
     if (request && (route.current?.id !== request.id || route.current.compiled !== compiled)) {
@@ -266,6 +298,9 @@ export function NavigationControls() {
         compiled,
         journey: createJourney(smoothRoute(compiled, plan.path.points)),
         doors: plan.staging ? plan.commands : [],
+        lookAt: plan.staging
+          ? undefined
+          : (arrivalView(compiled, request.target, request.lookAt)?.point ?? request.lookAt),
       };
     }
     const active = request ? route.current?.journey : null;
@@ -278,17 +313,18 @@ export function NavigationControls() {
         return;
       }
       let heading = active.heading;
+      const lookAt = route.current?.lookAt;
       const remaining = Math.hypot(
         world.feet.x - request.target.position.x,
         world.feet.z - request.target.position.z,
       );
       if (
         !route.current?.doors.length &&
-        request?.lookAt &&
+        lookAt &&
         remaining < 1.4 &&
-        Math.hypot(request.lookAt.x - world.feet.x, request.lookAt.z - world.feet.z) > 0.5
+        Math.hypot(lookAt.x - world.feet.x, lookAt.z - world.feet.z) > 0.5
       ) {
-        const facing = Math.atan2(world.feet.x - request.lookAt.x, world.feet.z - request.lookAt.z);
+        const facing = Math.atan2(world.feet.x - lookAt.x, world.feet.z - lookAt.z);
         heading =
           heading === null
             ? facing
@@ -301,7 +337,14 @@ export function NavigationControls() {
         angle = Math.atan2(Math.sin(heading - walkInput.yaw), Math.cos(heading - walkInput.yaw));
         walkInput.yaw += MathUtils.clamp(angle, -dt * 2.4, dt * 2.4);
       }
-      walkInput.pitch = MathUtils.damp(walkInput.pitch, -0.14, 4, dt);
+      const pitch =
+        lookAt && remaining < 1.4
+          ? Math.atan2(
+              lookAt.y - world.feet.y - 1.62,
+              Math.hypot(lookAt.x - world.feet.x, lookAt.z - world.feet.z),
+            )
+          : -0.1;
+      walkInput.pitch = MathUtils.damp(walkInput.pitch, MathUtils.clamp(pitch, -0.65, 0.35), 4, dt);
       if (status === 'blocked' || (status === 'arrived' && Math.abs(angle) < 0.04)) {
         useNavigation.getState().stop();
         if (status === 'blocked')
@@ -343,10 +386,10 @@ export function NavigationControls() {
     <OrbitControls
       ref={controls}
       makeDefault
-      target={[centreX, elevation + 0.5, centreZ]}
+      target={[outside.target.x, outside.target.y, outside.target.z]}
       enabled={!interacting}
       minDistance={3}
-      maxDistance={35}
+      maxDistance={Math.max(35, outside.distance * 2)}
       maxPolarAngle={Math.PI / 2 - 0.07}
       enableDamping
       dampingFactor={0.08}

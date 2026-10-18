@@ -452,6 +452,23 @@ textarea:focus-visible,
   border-radius: 50%;
   background: #f1eee6b0;
 }
+.pad-stairs {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid #ffffff40;
+  border-radius: 24px;
+  background: #17212cbf;
+  backdrop-filter: blur(14px);
+  font-size: 11px;
+  white-space: nowrap;
+}
 @media (max-width: 600px) {
   .movement-pad {
     width: 124px;

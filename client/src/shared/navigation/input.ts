@@ -16,13 +16,21 @@ export function joystickVector(x: number, y: number, radius: number) {
 
 export function movementInput() {
   const { keys, pad } = walkInput;
-  const x = Number(keys.has('d')) - Number(keys.has('a')) + pad.x;
+  const x = Number(keys.has('d')) - Number(keys.has('a'));
   const y =
     Number(keys.has('w') || keys.has('arrowup')) -
     Number(keys.has('s') || keys.has('arrowdown')) +
     pad.y;
   const length = Math.max(1, Math.hypot(x, y));
   return { x: x / length, y: y / length };
+}
+
+export function turningInput() {
+  const { keys, pad } = walkInput;
+  return Math.max(
+    -1,
+    Math.min(1, Number(keys.has('arrowright')) - Number(keys.has('arrowleft')) + pad.x),
+  );
 }
 
 export function resetWalkInput() {

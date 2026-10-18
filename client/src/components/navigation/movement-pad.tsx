@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from 'lucide-react';
+import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, RotateCcw, RotateCw } from 'lucide-react';
 import { joystickVector, walkInput } from '@/shared/navigation/input';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 import { useProject } from '@/shared/scene/scene-store';
 
 const directions = [
-  { name: 'forward', x: 0, y: 1, Icon: ChevronUp },
-  { name: 'left', x: -1, y: 0, Icon: ChevronLeft },
-  { name: 'right', x: 1, y: 0, Icon: ChevronRight },
-  { name: 'backward', x: 0, y: -1, Icon: ChevronDown },
+  { name: 'forward', key: 'ArrowUp', label: 'Walk forward', x: 0, y: 1, Icon: ChevronUp },
+  { name: 'left', key: 'ArrowLeft', label: 'Turn left', x: -1, y: 0, Icon: RotateCcw },
+  { name: 'right', key: 'ArrowRight', label: 'Turn right', x: 1, y: 0, Icon: RotateCw },
+  { name: 'backward', key: 'ArrowDown', label: 'Walk backward', x: 0, y: -1, Icon: ChevronDown },
 ] as const;
 
 export function MovementPad() {
@@ -18,6 +18,7 @@ export function MovementPad() {
   const [vector, setVector] = useState({ x: 0, y: 0 });
   const { selection, interacting, mode } = useProject();
   const mapOpen = useNavigation((state) => state.mapOpen);
+  const stair = useNavigation((state) => state.stair);
   const enabled = mode === 'walk' && !selection && !interacting && !mapOpen;
   const move = useCallback((value: { x: number; y: number }) => {
     walkInput.pad = value;
@@ -75,11 +76,25 @@ export function MovementPad() {
       aria-label="Walk controls"
       onContextMenu={(event) => event.preventDefault()}
     >
-      {directions.map(({ name, x, y, Icon }) => (
+      {stair && (
+        <button
+          className="pad-stairs"
+          aria-label={stair.label}
+          onClick={() => {
+            release();
+            begin();
+            useNavigation.getState().go(stair.target, stair.lookAt, stair.label);
+          }}
+        >
+          {stair.direction === 'down' ? <ArrowDown size={14} /> : <ArrowUp size={14} />}
+          {stair.caption ?? (stair.direction === 'down' ? 'Downstairs' : 'Upstairs')}
+        </button>
+      )}
+      {directions.map(({ name, label, x, y, Icon }) => (
         <button
           key={name}
           className={`pad-direction pad-${name}`}
-          aria-label={`Walk ${name}`}
+          aria-label={label}
           onPointerDown={(event) => {
             if (capture(event, false)) move({ x, y });
           }}
@@ -101,7 +116,7 @@ export function MovementPad() {
       ))}
       <button
         className="pad-stick"
-        aria-label="Drag to walk in any direction"
+        aria-label="Drag to steer and walk"
         style={{ transform: `translate(${vector.x * 23}px, ${-vector.y * 23}px)` }}
         onPointerDown={(event) => {
           if (capture(event, true)) drag(event);
@@ -112,11 +127,7 @@ export function MovementPad() {
         onLostPointerCapture={release}
         onBlur={release}
         onKeyDown={(event) => {
-          const direction = directions.find(
-            (value) =>
-              `Arrow${value.name === 'forward' ? 'Up' : value.name === 'backward' ? 'Down' : value.name === 'left' ? 'Left' : 'Right'}` ===
-              event.key,
-          );
+          const direction = directions.find((value) => value.key === event.key);
           if (!direction) return;
           event.preventDefault();
           event.stopPropagation();

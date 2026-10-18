@@ -3,7 +3,12 @@ import type { CompiledBuilding, Point3 } from '@refloor/engine';
 import { contains, rotate } from '@refloor/engine/math';
 import { colliderBounds } from '@refloor/engine/collision/bounds';
 
-function clearView(compiled: CompiledBuilding, from: Point3, to: Point3, featureId?: string) {
+export function clearView(
+  compiled: CompiledBuilding,
+  from: Point3,
+  to: Point3,
+  featureId?: string,
+) {
   return !compiled.colliders.some((collider) => {
     if (collider.entityId === featureId) return false;
     const box = colliderBounds(collider),

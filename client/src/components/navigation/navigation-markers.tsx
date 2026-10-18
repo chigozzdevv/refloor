@@ -7,7 +7,7 @@ import { contains } from '@refloor/engine/math';
 import type { Destination } from '@/shared/navigation/destinations';
 import { destinations, nearbyRoute, stairContinuation } from '@/shared/navigation/destinations';
 import { organizeMarkers } from '@/shared/navigation/marker-layout';
-import { portalPosition, tourPortals } from '@/shared/navigation/portals';
+import { portalPosition, stairForView, tourPortals } from '@/shared/navigation/portals';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 import type { PortalPin } from '@/shared/navigation/navigation-store';
 import { physicsSession } from '@/shared/navigation/physics-session';
@@ -117,10 +117,11 @@ export function NavigationMarkers() {
       continuing = stairContinuation(compiled, player);
     const links = continuing.length ? continuing : tourPortals(compiled, player, all);
     camera.getWorldDirection(projected);
+    const stair = stairForView(links, player, projected, request?.label);
     const heading = Math.atan2(projected.x, -projected.z),
       location = continuing.length ? 'Stairs' : (room?.name ?? floor?.name ?? '');
     if (request || mapOpen || interacting || selection) {
-      useNavigation.getState().setContext({ player, heading, location, edgePortals: [] });
+      useNavigation.getState().setContext({ player, heading, location, edgePortals: [], stair });
       return;
     }
     camera.updateMatrixWorld();
@@ -224,7 +225,7 @@ export function NavigationMarkers() {
       }
       edgePortals.push({ destination, x: Math.round(position.x), y: Math.round(position.y) });
     }
-    useNavigation.getState().setContext({ player, heading, location, edgePortals });
+    useNavigation.getState().setContext({ player, heading, location, edgePortals, stair });
     setVisible((previous) =>
       previous.length === layout.length &&
       previous.every(

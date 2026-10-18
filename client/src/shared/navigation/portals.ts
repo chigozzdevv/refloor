@@ -1,8 +1,28 @@
-import type { CompiledBuilding, NavigationPoint } from '@refloor/engine';
+import type { CompiledBuilding, NavigationPoint, Point3 } from '@refloor/engine';
 import { contains } from '@refloor/engine/math';
 import type { Destination } from '@/shared/navigation/destinations';
 import { nearbyRoute } from '@/shared/navigation/destinations';
 import { roomExit } from '@/shared/navigation/room-exit';
+
+export function stairForView(
+  links: Destination[],
+  player: NavigationPoint,
+  forward: Point3,
+  activeLabel?: string,
+) {
+  const stairs = links.filter((link) => link.kind === 'stairs');
+  const active = stairs.find((link) => link.label === activeLabel);
+  if (active) return active;
+  const alignment = (link: Destination) => {
+    const dx = link.anchor.x - player.position.x,
+      dy = link.anchor.y - player.position.y - 1.62,
+      dz = link.anchor.z - player.position.z;
+    return (
+      (dx * forward.x + dy * forward.y + dz * forward.z) / Math.max(0.01, Math.hypot(dx, dy, dz))
+    );
+  };
+  return stairs.sort((a, b) => alignment(b) - alignment(a))[0] ?? null;
+}
 
 export function tourPortals(
   compiled: CompiledBuilding,

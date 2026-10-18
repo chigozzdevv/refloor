@@ -8,6 +8,7 @@ type TourContext = {
   player: NavigationPoint;
   heading: number;
   edgePortals: PortalPin[];
+  stair: Destination | null;
 };
 
 type NavigationState = {
@@ -16,6 +17,7 @@ type NavigationState = {
   player: NavigationPoint | null;
   heading: number;
   edgePortals: PortalPin[];
+  stair: Destination | null;
   mapOpen: boolean;
   setMapOpen: (open: boolean) => void;
   setContext: (context: TourContext) => void;
@@ -31,6 +33,7 @@ export const useNavigation = create<NavigationState>((set) => ({
   player: null,
   heading: 0,
   edgePortals: [],
+  stair: null,
   mapOpen: false,
   setMapOpen: (mapOpen) => set({ mapOpen }),
   setContext: (context) =>
@@ -41,6 +44,8 @@ export const useNavigation = create<NavigationState>((set) => ({
       state.player?.position.y === context.player.position.y &&
       state.player?.position.z === context.player.position.z &&
       state.heading === context.heading &&
+      state.stair?.id === context.stair?.id &&
+      state.stair?.target === context.stair?.target &&
       state.edgePortals.length === context.edgePortals.length &&
       state.edgePortals.every(
         (pin, index) =>
