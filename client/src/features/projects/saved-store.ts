@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { fingerprintBuilding } from '@refloor/scene';
 import type { Building } from '@refloor/scene';
-import type { ProjectSummary } from '@refloor/contracts';
+import type { ProjectSummary } from '@refloor/scene/contracts';
 import { projectApi, ProjectApiError } from '@/runtime/projects/api';
 import { parseProjectFile } from '@/runtime/projects/files';
 import { useProject } from '@/features/projects/project-store';

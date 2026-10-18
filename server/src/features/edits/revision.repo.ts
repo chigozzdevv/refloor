@@ -1,6 +1,6 @@
 import { MongoServerError } from 'mongodb';
 import type { Collection, MongoClient, Db } from 'mongodb';
-import type { ProjectWrite } from '@refloor/contracts';
+import type { ProjectWrite } from '@refloor/scene/contracts';
 import type { HouseRecord } from '@refloor/server/features/houses/house.model';
 import type { HouseRepository } from '@refloor/server/features/houses/house.repo';
 import { houseReceipt } from '@refloor/server/features/houses/house.presenter';
@@ -11,7 +11,7 @@ import type {
   RevisionRecord,
 } from '@refloor/server/features/edits/revision.model';
 import { ApiError } from '@refloor/server/shared/http/errors';
-import { fingerprint } from '@refloor/server/shared/fingerprint';
+import { fingerprint } from '@refloor/server/shared/database/fingerprint';
 
 function checkRequest(record: RevisionRecord, digest: string) {
   if (record.fingerprint !== digest)

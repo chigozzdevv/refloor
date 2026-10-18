@@ -1,5 +1,5 @@
 import type { Building, Floor, SceneObject } from '@refloor/scene';
-import { createFurniture } from '@refloor/catalogue';
+import { createFurniture } from '@refloor/catalogue/furniture';
 
 export function furnishFloor(
   floor: Floor,

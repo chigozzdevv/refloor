@@ -3,8 +3,8 @@ import {
   projectListSchema,
   projectSchema,
   projectWriteSchema,
-} from '@refloor/contracts';
-import type { ProjectCreate, ProjectSave } from '@refloor/contracts';
+} from '@refloor/scene/contracts';
+import type { ProjectCreate, ProjectSave } from '@refloor/scene/contracts';
 import { z } from 'zod';
 
 const sessionReadySchema = z.strictObject({ ready: z.literal(true) });

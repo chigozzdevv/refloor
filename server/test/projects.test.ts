@@ -2,11 +2,11 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { MongoClient } from 'mongodb';
-import { createHouse } from '@refloor/blueprints';
+import { createHouse } from '@refloor/catalogue/houses';
 import { fingerprintBuilding } from '@refloor/scene';
 import type { SceneCommand } from '@refloor/scene';
-import { projectListSchema, projectSchema, projectWriteSchema } from '@refloor/contracts';
-import type { ProjectWrite } from '@refloor/contracts';
+import { projectListSchema, projectSchema, projectWriteSchema } from '@refloor/scene/contracts';
+import type { ProjectWrite } from '@refloor/scene/contracts';
 import { createApp } from '@refloor/server/app';
 import type { ServerConfig } from '@refloor/server/shared/config/env';
 

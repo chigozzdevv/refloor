@@ -1,5 +1,7 @@
 import { z } from 'zod';
-import { buildingSchema, editSchema, revisionSchema } from '@refloor/scene';
+import { buildingSchema } from '@refloor/scene/schema';
+import { editSchema } from '@refloor/scene/command';
+import { revisionSchema } from '@refloor/scene/revision';
 import { positionSchema, idSchema } from '@refloor/scene/primitives';
 
 export const playerSchema = z.strictObject({ floorId: idSchema, position: positionSchema });

@@ -1,5 +1,5 @@
 import { validatePlacement } from '@refloor/engine';
-import type { ProjectEdit, ProjectWrite } from '@refloor/contracts';
+import type { ProjectEdit, ProjectWrite } from '@refloor/scene/contracts';
 import type { RevisionRepository } from '@refloor/server/features/edits/revision.repo';
 import { revisionKey } from '@refloor/server/features/edits/revision.model';
 import { validateAssets } from '@refloor/server/features/houses/house.validation';

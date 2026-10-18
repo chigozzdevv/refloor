@@ -5,10 +5,6 @@ export default defineConfig({
   resolve: {
     alias: [
       {
-        find: /^@refloor\/contracts$/,
-        replacement: fileURLToPath(new URL('./packages/contracts/src/index.ts', import.meta.url)),
-      },
-      {
         find: /^@refloor\/server\//,
         replacement: fileURLToPath(new URL('./server/src/', import.meta.url)),
       },
@@ -24,14 +20,6 @@ export default defineConfig({
       {
         find: /^@refloor\/catalogue\//,
         replacement: fileURLToPath(new URL('./packages/catalogue/src/', import.meta.url)),
-      },
-      {
-        find: /^@refloor\/blueprints$/,
-        replacement: fileURLToPath(new URL('./packages/blueprints/src/index.ts', import.meta.url)),
-      },
-      {
-        find: /^@refloor\/blueprints\//,
-        replacement: fileURLToPath(new URL('./packages/blueprints/src/', import.meta.url)),
       },
       {
         find: /^@refloor\/engine$/,

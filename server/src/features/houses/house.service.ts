@@ -6,7 +6,7 @@ import type {
   ProjectCreate,
   ProjectSave,
   ProjectList,
-} from '@refloor/contracts';
+} from '@refloor/scene/contracts';
 import type { HouseRecord } from '@refloor/server/features/houses/house.model';
 import type { HouseRepository } from '@refloor/server/features/houses/house.repo';
 import { houseCursorSchema } from '@refloor/server/features/houses/house.schema';
@@ -19,7 +19,7 @@ import {
 import { validateAssets } from '@refloor/server/features/houses/house.validation';
 import type { RevisionRepository } from '@refloor/server/features/edits/revision.repo';
 import { ApiError } from '@refloor/server/shared/http/errors';
-import { fingerprint } from '@refloor/server/shared/fingerprint';
+import { fingerprint } from '@refloor/server/shared/database/fingerprint';
 
 export class HouseService {
   constructor(

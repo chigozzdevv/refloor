@@ -1,7 +1,7 @@
 import type { Collider, CompiledBuilding, Point3, StairConnection } from '@refloor/engine/types';
 import { distanceToBox } from '@refloor/engine/math';
 import { colliderBounds } from '@refloor/engine/collision/bounds';
-import { collisionCandidates } from '@refloor/engine/collision/index';
+import { collisionCandidates } from '@refloor/engine/collision/colliders';
 
 export function blockingCollider(
   compiled: CompiledBuilding,

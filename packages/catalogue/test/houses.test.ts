@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createHouse } from '@refloor/blueprints';
+import { createHouse } from '@refloor/catalogue/houses';
 import { validateBuilding, buildNavigation, entrancePoints, findPath } from '@refloor/engine';
 
 describe('parametric starting homes', () => {

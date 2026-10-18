@@ -25,9 +25,7 @@
     "@fastify/rate-limit": "11.2.1",
     "@refloor/scene": "workspace:*",
     "@refloor/engine": "workspace:*",
-    "@refloor/contracts": "workspace:*",
     "@refloor/catalogue": "workspace:*",
-    "@refloor/blueprints": "workspace:*",
     "fastify": "5.12.7",
     "mongodb": "7.7.0",
     "zod": "4.6.7"

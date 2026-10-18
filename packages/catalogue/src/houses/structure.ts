@@ -1,5 +1,5 @@
 import type { Floor, Room, Wall } from '@refloor/scene';
-import { finishes } from '@refloor/catalogue';
+import { finishes } from '@refloor/catalogue/materials';
 
 export function createFloor(
   id: string,

@@ -21,6 +21,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@refloor/scene": "workspace:*"
+    "@refloor/scene": "workspace:*",
+    "@refloor/engine": "workspace:*"
   }
 }

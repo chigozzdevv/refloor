@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { createHouse } from '@refloor/blueprints';
+import { createHouse } from '@refloor/catalogue/houses';
 import { buildNavigation, compileBuilding } from '@refloor/engine';
 import type { CompiledBuilding } from '@refloor/engine';
 import { physicsSession } from '@/runtime/physics/session';

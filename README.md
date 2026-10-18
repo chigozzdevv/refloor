@@ -44,11 +44,9 @@ first, so a fresh checkout does not depend on existing build output.
 
 ## Structure
 
-- `packages/scene`: shared scene schemas, commands, capabilities and revisions.
+- `packages/scene`: shared scene schemas, commands, capabilities, revisions and API contracts.
 - `packages/engine`: geometry, collision bounds, placement checks and navigation.
-- `packages/catalogue`: typed furniture assets, dimensions, behaviours and finishes.
-- `packages/blueprints`: validated, parameter-based furnished starting homes.
-- `packages/contracts`: shared, validated project API requests and responses.
+- `packages/catalogue`: furniture assets, dimensions, behaviours, finishes and validated starting homes.
 - `client`: React/Three.js browser studio. `pnpm dev` starts its local preview.
 - `server`: Fastify/Node API, MongoDB transactions and private browser sessions.
 

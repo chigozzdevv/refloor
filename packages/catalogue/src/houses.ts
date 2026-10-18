@@ -1,8 +1,8 @@
 import type { Building } from '@refloor/scene';
 import { validateBuilding } from '@refloor/engine';
-import { finishes } from '@refloor/catalogue';
-import { createFloor } from '@refloor/blueprints/structure';
-import { furnishHouse } from '@refloor/blueprints/furnish';
+import { finishes } from '@refloor/catalogue/materials';
+import { createFloor } from '@refloor/catalogue/houses/structure';
+import { furnishHouse } from '@refloor/catalogue/houses/furnish';
 
 export type HouseOptions = {
   id: string;

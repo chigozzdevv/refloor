@@ -3,7 +3,7 @@ import { z } from 'zod';
 export {
   projectCreateSchema as houseCreateSchema,
   projectSaveSchema as houseSaveSchema,
-} from '@refloor/contracts';
+} from '@refloor/scene/contracts';
 export const houseParamsSchema = z.strictObject({ id: z.uuid() });
 export const houseListSchema = z.strictObject({
   limit: z.coerce.number().int().min(1).max(50).default(20),

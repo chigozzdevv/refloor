@@ -1,5 +1,5 @@
 import type { SceneRevision } from '@refloor/scene';
-import type { Project, ProjectSummary, ProjectWrite } from '@refloor/contracts';
+import type { Project, ProjectSummary, ProjectWrite } from '@refloor/scene/contracts';
 import type { HouseRecord } from '@refloor/server/features/houses/house.model';
 
 export function houseSummary(record: HouseRecord): ProjectSummary {

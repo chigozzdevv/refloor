@@ -1,6 +1,6 @@
 import { EngineError, isPlayerPositionValid, validateBuilding } from '@refloor/engine';
 import { undoRevision } from '@refloor/scene';
-import type { ProjectHistory, ProjectWrite } from '@refloor/contracts';
+import type { ProjectHistory, ProjectWrite } from '@refloor/scene/contracts';
 import type { RevisionRepository } from '@refloor/server/features/edits/revision.repo';
 import { revisionKey } from '@refloor/server/features/edits/revision.model';
 import { validateAssets } from '@refloor/server/features/houses/house.validation';

@@ -145,15 +145,9 @@ importers:
       '@react-three/postprocessing':
         specifier: 3.2.0
         version: 3.2.0(@react-three/fiber@9.8.2(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(three@0.186.1))(@types/three@0.186.0)(postprocessing@6.39.5(three@0.186.1))(react@19.3.1)(three@0.186.1)
-      '@refloor/blueprints':
-        specifier: workspace:*
-        version: link:../packages/blueprints
       '@refloor/catalogue':
         specifier: workspace:*
         version: link:../packages/catalogue
-      '@refloor/contracts':
-        specifier: workspace:*
-        version: link:../packages/contracts
       '@refloor/engine':
         specifier: workspace:*
         version: link:../packages/engine
@@ -198,32 +192,14 @@ importers:
         specifier: 8.3.4
         version: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15)
 
-  packages/blueprints:
+  packages/catalogue:
     dependencies:
-      '@refloor/catalogue':
-        specifier: workspace:*
-        version: link:../catalogue
       '@refloor/engine':
         specifier: workspace:*
         version: link:../engine
       '@refloor/scene':
         specifier: workspace:*
         version: link:../scene
-
-  packages/catalogue:
-    dependencies:
-      '@refloor/scene':
-        specifier: workspace:*
-        version: link:../scene
-
-  packages/contracts:
-    dependencies:
-      '@refloor/scene':
-        specifier: workspace:*
-        version: link:../scene
-      zod:
-        specifier: 4.6.7
-        version: 4.6.7
 
   packages/engine:
     dependencies:
@@ -255,15 +231,9 @@ importers:
       '@fastify/rate-limit':
         specifier: 11.2.1
         version: 11.2.1
-      '@refloor/blueprints':
-        specifier: workspace:*
-        version: link:../packages/blueprints
       '@refloor/catalogue':
         specifier: workspace:*
         version: link:../packages/catalogue
-      '@refloor/contracts':
-        specifier: workspace:*
-        version: link:../packages/contracts
       '@refloor/engine':
         specifier: workspace:*
         version: link:../packages/engine

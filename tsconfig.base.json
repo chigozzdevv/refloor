@@ -21,11 +21,7 @@
       "@refloor/engine/*": ["./packages/engine/src/*.ts"],
       "@engine-test/*": ["./packages/engine/test/*.ts"],
       "@refloor/catalogue": ["./packages/catalogue/src/index.ts"],
-      "@refloor/catalogue/*": ["./packages/catalogue/src/*.ts"],
-      "@refloor/blueprints": ["./packages/blueprints/src/index.ts"],
-      "@refloor/blueprints/*": ["./packages/blueprints/src/*.ts"],
-      "@refloor/contracts": ["./packages/contracts/src/index.ts"],
-      "@refloor/contracts/*": ["./packages/contracts/src/*.ts"]
+      "@refloor/catalogue/*": ["./packages/catalogue/src/*.ts"]
     }
   }
 }
