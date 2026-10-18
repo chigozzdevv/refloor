@@ -8,22 +8,26 @@ type TourContext = {
   player: NavigationPoint;
   heading: number;
   edgePortals: PortalPin[];
-  stairs: Destination[];
 };
 
 type NavigationState = {
-  request: { id: string; target: NavigationPoint; lookAt?: Point3; label: string } | null;
+  request: {
+    id: string;
+    target: NavigationPoint;
+    lookAt?: Point3;
+    label: string;
+    preserveView: boolean;
+  } | null;
   location: string;
   player: NavigationPoint | null;
   heading: number;
   edgePortals: PortalPin[];
-  stairs: Destination[];
   mapOpen: boolean;
   setMapOpen: (open: boolean) => void;
   setContext: (context: TourContext) => void;
   overview: number;
   resetOverview: () => void;
-  go: (target: NavigationPoint, lookAt?: Point3, label?: string) => void;
+  go: (target: NavigationPoint, lookAt?: Point3, label?: string, preserveView?: boolean) => void;
   stop: () => void;
 };
 
@@ -33,7 +37,6 @@ export const useNavigation = create<NavigationState>((set) => ({
   player: null,
   heading: 0,
   edgePortals: [],
-  stairs: [],
   mapOpen: false,
   setMapOpen: (mapOpen) => set({ mapOpen }),
   setContext: (context) =>
@@ -44,11 +47,6 @@ export const useNavigation = create<NavigationState>((set) => ({
       state.player?.position.y === context.player.position.y &&
       state.player?.position.z === context.player.position.z &&
       state.heading === context.heading &&
-      state.stairs.length === context.stairs.length &&
-      state.stairs.every(
-        (stair, index) =>
-          stair.id === context.stairs[index]?.id && stair.target === context.stairs[index]?.target,
-      ) &&
       state.edgePortals.length === context.edgePortals.length &&
       state.edgePortals.every(
         (pin, index) =>
@@ -62,9 +60,15 @@ export const useNavigation = create<NavigationState>((set) => ({
     ),
   overview: 0,
   resetOverview: () => set((state) => ({ overview: state.overview + 1, request: null })),
-  go: (target, lookAt, label = 'Moving') =>
+  go: (target, lookAt, label = 'Moving', preserveView = false) =>
     set({
-      request: { id: crypto.randomUUID(), target, label, ...(lookAt ? { lookAt } : {}) },
+      request: {
+        id: crypto.randomUUID(),
+        target,
+        label,
+        preserveView,
+        ...(lookAt ? { lookAt } : {}),
+      },
     }),
   stop: () => set({ request: null }),
 }));

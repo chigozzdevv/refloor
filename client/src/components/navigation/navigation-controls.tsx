@@ -22,8 +22,9 @@ import {
 import { advanceStairAssist, stairAssist } from '@/shared/navigation/stair-assist';
 import type { StairAssist } from '@/shared/navigation/stair-assist';
 import { doorRoute } from '@/shared/navigation/door-route';
-import { arrivalView } from '@/shared/navigation/arrival';
+import { arrivalView, entranceArrival } from '@/shared/navigation/arrival';
 import { exteriorCamera } from '@/shared/scene/exterior';
+import { TourDoors } from '@/shared/navigation/tour-doors';
 
 export function NavigationControls() {
   const { camera, gl, size } = useThree(),
@@ -37,6 +38,7 @@ export function NavigationControls() {
   const outside = exteriorCamera(compiled, size.width / size.height);
   const exteriorPosition = outside.position;
   const previous = useRef(mode),
+    tourDoors = useRef(new TourDoors()),
     framing = useRef<{ mode: typeof mode; buildingId: string; epoch: number } | null>(null),
     stairs = useRef<StairAssist | null>(null),
     transition = useRef<number | null>(null),
@@ -48,10 +50,7 @@ export function NavigationControls() {
       doors: SceneCommand[];
       lookAt: Point3 | undefined;
     } | null>(null);
-  const entryFacing = useMemo(
-    () => arrivalView(compiled, { floorId: entry.floorId, position: entry.inside })?.point,
-    [compiled],
-  );
+  const entryFacing = useMemo(() => entranceArrival(compiled), [compiled]);
   const forward = useRef(new Vector3()),
     right = useRef(new Vector3()),
     target = useRef(new Vector3());
@@ -69,17 +68,14 @@ export function NavigationControls() {
     if (mode !== 'walk') useNavigation.getState().stop();
     route.current = null;
     if (mode === 'entry') {
+      tourDoors.current.clear();
       const portrait = size.width / size.height < 0.8;
       if (camera instanceof PerspectiveCamera) {
-        camera.fov = portrait ? 65 : 45;
+        camera.fov = portrait ? 55 : 45;
         camera.updateProjectionMatrix();
       }
       camera.position.set(entry.outside.x, entry.outside.y, entry.outside.z);
-      camera.lookAt(
-        entry.target.x - (portrait ? entry.normal.z * 0.65 : 0),
-        portrait ? entry.target.y + 0.7 : entry.target.y,
-        entry.target.z + (portrait ? entry.normal.x * 0.65 : 0),
-      );
+      camera.lookAt(entry.target.x, entry.target.y, entry.target.z);
     }
     if (mode === 'orbit') {
       if (camera instanceof PerspectiveCamera) {
@@ -92,6 +88,11 @@ export function NavigationControls() {
       route.current = null;
     }
     if (mode === 'walk') {
+      if (previous.current === 'entry') {
+        tourDoors.current.recover(compiled, useProject.getState().memory);
+        const door = compiled.doors.find((value) => value.id === entry.doorId);
+        if (door?.open) tourDoors.current.entrance(door, entry.outside);
+      }
       if (camera instanceof PerspectiveCamera) {
         camera.fov = 65;
         camera.updateProjectionMatrix();
@@ -261,6 +262,17 @@ export function NavigationControls() {
     if (!world || world.compiled !== compiled) return;
     const dt = Math.min(delta, 0.05),
       feet = world.feet;
+    if (transition.current === null) {
+      const closures = tourDoors.current.closures(
+        world,
+        Boolean(useNavigation.getState().request),
+        useProject.getState().memory,
+      );
+      if (closures.length) {
+        useProject.getState().edit(closures, { source: 'navigation' });
+        return;
+      }
+    }
     if (transition.current !== null) {
       transition.current += dt;
       const t = MathUtils.smootherstep(transition.current, 0.5, 1.9);
@@ -300,7 +312,10 @@ export function NavigationControls() {
         return;
       }
       if (plan.commands.length && !plan.staging) {
-        if (!state.edit(plan.commands, { source: 'navigation' })) useNavigation.getState().stop();
+        const from = world.player;
+        if (state.edit(plan.commands, { source: 'navigation' }))
+          tourDoors.current.record(compiled, from, plan.commands);
+        else useNavigation.getState().stop();
         return;
       }
       route.current = {
@@ -308,21 +323,24 @@ export function NavigationControls() {
         compiled,
         journey: createJourney(smoothRoute(compiled, plan.path.points)),
         doors: plan.staging ? plan.commands : [],
-        lookAt: plan.staging
-          ? undefined
-          : (arrivalView(compiled, request.target, request.lookAt)?.point ?? request.lookAt),
+        lookAt:
+          plan.staging || request.preserveView
+            ? undefined
+            : (arrivalView(compiled, request.target, request.lookAt)?.point ?? request.lookAt),
       };
     }
     const active = request ? route.current?.journey : null;
     if (active && request) {
       const status = stepJourney(world, active, dt);
       if (status === 'arrived' && route.current?.doors.length) {
-        if (!useProject.getState().edit(route.current.doors, { source: 'navigation' }))
-          useNavigation.getState().stop();
+        const from = world.player;
+        if (useProject.getState().edit(route.current.doors, { source: 'navigation' }))
+          tourDoors.current.record(compiled, from, route.current.doors);
+        else useNavigation.getState().stop();
         route.current = null;
         return;
       }
-      let heading = active.heading;
+      let heading = request.preserveView ? null : active.heading;
       const lookAt = route.current?.lookAt;
       const remaining = Math.hypot(
         world.feet.x - request.target.position.x,
@@ -355,7 +373,13 @@ export function NavigationControls() {
               Math.hypot(lookAt.x - world.feet.x, lookAt.z - world.feet.z),
             )
           : -0.1;
-      walkInput.pitch = MathUtils.damp(walkInput.pitch, MathUtils.clamp(pitch, -0.65, 0.35), 4, dt);
+      if (!request.preserveView)
+        walkInput.pitch = MathUtils.damp(
+          walkInput.pitch,
+          MathUtils.clamp(pitch, -0.65, 0.35),
+          4,
+          dt,
+        );
       if (status === 'blocked' || (status === 'arrived' && Math.abs(angle) < 0.04)) {
         useNavigation.getState().stop();
         if (status === 'blocked')

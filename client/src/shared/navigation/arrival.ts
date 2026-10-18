@@ -2,6 +2,7 @@ import type { CompiledBuilding, NavigationPoint, Point3 } from '@refloor/engine'
 import { contains } from '@refloor/engine/math';
 import { destinations, nearbyRoute } from '@/shared/navigation/destinations';
 import { clearView } from '@/shared/navigation/viewpoints';
+import { entryPose } from '@/shared/navigation/entry';
 
 export type ArrivalView = {
   point: Point3;
@@ -75,7 +76,9 @@ export function arrivalView(
     )
       add({ point: stop.anchor, entityId: stop.id, kind: 'waypoint' }, 5);
   }
-  for (const object of compiled.building.objects.filter((value) => value.roomId === room.id))
+  for (const object of compiled.building.objects.filter(
+    (value) => value.roomId === room.id && !value.placement,
+  ))
     add(
       {
         point: {
@@ -91,4 +94,20 @@ export function arrivalView(
     );
   const best = candidates.sort((a, b) => a.score - b.score)[0];
   return best ? { point: best.point, kind: best.kind, entityId: best.entityId } : null;
+}
+
+export function entranceArrival(compiled: CompiledBuilding): Point3 {
+  const entry = entryPose(compiled),
+    view = arrivalView(compiled, { floorId: entry.floorId, position: entry.inside });
+  if (view) {
+    const dx = view.point.x - entry.inside.x,
+      dz = view.point.z - entry.inside.z;
+    if (dx * entry.normal.x + dz * entry.normal.z > 1 && Math.hypot(dx, dz) > 1.6)
+      return view.point;
+  }
+  return {
+    x: entry.inside.x + entry.normal.x * 4,
+    y: entry.inside.y + 1.3,
+    z: entry.inside.z + entry.normal.z * 4,
+  };
 }

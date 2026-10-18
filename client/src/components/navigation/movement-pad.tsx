@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, RotateCcw, RotateCw } from 'lucide-react';
+import { ChevronDown, ChevronUp, RotateCcw, RotateCw } from 'lucide-react';
 import { joystickVector, walkInput } from '@/shared/navigation/input';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 import { useProject } from '@/shared/scene/scene-store';
@@ -18,8 +18,6 @@ export function MovementPad() {
   const [vector, setVector] = useState({ x: 0, y: 0 });
   const { selection, interacting, mode } = useProject();
   const mapOpen = useNavigation((state) => state.mapOpen);
-  const stairs = useNavigation((state) => state.stairs);
-  const travelling = useNavigation((state) => Boolean(state.request));
   const enabled = mode === 'walk' && !selection && !interacting && !mapOpen;
   const move = useCallback((value: { x: number; y: number }) => {
     walkInput.pad = value;
@@ -77,25 +75,6 @@ export function MovementPad() {
       aria-label="Walk controls"
       onContextMenu={(event) => event.preventDefault()}
     >
-      {!travelling && stairs.length > 0 && (
-        <div className="pad-stair-actions">
-          {stairs.map((stair) => (
-            <button
-              key={stair.id}
-              className="pad-stairs"
-              aria-label={stair.label}
-              onClick={() => {
-                release();
-                begin();
-                useNavigation.getState().go(stair.target, stair.lookAt, stair.label);
-              }}
-            >
-              {stair.direction === 'down' ? <ArrowDown size={14} /> : <ArrowUp size={14} />}
-              {stair.caption ?? (stair.direction === 'down' ? 'Downstairs' : 'Upstairs')}
-            </button>
-          ))}
-        </div>
-      )}
       {directions.map(({ name, label, x, y, Icon }) => (
         <button
           key={name}

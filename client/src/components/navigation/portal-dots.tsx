@@ -15,7 +15,7 @@ export function PortalDots() {
             className={`navigation-marker marker-edge ${x < 30 ? 'edge-left' : 'edge-right'}`}
             style={{ left: x, top: y }}
             aria-label={destination.label}
-            title={`Return to ${destination.caption ?? 'the doorway'}`}
+            title={destination.label}
             onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => {
               event.stopPropagation();

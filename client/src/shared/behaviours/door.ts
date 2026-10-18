@@ -1,5 +1,33 @@
 import { useProject } from '@/shared/scene/scene-store';
 import { entryPose } from '@/shared/navigation/entry';
+import { destinations } from '@/shared/navigation/destinations';
+import { useNavigation } from '@/shared/navigation/navigation-store';
+import { physicsSession } from '@/shared/navigation/physics-session';
+import { contains } from '@refloor/engine/math';
+
+export function traverseDoor(id: string) {
+  const state = useProject.getState();
+  if (state.mode === 'entry') {
+    state.enterHome();
+    return;
+  }
+  const player = physicsSession.current?.player;
+  if (!player) {
+    state.notify('The walking controls are still loading.');
+    return;
+  }
+  const floor = state.compiled.building.floors.find((value) => value.id === player.floorId);
+  const room = floor?.rooms.find((value) => contains(value.footprint, player.position));
+  const destination = destinations(state.compiled).find(
+    (value) => value.kind === 'door' && value.doorId === id && value.roomId === room?.id,
+  );
+  if (destination) {
+    state.select(null);
+    useNavigation.getState().go(destination.target, destination.lookAt, destination.label);
+  } else if (id === entryPose(state.compiled).doorId)
+    activateDoor(id, !state.compiled.doors.find((door) => door.id === id)?.open);
+  else state.notify('Move to this doorway before entering.');
+}
 
 export function activateDoor(id: string, open: boolean) {
   const state = useProject.getState();

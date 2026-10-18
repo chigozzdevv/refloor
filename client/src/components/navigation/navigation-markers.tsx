@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Billboard, Html } from '@react-three/drei';
 import { Raycaster, Shape, Vector3 } from 'three';
+import type { Mesh } from 'three';
 import { contains } from '@refloor/engine/math';
 import type { Destination } from '@/shared/navigation/destinations';
 import { destinations, nearbyRoute, stairContinuation } from '@/shared/navigation/destinations';
@@ -12,6 +13,7 @@ import type { PortalPin } from '@/shared/navigation/navigation-store';
 import { physicsSession } from '@/shared/navigation/physics-session';
 import { useProject } from '@/shared/scene/scene-store';
 import { belongsToDoor, isVisible } from '@/shared/editor/picking';
+import { doorwayBearing } from '@/shared/navigation/marker-facing';
 
 const chevron = new Shape();
 chevron.moveTo(-0.075, -0.035);
@@ -26,10 +28,15 @@ function Marker({ destination, primary }: { destination: Destination; primary: b
   const [hovered, setHovered] = useState(false);
   const portal = destination.kind === 'door' || destination.kind === 'stairs';
   const doorway = destination.kind === 'door';
+  const arrow = useRef<Mesh>(null);
+  useFrame(({ camera, size }) => {
+    if (doorway && arrow.current)
+      arrow.current.rotation.z = doorwayBearing(destination, camera, size.width, size.height);
+  });
   const travel = () => {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     useProject.getState().select(null);
-    useNavigation.getState().go(destination.target, destination.lookAt, destination.label);
+    useNavigation.getState().go(destination.target, destination.lookAt, destination.label, !portal);
   };
   return (
     <group position={[destination.anchor.x, destination.anchor.y, destination.anchor.z]}>
@@ -71,8 +78,9 @@ function Marker({ destination, primary }: { destination: Destination; primary: b
           </mesh>
           {portal ? (
             <mesh
+              ref={arrow}
               position={[0, 0, 0.002]}
-              rotation={[0, 0, doorway ? -Math.PI / 2 : (destination.bearing ?? 0)]}
+              rotation={[0, 0, doorway ? 0 : (destination.bearing ?? 0)]}
               raycast={() => undefined}
             >
               <shapeGeometry args={[chevron]} />
@@ -130,11 +138,10 @@ export function NavigationMarkers() {
       continuing = stairContinuation(compiled, player);
     const links = continuing.length ? continuing : tourPortals(compiled, player, all);
     camera.getWorldDirection(projected);
-    const stairs = links.filter((link) => link.kind === 'stairs');
     const heading = Math.atan2(projected.x, -projected.z),
       location = continuing.length ? 'Stairs' : (room?.name ?? floor?.name ?? '');
     if (request || mapOpen || interacting || selection) {
-      useNavigation.getState().setContext({ player, heading, location, edgePortals: [], stairs });
+      useNavigation.getState().setContext({ player, heading, location, edgePortals: [] });
       return;
     }
     camera.updateMatrixWorld();
@@ -219,12 +226,13 @@ export function NavigationMarkers() {
     ).map((value) => links.find((link) => link.id === value.destination.id) ?? value.destination);
     const edgePortals: PortalPin[] = [];
     for (const destination of links) {
-      if (destination.kind === 'stairs') continue;
       if (layout.some((value) => value.id === destination.id)) continue;
       const position = portalPosition(player, destination, heading, size.width, size.height);
+      if (edgePortals.some((pin) => pin.x === position.x && Math.abs(pin.y - position.y) < 54))
+        position.y += 54;
       edgePortals.push({ destination, ...position });
     }
-    useNavigation.getState().setContext({ player, heading, location, edgePortals, stairs });
+    useNavigation.getState().setContext({ player, heading, location, edgePortals });
     setVisible((previous) =>
       previous.length === layout.length &&
       previous.every(

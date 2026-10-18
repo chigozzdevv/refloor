@@ -56,14 +56,14 @@ function computeEntryPose(compiled: CompiledBuilding) {
           threshold,
           normal,
           outside: {
-            x: door.centre.x - normal.x * 3.5 + normal.z * 0.6,
+            x: door.centre.x - normal.x * 3.5,
             y: floor.elevation + 1.6,
-            z: door.centre.z - normal.z * 3.5 - normal.x * 0.6,
+            z: door.centre.z - normal.z * 3.5,
           },
           target: {
-            x: door.centre.x + normal.z,
-            y: floor.elevation + 1.2,
-            z: door.centre.z - normal.x,
+            x: door.centre.x,
+            y: door.hinge.y + door.height / 2,
+            z: door.centre.z,
           },
         };
       }

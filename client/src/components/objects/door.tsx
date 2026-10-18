@@ -10,9 +10,10 @@ import { rotate } from '@refloor/engine/math';
 import { useProject } from '@/shared/scene/scene-store';
 import { useSurface } from '@/shared/scene/asset-loader';
 import { physicsSession } from '@/shared/navigation/physics-session';
-import { activateDoor } from '@/shared/behaviours/door';
+import { activateDoor, traverseDoor } from '@/shared/behaviours/door';
 import { hiddenExterior } from '@/shared/scene/visibility';
 import { isScenePointer, visibleGroupRaycast, visibleMeshRaycast } from '@/shared/editor/picking';
+import { invalidateShadows } from '@/shared/scene/shadow-updates';
 
 export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
   const pivot = useRef<Group>(null),
@@ -41,8 +42,10 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
   useFrame((_state, delta) => {
     const target = preview.current ?? (portal.open ? 1 : 0),
       next = MathUtils.damp(fraction.current, target, 9, delta);
-    if (mode !== 'walk' || !physicsSession.current?.doorBlocked(portal.id, next))
+    if (mode !== 'walk' || !physicsSession.current?.doorBlocked(portal.id, next)) {
+      if (Math.abs(next - fraction.current) > 0.0001) invalidateShadows();
       fraction.current = next;
+    }
     if (pivot.current) {
       pivot.current.rotation.y = portal.rotation + portal.openingAngle * fraction.current;
       pivot.current.visible =
@@ -102,17 +105,33 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
           material={material}
           castShadow
           receiveShadow
+          onPointerOver={(event) => {
+            event.stopPropagation();
+            document.body.style.cursor = 'pointer';
+          }}
+          onPointerOut={() => {
+            document.body.style.cursor = '';
+          }}
           onClick={(event) => {
             if (!isScenePointer(event)) return;
             event.stopPropagation();
             if (event.delta >= 5) return;
-            if (mode === 'entry') useProject.getState().enterHome();
-            else
+            if (mode === 'orbit' || event.nativeEvent.shiftKey)
               useProject.getState().select({
                 kind: 'door',
                 id: portal.id,
                 point: { x: event.point.x, y: event.point.y, z: event.point.z },
               });
+            else traverseDoor(portal.id);
+          }}
+          onContextMenu={(event) => {
+            event.nativeEvent.preventDefault();
+            event.stopPropagation();
+            useProject.getState().select({
+              kind: 'door',
+              id: portal.id,
+              point: { x: event.point.x, y: event.point.y, z: event.point.z },
+            });
           }}
         />
         {[-1, 1].map((side) => (

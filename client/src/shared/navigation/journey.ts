@@ -42,7 +42,9 @@ export function stepJourney(world: CharacterWorld, journey: Journey, delta: numb
   if (distance > 0.1) journey.heading = Math.atan2(-x, -z);
   world.step({ x, z }, dt);
   const next = world.feet;
-  journey.idle =
-    Math.hypot(next.x - feet.x, next.z - feet.z, next.y - feet.y) < 0.0001 ? journey.idle + dt : 0;
+  const progress =
+    Math.hypot(point.x - feet.x, point.y - feet.y, point.z - feet.z) -
+    Math.hypot(point.x - next.x, point.y - next.y, point.z - next.z);
+  journey.idle = progress < 0.0005 ? journey.idle + dt : 0;
   return journey.idle > 1.2 ? ('blocked' as const) : ('moving' as const);
 }
