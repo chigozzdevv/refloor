@@ -10,7 +10,7 @@ import { findFurniturePlacement } from '@/runtime/editing/placement';
 import { editingError } from '@/runtime/editing/errors';
 
 export type ViewMode = 'entry' | 'orbit' | 'walk';
-export type Selection = { kind: 'object' | 'wall'; id: string } | null;
+export type Selection = { kind: 'object' | 'wall' | 'floor'; id: string } | null;
 type ProjectState = {
   sceneReady: boolean;
   setSceneReady: (ready: boolean) => void;

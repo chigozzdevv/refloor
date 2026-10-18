@@ -49,6 +49,11 @@ export const commandSchema = z.discriminatedUnion('type', [
     wallId: idSchema,
     material: materialSchema,
   }),
+  z.strictObject({
+    type: z.literal('set-room-floor-material'),
+    roomId: idSchema,
+    material: materialSchema,
+  }),
   z.strictObject({ type: z.literal('set-door'), doorId: idSchema, open: z.boolean() }),
   z.strictObject({
     type: z.literal('set-television'),

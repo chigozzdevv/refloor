@@ -119,6 +119,19 @@ function execute(building: Building, command: SceneCommand): SceneCommand {
       wall.material = structuredClone(command.material);
       return inverse;
     }
+    case 'set-room-floor-material': {
+      const room = building.floors
+        .flatMap((floor) => floor.rooms)
+        .find((value) => value.id === command.roomId);
+      if (!room) throw new SceneError('NOT_FOUND', `Room does not exist: ${command.roomId}`);
+      const inverse: SceneCommand = {
+        type: 'set-room-floor-material',
+        roomId: room.id,
+        material: structuredClone(room.floorMaterial),
+      };
+      room.floorMaterial = structuredClone(command.material);
+      return inverse;
+    }
     case 'set-door': {
       const opening = building.floors
         .flatMap((floor) => floor.walls)

@@ -52,6 +52,14 @@ const commands: [string, SceneCommand][] = [
     'change a wall material',
     { type: 'set-wall-material', wallId: 'south', material: { ...finish, color: '#123456' } },
   ],
+  [
+    'change a room floor material',
+    {
+      type: 'set-room-floor-material',
+      roomId: 'living',
+      material: { ...finish, color: '#785634' },
+    },
+  ],
   ['open a door', { type: 'set-door', doorId: 'entrance', open: true }],
   [
     'change TV state',
@@ -200,6 +208,10 @@ describe('scene commands', () => {
         position: { x: 2, y: 0, z: 2 },
         rotation: 0,
       },
+    ],
+    [
+      'missing room floor',
+      { type: 'set-room-floor-material', roomId: 'missing', material: finish },
     ],
     ['missing wall', { type: 'set-wall-material', wallId: 'missing', material: finish }],
     ['missing door', { type: 'set-door', doorId: 'missing', open: true }],

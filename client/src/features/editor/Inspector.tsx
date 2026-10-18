@@ -67,17 +67,23 @@ function Finishes({
   material,
   onChange,
   wall = false,
+  floor = false,
 }: {
   material: Material;
   onChange: (value: Material) => void;
   wall?: boolean;
+  floor?: boolean;
 }) {
   const names = wall
     ? wallFinishes
-    : (['linen', 'olive', 'tobacco', 'oak', 'walnut', 'black'] as const);
+    : floor
+      ? (['oak', 'walnut'] as const)
+      : (['linen', 'olive', 'tobacco', 'oak', 'walnut', 'black'] as const);
   return (
     <div className="finish-controls">
-      <span className="field-caption">{wall ? 'WALL FINISH' : 'MATERIAL & COLOUR'}</span>
+      <span className="field-caption">
+        {wall ? 'WALL FINISH' : floor ? 'FLOOR FINISH' : 'MATERIAL & COLOUR'}
+      </span>
       <div className="finish-swatches">
         {names.map((name) => (
           <button
@@ -116,11 +122,17 @@ export function Inspector() {
             .find((value) => value.id === selection.id)
         : undefined;
   const [slot, setSlot] = useState('body');
-  if (!object && !wall) return null;
+  const room =
+    selection?.kind === 'floor'
+      ? compiled.building.floors
+          .flatMap((value) => value.rooms)
+          .find((value) => value.id === selection.id)
+      : undefined;
+  if (!object && !wall && !room) return null;
   const activeSlot = object?.materials[slot]
       ? slot
       : (Object.keys(object?.materials ?? {})[0] ?? 'body'),
-    material = object?.materials[activeSlot] ?? wall?.material;
+    material = object?.materials[activeSlot] ?? wall?.material ?? room?.floorMaterial;
   return (
     <aside className="inspector" aria-label="Edit selected item">
       <div className="panel-heading">
@@ -133,7 +145,7 @@ export function Inspector() {
           <X size={18} />
         </button>
       </div>
-      <h2>{object?.label ?? 'Wall finish'}</h2>
+      <h2>{object?.label ?? (room ? `${room.name} floor` : 'Wall finish')}</h2>
       {object && (
         <>
           <DeviceControls key={object.assetId} object={object} />
@@ -189,6 +201,7 @@ export function Inspector() {
         <Finishes
           material={material}
           wall={!!wall}
+          floor={!!room}
           onChange={(value) =>
             edit(
               object
@@ -200,7 +213,9 @@ export function Inspector() {
                       material: value,
                     },
                   ]
-                : [{ type: 'set-wall-material', wallId: wall!.id, material: value }],
+                : room
+                  ? [{ type: 'set-room-floor-material', roomId: room.id, material: value }]
+                  : [{ type: 'set-wall-material', wallId: wall!.id, material: value }],
             )
           }
         />

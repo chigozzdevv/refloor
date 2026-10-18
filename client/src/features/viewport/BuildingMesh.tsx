@@ -58,6 +58,18 @@ export function BuildingPart({ part }: { part: MeshPart }) {
         if (wall) {
           event.stopPropagation();
           select({ kind: 'wall', id: wall.id });
+        } else if (part.role === 'slab' && floor) {
+          const room = floor.rooms.find(
+            (value) =>
+              event.point.x >= value.footprint.x &&
+              event.point.x <= value.footprint.x + value.footprint.width &&
+              event.point.z >= value.footprint.z &&
+              event.point.z <= value.footprint.z + value.footprint.depth,
+          );
+          if (room) {
+            event.stopPropagation();
+            select({ kind: 'floor', id: room.id });
+          }
         }
       }}
     />

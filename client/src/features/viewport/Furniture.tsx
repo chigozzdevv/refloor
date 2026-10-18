@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useCallback, useRef, useState } from 'react';
-import { TransformControls, useGLTF } from '@react-three/drei';
+import { Edges, TransformControls, useGLTF } from '@react-three/drei';
 import { Box3, Group, Mesh, Vector3 } from 'three';
 import type { MeshStandardMaterial } from 'three';
 import { getCatalogueEntry } from '@refloor/catalogue';
@@ -117,15 +117,16 @@ function FurnitureInstance({ object }: { object: SceneObject }) {
           <CraftedFurniture object={object} renderer={entry.renderer} />
         )}
         {selection?.id === object.id && (
-          <mesh position={[0, 0.008, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-            <ringGeometry
+          <mesh position={[0, object.dimensions.height / 2, 0]} raycast={() => undefined}>
+            <boxGeometry
               args={[
-                Math.max(object.dimensions.width, object.dimensions.depth) / 2 + 0.08,
-                Math.max(object.dimensions.width, object.dimensions.depth) / 2 + 0.105,
-                64,
+                object.dimensions.width + 0.025,
+                object.dimensions.height + 0.025,
+                object.dimensions.depth + 0.025,
               ]}
             />
-            <meshBasicMaterial color="#d6ad6d" depthWrite={false} transparent opacity={0.8} />
+            <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+            <Edges color="#c4a86d" transparent opacity={0.65} raycast={() => undefined} />
           </mesh>
         )}
       </group>

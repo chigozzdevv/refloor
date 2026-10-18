@@ -67,7 +67,7 @@ The TV clip is [BMKME's CC0 waterfall video](https://commons.wikimedia.org/wiki/
 - `getObjectCapabilities(object)`: derive supported editor and device actions.
 
 Commands add, remove, move, rotate, resize or replace furniture, change object or wall
-materials, and set door, TV or light state. An edit carries an ID, timestamp, expected
+materials, change room floor finishes, and set door, TV or light state. An edit carries an ID, timestamp, expected
 revision and typed commands. Failed batches preserve the original document; successful
 batches increment its revision once and record inverse commands. Replacement preserves
 instance identity, room, floor and transform.
