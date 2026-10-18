@@ -28,7 +28,7 @@ export class HouseAI {
   private readonly client: OpenAI;
   constructor(
     apiKey: string,
-    private readonly model = 'gpt-6.1-sol',
+    private readonly model = 'gpt-6-luna',
   ) {
     this.client = new OpenAI({ apiKey, maxRetries: 0, timeout: 90000 });
   }
