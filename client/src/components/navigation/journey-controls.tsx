@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Square } from 'lucide-react';
+import { LocateFixed, Square } from 'lucide-react';
 import { useNavigation } from '@/shared/navigation/navigation-store';
+import { useProject } from '@/shared/scene/scene-store';
 
 export function JourneyControls() {
-  const { request, stop } = useNavigation();
+  const { request, stop, location, nextStop, look } = useNavigation();
   const [hint, setHint] = useState(true);
   useEffect(() => {
     const timer = setTimeout(() => setHint(false), 8000);
@@ -12,12 +13,29 @@ export function JourneyControls() {
   useEffect(() => {
     if (request) setHint(false);
   }, [request]);
-  if (request)
-    return (
-      <button className="journey-stop" onClick={stop} aria-label="Stop moving">
-        <Square size={13} fill="currentColor" />
-        Stop
-      </button>
-    );
-  return hint ? <p className="tour-hint">Drag to look · Tap a ring to move</p> : null;
+  return (
+    <>
+      {hint && !request && <p className="tour-hint">Dots move you · Drag to look</p>}
+      <div className="tour-place" aria-label="Tour location">
+        <span role="status">{request?.label ?? location}</span>
+        {request ? (
+          <button onClick={stop} aria-label="Stop moving">
+            <Square size={13} fill="currentColor" />
+          </button>
+        ) : (
+          <button
+            disabled={!nextStop}
+            aria-label="Find next stop"
+            title="Find next stop"
+            onClick={() => {
+              useProject.getState().select(null);
+              look();
+            }}
+          >
+            <LocateFixed size={16} />
+          </button>
+        )}
+      </div>
+    </>
+  );
 }

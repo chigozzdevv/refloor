@@ -117,8 +117,12 @@ beside it. Luna interprets supported changes; the server validates commands and 
 and the client checks that the scene has not changed before applying them. Item chat
 can only affect the selected entity; house chat can change finishes or devices across
 the current building. Drag or swipe to look around, then select a floor ring to travel
-to a clear spot. Room and doorway markers come from the current navigation graph and
-update after edits. Doorway trips open required doors before following a route through
+to a clear spot. Stops follow clear room viewpoints and routes between entrances,
+doorways and stair landings, and update after edits. At most three separated markers
+appear at once: floor rings are places to stand, named doorway arrows enter rooms,
+and stair arrows change levels. Route stops face the next turn. The small location
+control names the current room; Find next stop turns toward a nearby choice without
+moving. Doorway trips open required doors before following a route through
 the actual colliders. Stair arrows handle the full climb or descent with one click;
 the camera follows the turn and smooths changes in height. A Stop button appears during
 travel; dragging, selecting an item, Escape or leaving the tab also stops it. A stair

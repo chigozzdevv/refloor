@@ -218,6 +218,20 @@ export function NavigationControls() {
       return;
     }
     const keys = walkInput.keys;
+    const look = useNavigation.getState().lookRequest;
+    if (look) {
+      const yaw = Math.atan2(feet.x - look.x, feet.z - look.z),
+        pitch = MathUtils.clamp(
+          Math.atan2(look.y - camera.position.y, Math.hypot(look.x - feet.x, look.z - feet.z)),
+          -0.7,
+          0.5,
+        ),
+        angle = Math.atan2(Math.sin(yaw - walkInput.yaw), Math.cos(yaw - walkInput.yaw));
+      walkInput.yaw += MathUtils.clamp(angle, -dt * 2.4, dt * 2.4);
+      walkInput.pitch = MathUtils.damp(walkInput.pitch, pitch, 8, dt);
+      if (Math.abs(angle) < 0.03 && Math.abs(pitch - walkInput.pitch) < 0.03)
+        useNavigation.getState().finishLook();
+    }
     const f =
       Number(keys.has('w') || keys.has('arrowup')) - Number(keys.has('s') || keys.has('arrowdown'));
     const r = Number(keys.has('d')) - Number(keys.has('a'));
