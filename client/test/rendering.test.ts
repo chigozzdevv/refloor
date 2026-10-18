@@ -1,5 +1,15 @@
+import { invalidateShadows, refreshShadows, shadowRevision } from '@/shared/scene/shadow-updates';
 import { describe, expect, it } from 'vitest';
-import { BoxGeometry, Group, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three';
+import {
+  BoxGeometry,
+  Group,
+  PointLight,
+  DirectionalLight,
+  Mesh,
+  MeshBasicMaterial,
+  Raycaster,
+  Vector3,
+} from 'three';
 import { belongsToDoor, visibleGroupRaycast, visibleMeshRaycast } from '@/shared/editor/picking';
 import { createHouse } from '@refloor/catalogue/houses';
 import { getCatalogueEntry } from '@refloor/catalogue';
@@ -74,5 +84,23 @@ describe('rendering contracts', () => {
         expect(geometry.attributes.normal!.getY(vertex) > 0.5).toBe(group.materialIndex === 0);
       }
     geometry.dispose();
+  });
+  it('invalidates cached light shadows without a wall-clock expiry', () => {
+    const scene = new Group(),
+      point = new PointLight(),
+      sun = new DirectionalLight();
+    point.castShadow = sun.castShadow = true;
+    point.shadow.autoUpdate = false;
+    point.shadow.needsUpdate = sun.shadow.needsUpdate = false;
+    scene.add(point, sun);
+    const previous = shadowRevision();
+    invalidateShadows();
+    expect(shadowRevision()).toBeGreaterThan(previous);
+    refreshShadows(scene);
+    expect(point.shadow.needsUpdate).toBe(true);
+    expect(sun.shadow.needsUpdate).toBe(true);
+    expect(point.shadow.autoUpdate).toBe(false);
+    point.dispose();
+    sun.dispose();
   });
 });

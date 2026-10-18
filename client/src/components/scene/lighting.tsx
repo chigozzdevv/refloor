@@ -2,6 +2,32 @@ import { Environment, SoftShadows } from '@react-three/drei';
 import { Bloom, EffectComposer, N8AO, Outline, ToneMapping } from '@react-three/postprocessing';
 import { ToneMappingMode } from 'postprocessing';
 import { useProject } from '@/shared/scene/scene-store';
+import { useLayoutEffect, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import { invalidateShadows, refreshShadows, shadowRevision } from '@/shared/scene/shadow-updates';
+
+function ShadowUpdates() {
+  const compiled = useProject((state) => state.compiled),
+    mode = useProject((state) => state.mode),
+    floorId = useProject((state) => state.floorId),
+    quality = useProject((state) => state.quality),
+    lighting = useProject((state) => state.lighting);
+  const seen = useRef(-1),
+    frames = useRef(0);
+  useLayoutEffect(invalidateShadows, [compiled, mode, floorId, quality, lighting]);
+  useFrame(({ scene, invalidate }) => {
+    if (seen.current !== shadowRevision()) {
+      seen.current = shadowRevision();
+      frames.current = 2;
+    }
+    if (frames.current > 0 || useProject.getState().interacting) {
+      refreshShadows(scene);
+      frames.current = Math.max(0, frames.current - 1);
+      if (frames.current > 0) invalidate();
+    }
+  }, -0.5);
+  return null;
+}
 
 export function Lighting() {
   const lighting = useProject((state) => state.lighting),
@@ -9,6 +35,7 @@ export function Lighting() {
   const day = lighting === 'day';
   return (
     <>
+      <ShadowUpdates />
       <Environment
         files="/textures/environment/daylight.hdr"
         environmentIntensity={day ? 0.65 : 0.18}

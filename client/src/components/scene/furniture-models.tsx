@@ -1,6 +1,4 @@
-import { useEffect, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
-import type { PointLight } from 'three';
+import { useEffect } from 'react';
 import { RoundedBox } from '@react-three/drei';
 import type { SceneObject } from '@refloor/scene';
 import type { FurnitureRenderer } from '@refloor/catalogue';
@@ -128,27 +126,7 @@ function Cabinet({ object }: { object: SceneObject }) {
 function Pendant({ object }: { object: SceneObject }) {
   const state = object.behaviours.find((behaviour) => behaviour.kind === 'light')?.state,
     lighting = useProject((value) => value.lighting),
-    quality = useProject((value) => value.quality),
-    compiled = useProject((value) => value.compiled),
-    mode = useProject((value) => value.mode),
-    floorId = useProject((value) => value.floorId);
-  const light = useRef<PointLight>(null),
-    dirtyUntil = useRef(0),
-    lastShadow = useRef(0);
-  useEffect(() => {
-    dirtyUntil.current = performance.now() + 1600;
-  }, [compiled, mode, floorId, quality]);
-  useFrame(() => {
-    const now = performance.now();
-    if (
-      light.current &&
-      (now < dirtyUntil.current || useProject.getState().interacting) &&
-      now - lastShadow.current > 160
-    ) {
-      light.current.shadow.needsUpdate = true;
-      lastShadow.current = now;
-    }
-  });
+    quality = useProject((value) => value.quality);
   const intensity = lightOutput(object),
     normal = lightTuning(object)?.normal ?? 3,
     powered = intensity > 0,
@@ -174,7 +152,6 @@ function Pendant({ object }: { object: SceneObject }) {
       </mesh>
       {powered && (
         <pointLight
-          ref={light}
           castShadow={quality === 'high'}
           shadow-mapSize={[512, 512]}
           shadow-camera-near={0.08}

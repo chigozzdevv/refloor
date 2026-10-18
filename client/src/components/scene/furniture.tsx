@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useLayoutEffect, useMemo } from 'react';
 import { useGLTF } from '@react-three/drei';
 import { Box3, Group, Mesh, Vector3 } from 'three';
 import type { MeshStandardMaterial } from 'three';
@@ -12,6 +12,7 @@ import { useSurface } from '@/shared/scene/asset-loader';
 import { sameMaterial } from '@/shared/scene/finish';
 import { isScenePointer, visibleGroupRaycast } from '@/shared/editor/picking';
 import { SelectionBounds } from '@/components/editor/selection-bounds';
+import { invalidateShadows } from '@/shared/scene/shadow-updates';
 
 function ScannedFurniture({ object, entry }: { object: SceneObject; entry: CatalogueEntry }) {
   const { scene } = useGLTF(entry.modelUrl!, false),
@@ -52,6 +53,7 @@ function ScannedFurniture({ object, entry }: { object: SceneObject; entry: Catal
     });
     return container;
   }, [scene, width, height, depth, changed, entry, finish]);
+  useLayoutEffect(invalidateShadows, [model]);
   useEffect(
     () => () =>
       model.traverse((child) => {
