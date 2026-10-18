@@ -11,16 +11,16 @@ export function Lighting() {
     <>
       <Environment
         files="/textures/environment/daylight.hdr"
-        environmentIntensity={day ? 0.65 : 0.12}
+        environmentIntensity={day ? 0.65 : 0.18}
         environmentRotation={[0, 2.3, 0]}
       />
       <color attach="background" args={[day ? '#e7e7df' : '#121922']} />
       <fog attach="fog" args={[day ? '#e7e7df' : '#121922', 45, 140]} />
-      <hemisphereLight args={['#e4ebf2', '#aa9276', day ? 0.35 : 0.08]} />
+      <hemisphereLight args={['#e4ebf2', '#aa9276', day ? 0.35 : 0.12]} />
       <directionalLight
         position={[-6, 12, -6]}
         color={day ? '#fff2d8' : '#b6cbe3'}
-        intensity={day ? 3.2 : 0.16}
+        intensity={day ? 3.2 : 0.35}
         castShadow
         shadow-mapSize={quality === 'high' ? [2048, 2048] : [1024, 1024]}
         shadow-camera-left={-14}

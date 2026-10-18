@@ -19,6 +19,7 @@ export function BuildingPart({ part }: { part: MeshPart }) {
     selection = useProject((state) => state.selection),
     select = useProject((state) => state.select);
   const compiled = useProject((state) => state.compiled);
+  const cutaway = useProject((state) => state.cutaway);
   const geometry = useMemo(() => partGeometry(part), [part]);
   useEffect(() => () => geometry.dispose(), [geometry]);
   const material = useSurface(part.material, part.role === 'window');
@@ -36,7 +37,7 @@ export function BuildingPart({ part }: { part: MeshPart }) {
   useFrame(() => {
     if (!ref.current) return;
     let visible = true;
-    if (mode === 'orbit' && activeFloor && floor) {
+    if (mode === 'orbit' && cutaway && activeFloor && floor) {
       visible = floor.elevation <= activeFloor.elevation && part.role !== 'roof';
       if (wall && floor.id === floorId && hiddenExterior(wall, floor, camera.position))
         visible = false;

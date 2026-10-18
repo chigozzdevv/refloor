@@ -7,21 +7,31 @@ import { useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import type { Group } from 'three';
 import { hiddenExterior } from '@/shared/scene/visibility';
+import { Exterior } from '@/components/scene/exterior';
+import { exteriorNormal } from '@/shared/scene/exterior';
 
 function WallDetails({ floor, wall }: { floor: Floor; wall: Wall }) {
   const ref = useRef<Group>(null),
     camera = useThree((state) => state.camera),
     mode = useProject((state) => state.mode),
-    floorId = useProject((state) => state.floorId);
+    floorId = useProject((state) => state.floorId),
+    cutaway = useProject((state) => state.cutaway);
   useFrame(() => {
     if (ref.current)
       ref.current.visible =
-        mode !== 'orbit' || floorId !== floor.id || !hiddenExterior(wall, floor, camera.position);
+        mode !== 'orbit' ||
+        !cutaway ||
+        floorId !== floor.id ||
+        !hiddenExterior(wall, floor, camera.position);
   });
   const length = Math.hypot(wall.end.x - wall.start.x, wall.end.z - wall.start.z),
     angle = Math.atan2(-(wall.end.z - wall.start.z), wall.end.x - wall.start.x);
   const material = useSurface(finishes.chalk),
     wood = useSurface(finishes.oak);
+  const outward = exteriorNormal(wall, floor);
+  const normalSign = outward
+    ? Math.sign(outward.x * Math.sin(angle) + outward.z * Math.cos(angle))
+    : 0;
   const doors = wall.openings.filter((opening) => opening.kind === 'door');
   const cuts = [
     0,
@@ -90,6 +100,25 @@ function WallDetails({ floor, wall }: { floor: Floor; wall: Wall }) {
                 </mesh>
               </>
             )}
+            {opening.kind === 'window' && outward && (
+              <group position={[0, 0, normalSign * (wall.thickness / 2 + 0.025)]}>
+                {[-1, 1].map((side) => (
+                  <group key={side}>
+                    <mesh
+                      position={[side * (opening.width / 2 - 0.025), opening.height / 2, 0]}
+                      castShadow
+                    >
+                      <boxGeometry args={[0.055, opening.height + 0.045, 0.065]} />
+                      <meshStandardMaterial color="#424c4a" roughness={0.45} metalness={0.4} />
+                    </mesh>
+                    <mesh position={[0, side === 1 ? opening.height : 0, 0]} castShadow>
+                      <boxGeometry args={[opening.width + 0.045, 0.055, 0.065]} />
+                      <meshStandardMaterial color="#424c4a" roughness={0.45} metalness={0.4} />
+                    </mesh>
+                  </group>
+                ))}
+              </group>
+            )}
           </group>
         );
       })}
@@ -100,12 +129,15 @@ function WallDetails({ floor, wall }: { floor: Floor; wall: Wall }) {
 export function ArchitecturalDetails() {
   const compiled = useProject((state) => state.compiled),
     mode = useProject((state) => state.mode),
-    floorId = useProject((state) => state.floorId);
+    floorId = useProject((state) => state.floorId),
+    cutaway = useProject((state) => state.cutaway);
   const active = compiled.building.floors.find((value) => value.id === floorId);
   return (
     <>
       {compiled.building.floors
-        .filter((floor) => mode !== 'orbit' || !active || floor.elevation <= active.elevation)
+        .filter(
+          (floor) => mode !== 'orbit' || !cutaway || !active || floor.elevation <= active.elevation,
+        )
         .map((floor) => (
           <group key={floor.id}>
             {floor.walls.map((wall) => (
@@ -113,14 +145,7 @@ export function ArchitecturalDetails() {
             ))}
           </group>
         ))}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[6, -0.205, 5]} receiveShadow>
-        <planeGeometry args={[200, 200]} />
-        <meshStandardMaterial color="#c7c6b9" roughness={0.94} />
-      </mesh>
-      <mesh position={[6, -0.18, -0.85]} receiveShadow castShadow>
-        <boxGeometry args={[4, 0.12, 1.6]} />
-        <meshStandardMaterial color="#c4beae" roughness={0.85} />
-      </mesh>
+      <Exterior />
     </>
   );
 }

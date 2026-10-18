@@ -93,7 +93,7 @@ export const useProject = create<ProjectState>((set, get, store) => ({
   mode: 'entry',
   lighting: 'evening',
   quality: 'high',
-  cutaway: true,
+  cutaway: false,
   notice: restored.historyWarning,
   notify: (notice) => {
     if (noticeTimer) clearTimeout(noticeTimer);
@@ -131,7 +131,12 @@ export const useProject = create<ProjectState>((set, get, store) => ({
         if (node) physicsSession.current.teleport(node.position);
       }
     }
-    set({ mode, selection: null, focusRequest: null });
+    set({
+      mode,
+      selection: null,
+      focusRequest: null,
+      ...(mode === 'orbit' ? { cutaway: false } : {}),
+    });
   },
   setDoor: (id, open) => {
     const state = get(),
