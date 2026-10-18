@@ -36,6 +36,11 @@ export const requirementsSchema = z.strictObject({
 export type HouseRequirements = z.infer<typeof requirementsSchema>;
 export type RoomRequirement = HouseRequirements['rooms'][number];
 
+export const houseResponseSchema = z.strictObject({
+  requirements: requirementsSchema.omit({ unsupported: true }).nullable(),
+  unsupported: z.array(z.string().max(200)).max(10),
+});
+
 export function validateRequirements(input: unknown): HouseRequirements {
   const requirements = requirementsSchema.parse(input);
   if (requirements.unsupported.length)

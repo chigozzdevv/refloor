@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { buildNavigation, entrancePoints, findPath, validateBuilding } from '@refloor/engine';
 import { generateLayout } from '@refloor/server/shared/planning/layout';
-import { validateRequirements } from '@refloor/server/shared/planning/requirements';
+import {
+  validateRequirements,
+  houseResponseSchema,
+} from '@refloor/server/shared/planning/requirements';
 import type {
   HouseRequirements,
   RoomRequirement,
@@ -105,6 +108,9 @@ describe('Z3 house generation', () => {
   });
 
   it('rejects unsupported or inconsistent programmes before solving', () => {
+    expect(
+      houseResponseSchema.parse({ requirements: null, unsupported: ['basement'] }).requirements,
+    ).toBeNull();
     expect(() => validateRequirements({ ...brief(), unsupported: ['basement'] })).toThrow(
       'basement',
     );

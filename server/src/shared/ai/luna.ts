@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import { zodTextFormat } from 'openai/helpers/zod';
-import { requirementsSchema } from '@refloor/server/shared/planning/requirements';
+import { houseResponseSchema } from '@refloor/server/shared/planning/requirements';
 import { housePrompt } from '@refloor/server/shared/ai/house-prompt';
 
 export type GenerationUsage = {
@@ -11,6 +11,15 @@ export type GenerationUsage = {
   reasoningTokens: number;
   durationMs: number;
 };
+
+export class LunaGenerationError extends Error {
+  constructor(
+    message: string,
+    public readonly usage: GenerationUsage,
+  ) {
+    super(message);
+  }
+}
 
 export class Luna {
   private readonly client: OpenAI;
@@ -33,12 +42,10 @@ export class Luna {
           { role: 'system', content: housePrompt },
           { role: 'user', content: prompt },
         ],
-        text: { format: zodTextFormat(requirementsSchema, 'house_requirements') },
+        text: { format: zodTextFormat(houseResponseSchema, 'house_brief') },
       },
       signal ? { signal } : undefined,
     );
-    if (response.status !== 'completed' || !response.output_parsed)
-      throw new Error('Luna did not return a complete house programme. Try a simpler description.');
     const usage: GenerationUsage = {
       model: response.model,
       responseId: response.id,
@@ -47,6 +54,22 @@ export class Luna {
       reasoningTokens: response.usage?.output_tokens_details.reasoning_tokens ?? 0,
       durationMs: Math.round(performance.now() - started),
     };
-    return { requirements: response.output_parsed, usage };
+    if (response.status !== 'completed' || !response.output_parsed)
+      throw new LunaGenerationError(
+        'Luna did not return a complete house programme. Try a simpler description.',
+        usage,
+      );
+    const result = response.output_parsed;
+    if (result.unsupported.length)
+      throw new LunaGenerationError(
+        `This request needs unsupported features: ${result.unsupported.join('; ')}`,
+        usage,
+      );
+    if (!result.requirements)
+      throw new LunaGenerationError(
+        'Luna did not provide a house programme. Please describe the rooms you want.',
+        usage,
+      );
+    return { requirements: { ...result.requirements, unsupported: [] }, usage };
   }
 }
