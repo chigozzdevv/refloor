@@ -115,8 +115,8 @@ the generated colliders, including entrance-to-upstairs routes, both stair types
 rotated flights. This verifies the geometry in a headless physics world. The browser
 supports an animated entrance with a draggable handle, orbit and first-person views,
 and evening lighting by default. A globe icon opens house chat, view settings, furniture,
-files and room furnishing completion. History beside the globe provides labelled session
-changes, undo, redo and restoration before an earlier edit. Completing furnishings runs
+files and room furnishing completion. History beside the globe provides labelled
+changes with their item and room, undo, redo and restoration before an earlier edit. Completing furnishings runs
 in a bounded browser worker, preserves the house layout, validates access and can be undone
 as one change. It upgrades legacy fittings and adds room essentials where clear space permits.
 The scene has no persistent inspector, left toolbar, floor buttons
@@ -146,7 +146,10 @@ televisions, lights and doors. Accepted edits
 update collision geometry and support undo/redo (also Cmd/Ctrl+Z and Shift+Cmd/Ctrl+Z).
 TV controls play the included clip or a compatible direct video URL on the 3D screen;
 power, mute and volume update the actual media player. Light controls update fixture
-emission, intensity, colour and cached local shadows in high quality mode.
+emission, intensity, colour and cached local shadows in high quality mode. Selected lights
+have a brightness slider from 0–200%, with 100% as the catalogue default, and a reset
+button for their original power, brightness and illumination colour. Chat and typed edits
+enforce the same brightness bounds; legacy brighter values remain loadable with capped rendering.
 
 Project files export/import the complete editable building. Import validates geometry,
 access and supported assets before replacing the open scene. Accepted changes save
@@ -156,7 +159,9 @@ The project menu saves snapshots, lists saved spaces and opens complete houses f
 API. It retains the saved project/version across reloads. Conflicting saves keep the
 local draft and offer the latest saved version or a new copy. Editing remains immediate
 in the browser; snapshot saves replace the server's active command history, while the
-current browser undo history remains available until another project is opened.
+current browser undo/redo history saves atomically with the draft and survives refreshes
+until another project is opened. History retains up to 50 changes within a 4 MB draft limit;
+invalid history is discarded without replacing a valid house.
 New spaces can use one or two storeys, widths 11.5–16 m and depths 9.5–14 m.
 
 Rendering assets are self-hosted. `client/public/manifest.json` records their

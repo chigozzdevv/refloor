@@ -7,7 +7,7 @@ import type { CompiledBuilding } from '@refloor/engine';
 import { physicsSession } from '@/shared/navigation/physics-session';
 import { entryPose } from '@/shared/navigation/entry';
 import { draftKey, restoreDraft } from '@/shared/scene/draft';
-import { encodeProject } from '@/shared/scene/files';
+import { encodeDraft } from '@/shared/scene/draft-codec';
 import { persistRemoteLink, restoreRemoteLink } from '@/shared/scene/remote';
 import type { RemoteLink } from '@/shared/scene/remote';
 import { navigationFor } from '@/shared/navigation/destinations';
@@ -57,7 +57,7 @@ export const useProject = create<ProjectState>((set, get, store) => ({
   remote: restored.compiled ? restoreRemoteLink(initial.building.id) : null,
   resumeSaving: () => {
     try {
-      localStorage.setItem(draftKey, encodeProject(get().compiled.building));
+      localStorage.setItem(draftKey, encodeDraft(get()));
       set({ recovery: null, saveError: null, saved: true });
     } catch {
       set({
@@ -81,12 +81,14 @@ export const useProject = create<ProjectState>((set, get, store) => ({
     get().notify('Space opened.');
   },
   ...createEditorState(set, get, store),
+  past: restored.past,
+  future: restored.future,
   floorId: entryPose(initial).floorId,
   mode: 'entry',
   lighting: 'evening',
   quality: 'high',
   cutaway: true,
-  notice: null,
+  notice: restored.historyWarning,
   notify: (notice) => {
     if (noticeTimer) clearTimeout(noticeTimer);
     set({ notice });
@@ -168,13 +170,18 @@ export const useProject = create<ProjectState>((set, get, store) => ({
 
 const unsubscribeDraft = useProject.subscribe((state, previous) => {
   if (state.remote !== previous.remote) persistRemoteLink(state.remote);
-  if (state.compiled.building === previous.compiled.building) return;
+  if (
+    state.compiled.building === previous.compiled.building &&
+    state.past === previous.past &&
+    state.future === previous.future
+  )
+    return;
   if (state.recovery !== null) {
     useProject.setState({ saved: false });
     return;
   }
   try {
-    localStorage.setItem(draftKey, encodeProject(state.compiled.building));
+    localStorage.setItem(draftKey, encodeDraft(state));
     useProject.setState({ saved: true, saveError: null });
   } catch {
     useProject.setState({

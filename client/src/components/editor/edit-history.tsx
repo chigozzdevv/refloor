@@ -24,7 +24,9 @@ export function EditHistory({ close }: { close: () => void }) {
         </button>
       </div>
       {!records.length && (
-        <p className="history-empty">Your changes in this session will appear here.</p>
+        <p className="history-empty">
+          Your changes will appear here and stay with this browser draft.
+        </p>
       )}
       <ol className="history-list">
         {records.map((record) => (
