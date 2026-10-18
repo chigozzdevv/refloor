@@ -5,6 +5,7 @@ import { buildNavigation, compileBuilding, findPath } from '@refloor/engine';
 import type { Point3 } from '@refloor/engine';
 import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
 import { entryPose } from '@/shared/navigation/entry';
+import { stairTravel } from '@/shared/navigation/stair-travel';
 
 beforeAll(initializePhysics);
 
@@ -29,6 +30,35 @@ function walk(world: CharacterWorld, points: Point3[]) {
 }
 
 describe('browser character runtime', () => {
+  it('follows the staircase in both directions from continuous forward input and resumes mid-flight', () => {
+    const compiled = compileBuilding(
+      createHouse({ id: 'continuous-stairs', name: 'Continuous stairs', storeys: 2 }),
+    );
+    const stair = compiled.stairs[0]!;
+    const world = new CharacterWorld(compiled, {
+      x: stair.lower.position.x + 1.15,
+      y: 0,
+      z: stair.lower.position.z - 0.4,
+    });
+    try {
+      const up = stairTravel(compiled, world.feet, { x: 0, z: -1 });
+      expect(up).not.toBeNull();
+      walk(world, up!.points);
+      expect(world.player.floorId).toBe('first');
+      const down = stairTravel(compiled, world.feet, { x: 0, z: -1 });
+      expect(down).not.toBeNull();
+      walk(world, down!.points);
+      expect(world.player.floorId).toBe('ground');
+      walk(world, stair.path.slice(0, 6));
+      const resumed = stairTravel(compiled, world.feet, { x: 0, z: -1 });
+      expect(resumed).not.toBeNull();
+      walk(world, resumed!.points);
+      expect(world.feet.y).toBeCloseTo(stair.upper.position.y, 1);
+      expect(stairTravel(compiled, entryPose(compiled).inside, { x: 0, z: 1 })).toBeNull();
+    } finally {
+      world.dispose();
+    }
+  }, 15000);
   it('walks the generated house and climbs its actual staircase', () => {
     const building = createHouse({ id: 'walkthrough', name: 'Walkthrough', storeys: 2 });
     const doors = building.floors.flatMap((floor) =>
