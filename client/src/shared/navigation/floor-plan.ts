@@ -28,6 +28,7 @@ export function planDoor(door: DoorPortal) {
   return {
     radius,
     openTip,
+    leafTip: door.open ? openTip : closedTip,
     arc: `M ${closedTip.x} ${closedTip.z} A ${radius} ${radius} 0 0 ${door.openingAngle < 0 ? 1 : 0} ${openTip.x} ${openTip.z}`,
   };
 }

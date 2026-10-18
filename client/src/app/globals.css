@@ -238,6 +238,10 @@ textarea:focus-visible,
   height: 22px;
   color: var(--muted);
 }
+.chat-heading-actions {
+  display: flex;
+  gap: 2px;
+}
 .chat-input {
   display: flex;
   align-items: center;
@@ -250,7 +254,7 @@ textarea:focus-visible,
 .chat-input:focus-within {
   border-color: var(--accent);
 }
-.chat-input input {
+.chat-input textarea {
   width: 100%;
   min-width: 0;
   padding: 7px 0;
@@ -258,11 +262,15 @@ textarea:focus-visible,
   background: none;
   outline: 0;
   font-size: 11px;
+  line-height: 1.6;
+  min-height: 32px;
+  max-height: 96px;
+  resize: none;
 }
-.chat-input input::placeholder {
+.chat-input textarea::placeholder {
   color: var(--muted);
 }
-.chat-input input:focus-visible {
+.chat-input textarea:focus-visible {
   outline: none;
 }
 .chat-send {
@@ -907,19 +915,19 @@ select option {
   left: 16px;
   z-index: 45;
   width: 176px;
-  padding: 12px;
-  border: 1px solid #fff9;
-  border-radius: 14px;
-  background: #edeae2f2;
-  box-shadow: 0 8px 30px #0003;
+  padding: 9px;
+  border: 1px solid #ffffff28;
+  border-radius: 12px;
+  background: #17212ce8;
+  box-shadow: 0 8px 30px #0002;
   backdrop-filter: blur(16px);
 }
 .map-expand {
   position: absolute;
   right: 8px;
   top: 8px;
-  color: #64675f;
-  opacity: 0.65;
+  color: #d0d7d9;
+  opacity: 0;
 }
 .map-mini:hover .map-expand {
   opacity: 1;
@@ -938,17 +946,17 @@ select option {
   overflow: visible;
 }
 .plan-paper {
-  fill: #fbfaf5;
+  fill: #202b34;
 }
 .map-room > rect {
-  fill: #fbfaf5;
+  fill: #202b34;
 }
 .map-room[role='button'] {
   cursor: pointer;
 }
 .map-room[role='button']:hover > rect,
 .map-room[role='button']:focus > rect {
-  fill: #e8edf0;
+  fill: #344754;
 }
 .map-room[role='button']:focus {
   outline: none;
@@ -958,15 +966,15 @@ select option {
   stroke-width: 0.07;
 }
 .map-room.map-current > rect {
-  fill: #e3ebef;
+  fill: #344a58;
 }
 .plan-details,
 .map-player {
   pointer-events: none;
 }
 .plan-furniture {
-  fill: #edeae2;
-  stroke: #a4a69c;
+  fill: #39434b;
+  stroke: #71808a;
   stroke-width: 0.045;
   stroke-linejoin: round;
 }
@@ -982,12 +990,12 @@ select option {
   stroke: none;
 }
 .plan-stair {
-  fill: #f2efe7;
-  stroke: #a6a99f;
+  fill: #2e3a43;
+  stroke: #7a878b;
   stroke-width: 0.035;
 }
 .plan-wall {
-  fill: #545c56;
+  fill: #b5c0bd;
 }
 .plan-window rect {
   fill: #d3e3e7;
@@ -1001,7 +1009,7 @@ select option {
 }
 .plan-door {
   fill: none;
-  stroke: #7f8981;
+  stroke: #a4b2b6;
   stroke-width: 0.05;
 }
 .plan-door-swing {
@@ -1009,15 +1017,12 @@ select option {
   stroke-width: 0.03;
 }
 .plan-room-name {
-  fill: #535d57;
+  fill: #e4e9e7;
   font-weight: 550;
   paint-order: stroke;
-  stroke: #fbfaf5dd;
+  stroke: #202b34dd;
   stroke-width: 0.12;
   stroke-linejoin: round;
-}
-.plan-view-cone {
-  fill: #338acb24;
 }
 .plan-player-halo {
   fill: #fff9;
@@ -1042,10 +1047,10 @@ select option {
   bottom: 16px;
   width: min(520px, calc(100vw - 32px));
   padding: 14px;
-  border: 1px solid #fff9;
+  border: 1px solid #ffffff28;
   border-radius: 18px;
-  background: #eeece5f5;
-  color: #545c56;
+  background: #17212cf5;
+  color: #e1e6e5;
   box-shadow: 0 16px 60px #0004;
   backdrop-filter: blur(20px);
   max-height: calc(100dvh - 96px);
@@ -1070,15 +1075,15 @@ select option {
   padding: 8px 10px;
   border-radius: 8px;
   font-size: 11px;
-  color: #747c74;
+  color: #a4b2b8;
 }
 .map-floors button[aria-selected='true'] {
-  color: #414f48;
-  background: #fff9;
+  color: #ede3ce;
+  background: #ffffff14;
   box-shadow: 0 1px 4px #0001;
 }
 .house-map .icon-button:hover {
-  background: #fff7;
+  background: #ffffff14;
 }
 .edit-history {
   width: min(340px, calc(100vw - 32px));

@@ -25,7 +25,6 @@ export function HouseMap() {
       player: null,
       heading: 0,
       edgePortals: [],
-      stairs: [],
       request: null,
       mapOpen: false,
     });

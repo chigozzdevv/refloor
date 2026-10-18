@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ArrowUp, LoaderCircle, X } from 'lucide-react';
+import { useLayoutEffect, useRef, useState } from 'react';
+import { ArrowUp, Lightbulb, LoaderCircle, X } from 'lucide-react';
 import type { ChatTarget } from '@refloor/scene/chat';
 import { useLanguageEdit } from '@/shared/editor/use-language-edit';
 
@@ -15,8 +15,18 @@ export function ElementChat({
   close?: () => void;
 }) {
   const [message, setMessage] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const input = useRef<HTMLTextAreaElement>(null);
   const { send, busy, reply } = useLanguageEdit(target);
+  useLayoutEffect(() => {
+    if (input.current) {
+      input.current.style.height = 'auto';
+      input.current.style.height = `${Math.min(96, input.current.scrollHeight)}px`;
+    }
+  }, [message]);
   const submit = async (text: string) => {
+    if (busy || !text.trim()) return;
+    setShowSuggestions(false);
     if (await send(text)) setMessage('');
   };
   return (
@@ -28,11 +38,25 @@ export function ElementChat({
     >
       <div className="chat-heading">
         <span title={label}>{label}</span>
-        {close && (
-          <button className="icon-button" aria-label="Close chat" onClick={close}>
-            <X size={14} />
-          </button>
-        )}
+        <div className="chat-heading-actions">
+          {suggestions.length > 0 && (
+            <button
+              className="icon-button"
+              type="button"
+              aria-label="Show suggestions"
+              aria-expanded={showSuggestions}
+              title="Suggestions"
+              onClick={() => setShowSuggestions(!showSuggestions)}
+            >
+              <Lightbulb size={14} />
+            </button>
+          )}
+          {close && (
+            <button className="icon-button" aria-label="Close chat" onClick={close}>
+              <X size={14} />
+            </button>
+          )}
+        </div>
       </div>
       {reply && (
         <p className="chat-reply" role="status">
@@ -46,9 +70,11 @@ export function ElementChat({
           void submit(message);
         }}
       >
-        <input
+        <textarea
+          ref={input}
+          rows={1}
           aria-label={`Message ${label}`}
-          placeholder="What would you like to change?"
+          placeholder="Describe a change…"
           value={message}
           onChange={(event) => setMessage(event.target.value)}
           maxLength={500}
@@ -57,13 +83,17 @@ export function ElementChat({
           onKeyDown={(event) => {
             event.stopPropagation();
             if (event.key === 'Escape') close?.();
+            if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+              event.preventDefault();
+              void submit(message);
+            }
           }}
         />
         <button className="chat-send" aria-label="Send request" disabled={busy || !message.trim()}>
           {busy ? <LoaderCircle size={16} className="spinning" /> : <ArrowUp size={16} />}
         </button>
       </form>
-      {!reply && (
+      {showSuggestions && (
         <div className="chat-suggestions">
           {suggestions.map((text) => (
             <button
@@ -71,7 +101,9 @@ export function ElementChat({
               type="button"
               disabled={busy}
               onClick={() => {
-                void submit(text);
+                setMessage(text);
+                setShowSuggestions(false);
+                input.current?.focus();
               }}
             >
               {text}

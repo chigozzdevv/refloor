@@ -102,11 +102,10 @@ export function MapPlan({
         </g>
       ))}
       <g className="plan-details">
-        {compiled.building.objects
-          .filter((object) => object.floorId === floorId && object.kind !== 'light')
-          .map((object) => (
-            <MapFurniture key={object.id} object={object} />
-          ))}
+        {navigate &&
+          compiled.building.objects
+            .filter((object) => object.floorId === floorId && object.kind !== 'light')
+            .map((object) => <MapFurniture key={object.id} object={object} />)}
         {stairs.map((part) => (
           <rect
             key={part.id}
@@ -148,10 +147,10 @@ export function MapPlan({
               ))}
           </g>
         ))}
-        {doors.map(({ door, arc, openTip }) => (
+        {doors.map(({ door, arc, leafTip }) => (
           <g key={door.id} className="plan-door">
-            <path className="plan-door-swing" d={arc} />
-            <path d={`M ${door.hinge.x} ${door.hinge.z} L ${openTip.x} ${openTip.z}`} />
+            {navigate && door.open && <path className="plan-door-swing" d={arc} />}
+            <path d={`M ${door.hinge.x} ${door.hinge.z} L ${leafTip.x} ${leafTip.z}`} />
           </g>
         ))}
         {floor.rooms.map((room) => {
@@ -168,10 +167,14 @@ export function MapPlan({
               key={room.id}
               className="plan-room-name"
               x={rect.x + rect.width / 2}
-              y={rect.z + rect.depth * (room.kind === 'corridor' ? 0.8 : 0.5)}
+              y={
+                navigate && room.kind !== 'corridor' && room.kind !== 'stairwell'
+                  ? rect.z + Math.min(1.1, rect.depth * 0.4)
+                  : rect.z + rect.depth * (room.kind === 'corridor' ? 0.8 : 0.5)
+              }
               textAnchor="middle"
               fontSize={Math.min(
-                (navigate ? 12 : 7) * unitsPerPixel,
+                (navigate ? 12 : 8) * unitsPerPixel,
                 (rect.width - 0.5) / (Math.max(...lines.map((line) => line.length), 5) * 0.55),
               )}
             >
@@ -193,10 +196,9 @@ export function MapPlan({
           className="map-player"
           transform={`translate(${here.x} ${here.z}) rotate(${(heading * 180) / Math.PI})`}
         >
-          <path className="plan-view-cone" d="M 0 0 L -.85 -1.55 Q 0 -2.1 .85 -1.55 Z" />
-          <circle className="plan-player-halo" r={navigate ? 0.42 : 0.53} />
-          <circle r={navigate ? 0.22 : 0.29} />
-          <path className="plan-player-heading" d="M 0 -.6 L .14 -.32 H -.14 Z" />
+          <circle className="plan-player-halo" r={0.36} />
+          <circle r={0.19} />
+          <path className="plan-player-heading" d="M 0 -.55 L .12 -.34 H -.12 Z" />
         </g>
       )}
     </svg>
