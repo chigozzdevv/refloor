@@ -12,6 +12,7 @@ import { PhysicsRuntime } from '@/shared/navigation/physics-runtime';
 import { SelectionChat } from '@/components/editor/selection-chat';
 import { NavigationMarkers } from '@/components/navigation/navigation-markers';
 import { SelectedFloor } from '@/components/editor/selected-floor';
+import { ActionEvents } from '@/components/scene/action-events';
 
 function SceneReady() {
   const setReady = useProject((state) => state.setSceneReady);
@@ -49,6 +50,7 @@ export function World() {
           <Furniture />
           <ArchitecturalDetails />
           <NavigationControls />
+          <ActionEvents />
           <NavigationMarkers />
           <SelectionChat />
           <SelectedFloor />

@@ -19,6 +19,7 @@ import { ElementChat } from '@/components/editor/element-chat';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 import { EditHistory } from '@/components/editor/edit-history';
 import { useFurnishings } from '@/shared/editor/use-furnishings';
+import { SavedActions } from '@/components/editor/saved-actions';
 
 export function StudioHeader({
   openNewHome,
@@ -141,6 +142,7 @@ export function StudioHeader({
                 </button>
               ))}
             </div>
+            <SavedActions key={`actions:${projectEpoch}`} />
             <div className="house-actions">
               <button
                 disabled={furnishing}

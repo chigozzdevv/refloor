@@ -13,6 +13,7 @@ import { sameMaterial } from '@/shared/scene/finish';
 import { isScenePointer, visibleGroupRaycast } from '@/shared/editor/picking';
 import { SelectionBounds } from '@/components/editor/selection-bounds';
 import { invalidateShadows } from '@/shared/scene/shadow-updates';
+import { dispatchSceneEvent } from '@/shared/behaviours/events';
 
 function ScannedFurniture({ object, entry }: { object: SceneObject; entry: CatalogueEntry }) {
   const { scene } = useGLTF(entry.modelUrl!, false),
@@ -90,6 +91,7 @@ function FurnitureInstance({ object }: { object: SceneObject }) {
           if (!isScenePointer(event) || event.delta > 5 || useProject.getState().interacting)
             return;
           event.stopPropagation();
+          if (!dispatchSceneEvent({ kind: 'object-click', objectId: object.id })) return;
           select({ kind: 'object', id: object.id });
         }}
         onPointerOver={(event) => {
