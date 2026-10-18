@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    "paths": {
+      "@refloor/server/*": ["./src/*.ts"],
+      "@server-test/*": ["./test/*.ts"]
+    }
+  },
+  "include": ["src", "test", "scripts"]
+}

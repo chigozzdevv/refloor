@@ -10,13 +10,15 @@
     "dev": "pnpm build:packages && pnpm --filter @refloor/client dev",
     "build": "pnpm -r --if-present build",
     "typecheck": "pnpm build:packages && pnpm -r --if-present typecheck",
-    "lint": "eslint packages client --max-warnings 0",
+    "lint": "eslint packages client server --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "pnpm build && vitest run",
     "check": "pnpm format:check && pnpm lint && pnpm build && pnpm -r --if-present typecheck && vitest run",
     "build:packages": "pnpm -r --filter './packages/*' build",
-    "preview": "pnpm --filter @refloor/client preview"
+    "preview": "pnpm --filter @refloor/client preview",
+    "dev:server": "pnpm build:packages && pnpm --filter @refloor/server dev",
+    "db:dev": "pnpm --filter @refloor/server db:dev"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

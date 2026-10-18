@@ -4,6 +4,18 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   resolve: {
     alias: [
+      {
+        find: /^@refloor\/contracts$/,
+        replacement: fileURLToPath(new URL('./packages/contracts/src/index.ts', import.meta.url)),
+      },
+      {
+        find: /^@refloor\/server\//,
+        replacement: fileURLToPath(new URL('./server/src/', import.meta.url)),
+      },
+      {
+        find: /^@server-test\//,
+        replacement: fileURLToPath(new URL('./server/test/', import.meta.url)),
+      },
       { find: /^@\//, replacement: fileURLToPath(new URL('./client/src/', import.meta.url)) },
       {
         find: /^@refloor\/catalogue$/,
@@ -48,7 +60,11 @@ export default defineConfig({
     ],
   },
   test: {
-    include: ['packages/*/test/**/*.test.ts', 'client/test/**/*.test.ts'],
+    include: [
+      'packages/*/test/**/*.test.ts',
+      'client/test/**/*.test.ts',
+      'server/test/**/*.test.ts',
+    ],
     environment: 'node',
   },
 });

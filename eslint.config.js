@@ -6,7 +6,7 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ['packages/**/*.ts', 'client/**/*.{ts,tsx}'],
+    files: ['packages/**/*.ts', 'client/**/*.{ts,tsx}', 'server/**/*.ts'],
     rules: {
       'no-restricted-imports': ['error', { patterns: ['./*', '../*'] }],
       '@typescript-eslint/consistent-type-imports': 'error',
