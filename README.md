@@ -1,14 +1,14 @@
 # Refloor
 
 Refloor is a browser studio for generating, furnishing and exploring editable 3D houses.
-Describe a house, generate it with GPT-6.1 Sol, then enter and edit the saved space.
+Describe a house, generate it with GPT-6 Luna, then enter and edit the saved space.
 
 `@refloor/scene` validates building documents and applies atomic, reversible commands.
 `@refloor/engine` compiles those documents into meshes, colliders and walking routes,
 then checks furniture placement, door clearance and stair access. The client renders
 parameter-based starting homes with physical materials, scanned furniture, HDR daylight,
 shadows and cutaway views. The Node API stores projects and reversible
-edit history in MongoDB. GPT-6.1 Sol interprets house descriptions; Z3 solves room layouts,
+edit history in MongoDB. GPT-6 Luna interprets house descriptions; Z3 solves room layouts,
 and the engine validates the assembled building before it can be saved.
 
 ## Requirements
@@ -33,9 +33,13 @@ configured MongoDB replica set or sharded cluster; standalone MongoDB cannot pro
 the transactions used by project revisions.
 
 Set `OPENAI_API_KEY` in the root `.env` to enable generation. `OPENAI_MODEL` is
-`gpt-6.1-sol`; there is no fallback to another model. In **New space**, enter a description,
-choose **Generate my house**, then **Open generated house** when it is ready. The current
-space stays editable while generation runs. Completed houses appear in saved spaces.
+`gpt-6-luna`; there is no fallback to another model. The opening screen has a centered
+description field over the blurred current house. Submit with the paper-plane button or Enter
+(Shift+Enter adds a line). Generation shows real job stages, opens the saved result automatically,
+reveals its paved compound, then approaches the entrance. Reduced-motion preferences skip the
+animated approach; a skip button is also available. A failed job keeps the description and previous
+house available. Continue the current draft or choose a validated starting house without generating.
+Completed houses also appear in saved spaces.
 The API key stays on the server. Responses use Structured Outputs with storage disabled,
 a 6,000-token output limit, a 90-second provider timeout and no automatic provider retries.
 
@@ -109,7 +113,7 @@ uses `@refloor/server/*` so compiled imports resolve without a runtime alias loa
 
 Tests execute the real implementation without mocked services or replacement modules.
 Their input documents describe buildings, room programmes and edits; automated tests
-run the real Z3 solver and MongoDB without spending API credits. Live GPT-6.1 Sol checks are
+run the real Z3 solver and MongoDB without spending API credits. Live GPT-6 Luna checks are
 separate from `pnpm check`. Engine tests instantiate Rapier and walk a capsule through
 the generated colliders, including entrance-to-upstairs routes, both stair types and
 rotated flights. This verifies the geometry in a headless physics world. The browser
@@ -120,40 +124,51 @@ changes with their item and room, undo, redo and restoration before an earlier e
 in a bounded browser worker, preserves the house layout, validates access and can be undone
 as one change. It upgrades legacy fittings and adds room essentials where clear space permits.
 The scene has no persistent inspector, left toolbar, floor buttons
-or statistics overlays. Clicking an item, wall, floor or door opens a small chat anchored
-beside it with a speech-bubble tail and a selection outline. GPT-6.1 Sol interprets supported changes; the server validates commands and placement,
+or statistics overlays. Clicking an interior door walks through it, opening it when necessary;
+Shift+click, right-click, or selecting it in overview opens door editing. Clicking other items, walls or floors opens a small chat anchored
+beside it with a speech-bubble tail and a selection outline. Suggestions are collapsed behind a help icon; selecting one fills the composer for review before sending. GPT-6 Luna interprets supported changes; the server validates commands and placement,
 and the client checks that the scene has not changed before applying them. Item chat
 can only affect the selected entity; house chat can change finishes or devices across
 the current building. Drag or swipe to look around, then select a floor ring to travel
 to a clear spot. Stops follow clear room viewpoints and routes between entrances,
 doorways and stair landings, and update after edits. At most three separated markers
 appear at once: floor rings mark clear standing spots, small doorway rings enter rooms,
-and stair rings sit on real treads with a chevron pointing along the flight. Arrivals face a visible
-door, stair entrance or editable item, with the requested focal point preferred when visible.
+and stair rings sit on real treads with a chevron pointing along the flight. Door chevrons point into their destination in the current camera view. Floor dots preserve the viewing direction; doorway and map arrivals face a visible door, stair entrance or editable item.
 Room exits use the same doorway dots and name the room they lead to. When the exit is out
 of view, a small cue at the screen edge points towards it and still starts the walking route.
-Stair markers stay at the staircase rather than appearing inside unrelated rooms. The map
-shows actual walls, door swings, windows, furniture, stairs and the current room,
-position and heading. The small floor plan opens the larger view without a duplicate toolbar icon.
+Stair actions appear once, on the actual tread when visible or at the viewport edge when out of view. The compact map shows rooms, walls, doors, stairs and the current position; the expanded plan adds furniture. Door leaves follow their actual open or closed state. The small floor plan opens the larger view without a duplicate toolbar icon.
 Choose a room on either floor to follow a validated walking route there.
 Doorway trips open required doors and close obstructing open leaves, moving clear of the swing first, before following a route through
-the actual colliders. Stair arrows handle the full climb or descent with one click;
-the camera follows the turn and smooths changes in height. A Stop button appears during
+the actual colliders. Tour-opened doors return to their original state after the player clears their swing. Explicit manual door changes are preserved; saved navigation-owned openings are recovered from edit history. Stair arrows handle the full climb or descent with one click;
+the camera follows the turn and smooths changes in height. A centered, translucent stop icon appears during
 travel; dragging, selecting an item or Escape also stops it. Losing focus releases manual input without silently cancelling a chosen tour. A stair
 arrow can resume from the current step. House overview in the globe menu resets the
 outside view; returning to Walk preserves the previous position and viewing direction
-on that floor. On the translucent bottom-right pad, left/right turn the camera and up/down walk forward/backward. Dragging the centre steers while walking. Nearby stair actions use the actual landing and elevation: upstairs at the bottom, downstairs at the top, and both destinations if stopped mid-flight. Actions hide during travel, and the camera waits until it is near the destination in all three dimensions before turning towards its arrival view. The physical stair markers remain available. Near a staircase, forward movement aligns with the steps and follows the climb while held; releasing stops it. Keyboard WASD and arrow keys remain available. The player physically
+on that floor. On the translucent bottom-right pad, left/right turn the camera and up/down walk forward/backward. Dragging the centre steers while walking. Stair actions use the actual landing and elevation: upstairs at the bottom, downstairs at the top, and both destinations if stopped mid-flight. Actions hide during travel, and the camera waits until it is near the destination in all three dimensions before turning towards its arrival view. Near a staircase, forward movement aligns with the steps and follows the climb while held; releasing stops it. Keyboard WASD and arrow keys remain available. The player physically
 climbs the steps; floor state follows its elevation. Doors validate their full swing before edits and undo/redo, and walking waits briefly outside a nearby moving door. The entry arrival point stays clear of the entrance swing, and an already-open entrance offers Enter house.
-The exterior overview shows every storey, exterior wall and the complete roof; the interior cutaway is used when focusing furniture. Window frames, floor bands, roof edges, entrance canopy, paving, planting and porch lighting derive from the actual building and entrance. Exterior paving has matching physical colliders. The overview fits the whole house at phone and desktop aspect ratios. Tour routes and the map cover the interior; roof and site decoration remain architectural details. The furniture library adds items into validated clear spaces.
+The exterior overview shows every storey, exterior wall and the complete roof; the interior cutaway is used when focusing furniture. Window frames, floor bands, roof edges, entrance canopy, paving, planting and porch lighting derive from the actual building and entrance. The compound uses instanced block paving with a matching flat physical surface, curbs and planting. New generated and starting houses include two separately identified, editable exterior floodlights, initially off. The overview fits the whole house at phone and desktop aspect ratios. Tour routes and the map cover the interior; roof and site decoration remain architectural details. The furniture library adds items into validated clear spaces.
 Chat moves, rotates, resizes, recolours, replaces or removes compatible items and controls
 televisions, lights and doors. Accepted edits
 update collision geometry and support undo/redo (also Cmd/Ctrl+Z and Shift+Cmd/Ctrl+Z).
 TV controls play the included clip or a compatible direct video URL on the 3D screen;
 power, mute and volume update the actual media player. Light controls update fixture
-emission, intensity, colour and cached local shadows in high quality mode. Chat can restore
+emission, intensity, colour and cached local shadows in high quality mode. Geometry changes schedule shadow refreshes on rendered frames; paused tabs cannot expire the refresh window, and animated doors refresh shadows through their movement. Chat can restore
 a light's original power, brightness and illumination colour. Chat and typed edits enforce
 brightness bounds of 0–200% of the catalogue default; legacy brighter values remain loadable
 with capped rendering. Item chats show the selected item name and accept changes through text.
+
+Saved actions are part of the building document. House chat can connect door opens/closes,
+light or television power changes, room entry and object clicks to supported scene commands,
+including multiple devices, furniture transforms and surface finishes. Door and power conditions
+can restrict a rule. The house menu lists rules, their actual triggers/actions, enable/disable switches
+and removal; configuration changes use normal undo/redo and persist in browser drafts, exports
+and MongoDB snapshots. Rules run locally without another model call. State triggers fire only on
+actual changes, each rule fires at most once per transaction, and at most 100 commands execute
+in one interaction. Chained effects are validated atomically against geometry, the player and light
+tuning; invalid effects reject the interaction with a visible error. Undo/redo replays the recorded
+commands without firing rules again. Removing an object also removes rules that depend on it,
+and undo restores both. Existing houses without exterior fixtures remain valid. Timers, sensors,
+real-world smart-home devices and arbitrary scripts are unsupported.
 
 Each house keeps original item and surface properties, the latest 50 applied edit/undo/redo
 transitions and 80 conversation turns. Item chat receives its original snapshot, up to 12 related
@@ -277,7 +292,7 @@ portable copy. Use HTTPS in production and configure exact `CLIENT_ORIGINS`.
 - `PUT /api/projects/:id`: save a snapshot with `requestId`, `expectedVersion` and `building`.
 - `POST /api/projects/:id/edits`: apply `{ edit, player }` through the shared placement engine.
 - `POST /api/edits/interpret`: interpret `{ requestId, building, target, message, view, player }`
-  with GPT-6.1 Sol. Returns scoped, validated commands, their base revision and token usage. It
+  with GPT-6 Luna. Returns scoped, validated commands, their base revision and token usage. It
   does not write a project; the client applies the commands to its current draft and uses
   the normal save flow. `target` contains an existing entity `kind` and `id`; `view` is the
   horizontal camera direction used for relative movement. Requests require a session,
