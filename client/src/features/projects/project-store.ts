@@ -87,6 +87,7 @@ export const useProject = create<ProjectState>((set, get) => ({
       past: [],
       future: [],
       mode: 'entry',
+      focusRequest: null,
       floorId: entryPose(compiled).floorId,
       selection: null,
       travelRequest: null,
@@ -196,7 +197,7 @@ export const useProject = create<ProjectState>((set, get) => ({
     if (get().mode === 'walk') {
       if (get().floorId !== floorId)
         set({ travelRequest: { id: crypto.randomUUID(), floorId }, selection: null });
-    } else set({ floorId, mode: 'orbit', selection: null });
+    } else set({ floorId, mode: 'orbit', selection: null, focusRequest: null });
   },
   setWalkFloor: (floorId) => set({ floorId }),
   select: (selection) => set({ selection }),
@@ -225,7 +226,7 @@ export const useProject = create<ProjectState>((set, get) => ({
         if (node) physicsSession.current.teleport(node.position);
       }
     }
-    set({ mode, selection: null, travelRequest: null });
+    set({ mode, selection: null, travelRequest: null, focusRequest: null });
   },
   setInteracting: (interacting) => set({ interacting }),
   setDoor: (id, open) => {
@@ -257,6 +258,7 @@ export const useProject = create<ProjectState>((set, get) => ({
       mode: 'entry',
       selection: null,
       travelRequest: null,
+      focusRequest: null,
       past: [],
       future: [],
     });
