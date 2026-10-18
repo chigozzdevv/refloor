@@ -380,6 +380,86 @@ textarea:focus-visible,
 .walk-mode canvas:active {
   cursor: grabbing;
 }
+.movement-pad {
+  position: absolute;
+  z-index: 45;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  width: 140px;
+  height: 140px;
+  border: 1px solid #ffffff30;
+  border-radius: 50%;
+  background: #17212c7a;
+  box-shadow:
+    0 8px 32px #0003,
+    inset 0 0 24px #ffffff05;
+  backdrop-filter: blur(14px);
+  touch-action: none;
+  user-select: none;
+  color: #f1eee6;
+}
+.pad-direction,
+.pad-stick {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  touch-action: none;
+}
+.pad-direction {
+  opacity: 0.75;
+}
+.pad-direction:hover,
+.pad-direction:active {
+  opacity: 1;
+  background: #ffffff12;
+}
+.pad-forward {
+  top: 0;
+  left: calc(50% - 22px);
+}
+.pad-backward {
+  bottom: 0;
+  left: calc(50% - 22px);
+}
+.pad-left {
+  left: 0;
+  top: calc(50% - 22px);
+}
+.pad-right {
+  right: 0;
+  top: calc(50% - 22px);
+}
+.pad-stick {
+  top: calc(50% - 22px);
+  left: calc(50% - 22px);
+  border: 1px solid #ffffff50;
+  background: #b7c3cb30;
+  box-shadow: 0 3px 12px #0003;
+  cursor: grab;
+}
+.pad-stick:active {
+  cursor: grabbing;
+  background: #d1b88660;
+}
+.pad-stick span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f1eee6b0;
+}
+@media (max-width: 600px) {
+  .movement-pad {
+    width: 124px;
+    height: 124px;
+    right: max(14px, env(safe-area-inset-right));
+    bottom: max(14px, env(safe-area-inset-bottom));
+  }
+}
 .journey-stop,
 .tour-hint {
   position: absolute;
@@ -856,6 +936,12 @@ select option {
 }
 .map-mini:hover .map-expand {
   opacity: 1;
+}
+@media (max-width: 380px) {
+  .map-mini {
+    width: 144px;
+    padding: 9px;
+  }
 }
 .map-plan {
   display: block;

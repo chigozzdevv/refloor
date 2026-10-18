@@ -4,14 +4,18 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { MathUtils, PerspectiveCamera, Vector3 } from 'three';
 import type { CompiledBuilding } from '@refloor/engine';
-import { destinationRoute, smoothRoute } from '@/shared/navigation/destinations';
+import type { SceneCommand } from '@refloor/scene';
+import { smoothRoute } from '@/shared/navigation/destinations';
 import { createJourney, stepJourney } from '@/shared/navigation/journey';
 import type { Journey } from '@/shared/navigation/journey';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 import { useProject } from '@/shared/scene/scene-store';
 import { entryPose } from '@/shared/navigation/entry';
 import { physicsSession } from '@/shared/navigation/physics-session';
-import { isTyping, walkInput } from '@/shared/navigation/input';
+import { isTyping, movementInput, resetWalkInput, walkInput } from '@/shared/navigation/input';
+import { advanceStairAssist, stairAssist } from '@/shared/navigation/stair-assist';
+import type { StairAssist } from '@/shared/navigation/stair-assist';
+import { doorRoute } from '@/shared/navigation/door-route';
 
 export function NavigationControls() {
   const { camera, gl, size } = useThree(),
@@ -24,9 +28,15 @@ export function NavigationControls() {
     selection = useProject((state) => state.selection);
   const overview = useNavigation((state) => state.overview);
   const previous = useRef(mode),
+    stairs = useRef<StairAssist | null>(null),
     transition = useRef<number | null>(null),
     entry = entryPose(compiled),
-    route = useRef<{ id: string; compiled: CompiledBuilding; journey: Journey } | null>(null);
+    route = useRef<{
+      id: string;
+      compiled: CompiledBuilding;
+      journey: Journey;
+      doors: SceneCommand[];
+    } | null>(null);
   const floor = compiled.building.floors.find((value) => value.id === floorId),
     elevation = floor?.elevation ?? 0,
     centreX = (floor?.footprint.x ?? 0) + (floor?.footprint.width ?? 12) / 2,
@@ -74,7 +84,8 @@ export function NavigationControls() {
       walkInput.yaw = camera.rotation.y;
       walkInput.pitch = camera.rotation.x;
     }
-    walkInput.keys.clear();
+    resetWalkInput();
+    stairs.current = null;
     previous.current = mode;
   }, [camera, mode, compiled.building.id, epoch, size.width, size.height]);
   useEffect(() => {
@@ -135,11 +146,11 @@ export function NavigationControls() {
     };
     const up = (event: KeyboardEvent) => walkInput.keys.delete(event.key.toLowerCase()),
       blur = () => {
-        walkInput.keys.clear();
+        resetWalkInput();
         useNavigation.getState().stop();
         pointerUp();
       };
-    let pointer: { id: number; x: number; y: number } | null = null;
+    let pointer: { id: number; x: number; y: number; dragging: boolean } | null = null;
     const pointerDown = (event: PointerEvent) => {
       if (
         useProject.getState().mode === 'walk' &&
@@ -148,7 +159,7 @@ export function NavigationControls() {
       ) {
         useNavigation.getState().stop();
         gl.domElement.setPointerCapture(event.pointerId);
-        pointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
+        pointer = { id: event.pointerId, x: event.clientX, y: event.clientY, dragging: false };
       }
     };
     const pointerMove = (event: PointerEvent) => {
@@ -159,6 +170,8 @@ export function NavigationControls() {
       }
       const dx = event.clientX - pointer.x,
         dy = event.clientY - pointer.y;
+      if (!pointer.dragging && Math.hypot(dx, dy) < 5) return;
+      pointer.dragging = true;
       const sensitivity =
         Math.PI / Math.max(480, Math.min(gl.domElement.clientWidth, gl.domElement.clientHeight));
       walkInput.yaw -= dx * sensitivity;
@@ -191,6 +204,7 @@ export function NavigationControls() {
       window.removeEventListener('pointercancel', pointerUp);
       gl.domElement.removeEventListener('lostpointercapture', pointerUp);
       useNavigation.getState().stop();
+      resetWalkInput();
     };
   }, [gl]);
   useFrame((_state, delta) => {
@@ -199,8 +213,14 @@ export function NavigationControls() {
     forward.current.normalize();
     walkInput.view = { x: forward.current.x, z: forward.current.z };
     if (mode !== 'walk') return;
-    if (interacting || isTyping(document.activeElement)) {
-      walkInput.keys.clear();
+    if (
+      interacting ||
+      selection ||
+      useNavigation.getState().mapOpen ||
+      isTyping(document.activeElement)
+    ) {
+      resetWalkInput();
+      stairs.current = null;
       route.current = null;
       if (useNavigation.getState().request) useNavigation.getState().stop();
       return;
@@ -223,46 +243,47 @@ export function NavigationControls() {
       return;
     }
     const keys = walkInput.keys;
-    const f =
-      Number(keys.has('w') || keys.has('arrowup')) - Number(keys.has('s') || keys.has('arrowdown'));
-    const r = Number(keys.has('d')) - Number(keys.has('a'));
+    const input = movementInput(),
+      f = input.y,
+      r = input.x;
     const turn = Number(keys.has('arrowright')) - Number(keys.has('arrowleft'));
     walkInput.yaw -= turn * dt * 1.7;
     const request = useNavigation.getState().request;
     if (request && (route.current?.id !== request.id || route.current.compiled !== compiled)) {
       const state = useProject.getState(),
-        openable = destinationRoute(compiled, world.player, request.target, 'openable');
-      if (openable?.doorIds.length) {
-        if (
-          !state.edit(
-            openable.doorIds.map((doorId) => ({ type: 'set-door', doorId, open: true })),
-            { source: 'navigation' },
-          )
-        )
-          useNavigation.getState().stop();
-        return;
-      }
-      const path = destinationRoute(compiled, world.player, request.target, 'current');
-      if (!path) {
+        plan = doorRoute(compiled, world.player, request.target);
+      if (!plan) {
         state.notify('That spot is blocked. Choose another marker.');
         useNavigation.getState().stop();
+        return;
+      }
+      if (plan.commands.length && !plan.staging) {
+        if (!state.edit(plan.commands, { source: 'navigation' })) useNavigation.getState().stop();
         return;
       }
       route.current = {
         id: request.id,
         compiled,
-        journey: createJourney(smoothRoute(compiled, path.points)),
+        journey: createJourney(smoothRoute(compiled, plan.path.points)),
+        doors: plan.staging ? plan.commands : [],
       };
     }
     const active = request ? route.current?.journey : null;
     if (active && request) {
       const status = stepJourney(world, active, dt);
+      if (status === 'arrived' && route.current?.doors.length) {
+        if (!useProject.getState().edit(route.current.doors, { source: 'navigation' }))
+          useNavigation.getState().stop();
+        route.current = null;
+        return;
+      }
       let heading = active.heading;
       const remaining = Math.hypot(
         world.feet.x - request.target.position.x,
         world.feet.z - request.target.position.z,
       );
       if (
+        !route.current?.doors.length &&
         request?.lookAt &&
         remaining < 1.4 &&
         Math.hypot(request.lookAt.x - world.feet.x, request.lookAt.z - world.feet.z) > 0.5
@@ -287,16 +308,29 @@ export function NavigationControls() {
           useProject.getState().notify('The path changed. Choose another marker.');
       }
     } else {
-      camera.rotation.set(walkInput.pitch, walkInput.yaw, 0, 'YXZ');
-      camera.getWorldDirection(forward.current);
-      forward.current.y = 0;
-      forward.current.normalize();
-      right.current.crossVectors(forward.current, new Vector3(0, 1, 0));
-      const length = Math.max(1, Math.hypot(f, r)),
-        speed = keys.has('shift') ? 2.5 : 1.65;
-      const x = ((forward.current.x * f + right.current.x * r) / length) * speed,
-        z = ((forward.current.z * f + right.current.z * r) / length) * speed;
-      world.step({ x, z }, dt);
+      if (f <= 0.25 || Math.abs(r) > 0.35 || turn) stairs.current = null;
+      else stairs.current ??= stairAssist(compiled, world.player, walkInput.yaw);
+      const assist = stairs.current;
+      if (assist) {
+        const { yaw, status } = advanceStairAssist(world, assist, walkInput.yaw, dt);
+        walkInput.yaw = yaw;
+        walkInput.pitch = MathUtils.damp(walkInput.pitch, assist.ascending ? 0.08 : -0.3, 4, dt);
+        if (status === 'blocked')
+          useProject
+            .getState()
+            .notify('The stairs are obstructed. Move away or choose a stair marker.');
+      } else {
+        camera.rotation.set(walkInput.pitch, walkInput.yaw, 0, 'YXZ');
+        camera.getWorldDirection(forward.current);
+        forward.current.y = 0;
+        forward.current.normalize();
+        right.current.crossVectors(forward.current, new Vector3(0, 1, 0));
+        const length = Math.max(1, Math.hypot(f, r)),
+          speed = keys.has('shift') ? 2.5 : 1.65;
+        const x = ((forward.current.x * f + right.current.x * r) / length) * speed,
+          z = ((forward.current.z * f + right.current.z * r) / length) * speed;
+        world.step({ x, z }, dt);
+      }
     }
     const next = world.feet;
     camera.position.set(next.x, MathUtils.damp(camera.position.y, next.y + 1.62, 12, dt), next.z);
