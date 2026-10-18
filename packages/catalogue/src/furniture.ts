@@ -9,6 +9,7 @@ export type FurnitureRenderer =
   | 'bed'
   | 'television'
   | 'pendant'
+  | 'floodlight'
   | 'cabinet'
   | 'plant'
   | 'kitchen'
@@ -34,6 +35,16 @@ export type CatalogueEntry = ObjectAsset & {
 
 export const catalogue: CatalogueEntry[] = [
   ...roomEssentials,
+  {
+    assetId: 'catalogue/floodlight',
+    label: 'Exterior floodlight',
+    kind: 'light',
+    dimensions: { width: 0.32, height: 0.22, depth: 0.18 },
+    materials: { body: finishes.black, frame: finishes.black },
+    behaviours: [{ kind: 'light', state: { powered: false, intensity: 20, color: '#ffe6c4' } }],
+    renderer: 'floodlight',
+    description: 'An adjustable exterior light for the entrance and compound.',
+  },
   {
     assetId: 'catalogue/sofa',
     label: 'Forma sofa',

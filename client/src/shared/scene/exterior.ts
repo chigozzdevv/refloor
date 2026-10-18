@@ -1,4 +1,5 @@
 import type { CompiledBuilding, Point3 } from '@refloor/engine';
+import { compoundFootprint } from '@refloor/engine';
 import type { Floor, Wall } from '@refloor/scene';
 import { entryPose } from '@/shared/navigation/entry';
 
@@ -53,6 +54,7 @@ export function exteriorLayout(compiled: CompiledBuilding) {
     door,
     entrancePoint,
     rotation: Math.atan2(outward.x, outward.z),
+    compound: compoundFootprint(compiled.building),
     paving: [
       {
         position: { ...centre, y: ground.elevation - 0.18 },
@@ -60,13 +62,6 @@ export function exteriorLayout(compiled: CompiledBuilding) {
         depth: maxZ - minZ + 1.6,
         height: 0.07,
         rotation: 0,
-      },
-      {
-        position: entrancePoint(0, 2.2, -0.13),
-        width: door.width + 1.1,
-        depth: 4.4,
-        height: 0.08,
-        rotation: Math.atan2(outward.x, outward.z),
       },
     ],
   };
@@ -87,7 +82,7 @@ export function exteriorCamera(compiled: CompiledBuilding, aspect = 1.6) {
   };
   const length = Math.hypot(direction.x, direction.y, direction.z);
   const halfFov = Math.min(Math.PI / 8, Math.atan(Math.tan(Math.PI / 8) * aspect));
-  const radius = Math.hypot(site.width + 2, site.height, site.depth + 5) / 2;
+  const radius = Math.hypot(site.compound.width, site.height, site.compound.depth) / 2;
   const distance = (radius / Math.sin(halfFov)) * 1.08;
   return {
     target,

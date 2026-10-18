@@ -85,16 +85,18 @@ describe('exterior layout', () => {
           expect(Math.abs(point.y)).toBeLessThan(0.95);
         }
   });
-  it('aligns the path and canopy to the generated entrance instead of a fixed scene position', () => {
+  it('aligns the canopy to the entrance and leaves paved space around the building', () => {
     const compiled = compileBuilding(generated),
       site = exteriorLayout(compiled),
       entry = entryPose(compiled);
-    const path = site.paving[1]!;
-    const dx = path.position.x - site.door.centre.x,
-      dz = path.position.z - site.door.centre.z;
+    const approach = site.entrancePoint(0, 2.2, -0.1);
+    const dx = approach.x - site.door.centre.x,
+      dz = approach.z - site.door.centre.z;
     expect(dx * site.tangent.x + dz * site.tangent.z).toBeCloseTo(0);
     expect(dx * entry.normal.x + dz * entry.normal.z).toBeLessThan(0);
     expect(site.paving[0]!.width).toBeGreaterThan(site.width);
+    expect(site.compound.width).toBeGreaterThan(site.width + 6);
+    expect(site.compound.depth).toBeGreaterThan(site.depth + 8);
     const camera = exteriorCamera(compiled);
     expect(camera.position.y).toBeGreaterThan(site.height);
     expect(camera.target.y).toBeGreaterThan(0);

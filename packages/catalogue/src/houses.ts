@@ -3,6 +3,7 @@ import { validateBuilding } from '@refloor/engine';
 import { finishes } from '@refloor/catalogue/materials';
 import { createFloor } from '@refloor/catalogue/houses/structure';
 import { furnishHouse } from '@refloor/catalogue/houses/furnish';
+import { furnishExterior } from '@refloor/catalogue/houses/exterior';
 
 export type HouseOptions = {
   id: string;
@@ -57,5 +58,6 @@ export function createHouse({ id, name, storeys, width = 12, depth = 10 }: House
     });
   }
   furnishHouse(building);
+  furnishExterior(building);
   return validateBuilding(building).building;
 }

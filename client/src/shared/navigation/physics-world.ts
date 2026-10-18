@@ -43,6 +43,17 @@ export class CharacterWorld {
     }
     const site = exteriorLayout(compiled);
     this.world.createCollider(
+      RAPIER.ColliderDesc.cuboid(
+        site.compound.width / 2,
+        0.03,
+        site.compound.depth / 2,
+      ).setTranslation(
+        site.compound.x + site.compound.width / 2,
+        site.ground.elevation - 0.125,
+        site.compound.z + site.compound.depth / 2,
+      ),
+    );
+    this.world.createCollider(
       RAPIER.ColliderDesc.cuboid(100, 0.1, 100).setTranslation(
         site.centre.x,
         site.ground.elevation - 0.305,
@@ -105,6 +116,8 @@ export class CharacterWorld {
     const feet = this.feet;
     const swinging = this.compiled.doors.some(
       (door) =>
+        door.hinge.y + door.height > feet.y + 0.1 &&
+        door.hinge.y < feet.y + this.compiled.options.height &&
         Math.abs(this.doorFraction(door.id) - Number(door.open)) > 0.015 &&
         Math.hypot(feet.x - door.hinge.x, feet.z - door.hinge.z) <
           door.width + this.compiled.options.radius + 0.45,

@@ -4,6 +4,7 @@ import { Box3, BufferGeometry, Float32BufferAttribute, Mesh, Quaternion, Vector3
 import type { Point3 } from '@refloor/engine';
 import { useProject } from '@/shared/scene/scene-store';
 import { exteriorLayout } from '@/shared/scene/exterior';
+import { Compound } from '@/components/scene/compound';
 
 function RoofSeams({
   x,
@@ -127,6 +128,7 @@ export function Exterior() {
   const trim = '#555c59';
   return (
     <group>
+      <Compound compiled={compiled} />
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
         position={[site.centre.x, site.ground.elevation - 0.205, site.centre.z]}

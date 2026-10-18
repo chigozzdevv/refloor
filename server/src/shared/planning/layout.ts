@@ -7,6 +7,7 @@ import { validateRequirements } from '@refloor/server/shared/planning/requiremen
 import { furnishLayout } from '@refloor/server/shared/planning/placement';
 import { validateBuildingAssets } from '@refloor/catalogue/validation';
 import { validateBuilding } from '@refloor/engine';
+import { furnishExterior } from '@refloor/catalogue/houses/exterior';
 
 export async function generateLayout(
   id: string,
@@ -18,6 +19,7 @@ export async function generateLayout(
   const layout = await solveLayout(requirements);
   const building = assembleHouse(id, requirements, layout);
   furnishLayout(building, requirements, layout);
+  furnishExterior(building);
   progress?.('validating');
   validateBuildingAssets(building);
   return validateBuilding(building).building;

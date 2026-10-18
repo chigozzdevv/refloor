@@ -33,7 +33,13 @@ export function targetIdentity(building: Building, target: ChatTarget, point?: P
         siblings.length > 1
           ? `${object.label} ${siblings.findIndex((item) => item.id === object.id) + 1}`
           : object.label;
-    return { label, location: [room?.name, floor?.name].filter(Boolean).join(' · ') };
+    return {
+      label,
+      location:
+        object.placement === 'exterior'
+          ? 'Compound'
+          : [room?.name, floor?.name].filter(Boolean).join(' · '),
+    };
   }
   for (const floor of building.floors) {
     if (target.kind === 'floor') {

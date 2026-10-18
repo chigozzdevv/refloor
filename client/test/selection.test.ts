@@ -6,7 +6,7 @@ import { selectedContext } from '@/shared/editor/chat-context';
 describe('selected element identity', () => {
   it('keeps identical fixture names tied to their actual rooms and floors', () => {
     const building = createHouse({ id: 'labelled', name: 'Labelled', storeys: 2 });
-    for (const object of building.objects.filter((item) => item.kind === 'light')) {
+    for (const object of building.objects.filter((item) => item.assetId === 'catalogue/pendant')) {
       const context = selectedContext(building, { kind: 'object', id: object.id }),
         floor = building.floors.find((item) => item.id === object.floorId)!,
         room = floor.rooms.find((item) => item.id === object.roomId)!;
