@@ -1,6 +1,4 @@
 import { RoundedBox } from '@react-three/drei';
-import { useMemo } from 'react';
-import { Color, DoubleSide } from 'three';
 import type { SceneObject } from '@refloor/scene';
 import type { FurnitureRenderer } from '@refloor/catalogue';
 import { finishes } from '@refloor/catalogue';
@@ -159,57 +157,6 @@ function Pendant({ object }: { object: SceneObject }) {
   );
 }
 
-function Plant() {
-  const leaves = useMemo(
-    () =>
-      Array.from({ length: 70 }, (_, i) => {
-        const angle = i * 2.399963,
-          h = 0.7 + ((i % 15) / 15) * 0.8,
-          radius = Math.sin(((h - 0.6) / 1.1) * Math.PI) * 0.24;
-        return {
-          x: Math.cos(angle) * radius,
-          y: h,
-          z: Math.sin(angle) * radius,
-          angle,
-          tilt: ((i % 5) - 2) * 0.2,
-        };
-      }),
-    [],
-  );
-  return (
-    <>
-      <mesh position={[0, 0.22, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[0.22, 0.15, 0.44, 40]} />
-        <meshStandardMaterial color="#b9ad92" roughness={0.88} />
-      </mesh>
-      <mesh position={[0, 0.445, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[0.195, 32]} />
-        <meshStandardMaterial color="#4e4436" roughness={1} />
-      </mesh>
-      <mesh position={[0, 0.91, 0]} castShadow>
-        <cylinderGeometry args={[0.012, 0.025, 1.1, 10]} />
-        <meshStandardMaterial color="#776346" roughness={1} />
-      </mesh>
-      {leaves.map((leaf, i) => (
-        <mesh
-          key={i}
-          position={[leaf.x, leaf.y, leaf.z]}
-          rotation={[leaf.tilt, leaf.angle, 0.4]}
-          scale={[0.045, 0.14, 0.015]}
-          castShadow
-        >
-          <sphereGeometry args={[1, 8, 6]} />
-          <meshStandardMaterial
-            color={new Color().setHSL(0.23, 0.16 + (i % 3) * 0.04, 0.28 + (i % 4) * 0.04)}
-            roughness={0.9}
-            side={DoubleSide}
-          />
-        </mesh>
-      ))}
-    </>
-  );
-}
-
 function Television({ object }: { object: SceneObject }) {
   const { width: w, height: h, depth: d } = object.dimensions;
   return (
@@ -249,7 +196,6 @@ export function CraftedFurniture({
   if (renderer === 'bed') return <Bed object={object} />;
   if (renderer === 'cabinet') return <Cabinet object={object} />;
   if (renderer === 'pendant') return <Pendant object={object} />;
-  if (renderer === 'plant') return <Plant />;
   if (renderer === 'television') return <Television object={object} />;
   throw new Error(`Furniture renderer is unavailable: ${renderer}`);
 }

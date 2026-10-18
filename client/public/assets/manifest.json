@@ -42,8 +42,14 @@
           "sha256": "7786fe98ea2824ca90072fca069996429c56469acd96a80166d3780a13be70ce"
         }
       ],
-      "sourceDimensionsMillimetres": [1200.0000476837158, 1200.0000476837158],
-      "tileMetres": [1.2, 1.2],
+      "sourceDimensionsMillimetres": [
+        1200.0000476837158,
+        1200.0000476837158
+      ],
+      "tileMetres": [
+        1.2,
+        1.2
+      ],
       "channels": {
         "basecolor": "sRGB",
         "normal": "linear, OpenGL +Y",
@@ -89,8 +95,14 @@
           "sha256": "f072f12ac50d667f23ec2c20dd03463923e405f109106cc7ad4d2d85eeb16bd6"
         }
       ],
-      "sourceDimensionsMillimetres": [1998.0629682540894, 1998.0640411376953],
-      "tileMetres": [1.998063, 1.998064],
+      "sourceDimensionsMillimetres": [
+        1998.0629682540894,
+        1998.0640411376953
+      ],
+      "tileMetres": [
+        1.998063,
+        1.998064
+      ],
       "channels": {
         "basecolor": "sRGB",
         "normal": "linear, OpenGL +Y",
@@ -137,8 +149,14 @@
           "sha256": "c3d38c2d862df80f0133f895bb7142978f097d69b4507374d5a8eafd6e088d71"
         }
       ],
-      "sourceDimensionsMillimetres": [263.6027473872483, 263.7999951839447],
-      "tileMetres": [0.263603, 0.2638],
+      "sourceDimensionsMillimetres": [
+        263.6027473872483,
+        263.7999951839447
+      ],
+      "tileMetres": [
+        0.263603,
+        0.2638
+      ],
       "channels": {
         "basecolor": "sRGB",
         "normal": "linear, OpenGL +Y",
@@ -225,13 +243,25 @@
           "sha256": "cb337e03211be0309afa1ded2b6cbb2d402c0f794aaf8828fba559d27a42d3f5"
         }
       ],
-      "sourceDimensionsMillimetres": [1807.1673512458801, 817.7513778209686, 709.4888985157013],
+      "sourceDimensionsMillimetres": [
+        1807.1673512458801,
+        817.7513778209686,
+        709.4888985157013
+      ],
       "providerPolygonCount": 2728,
       "triangleCount": 2728,
       "vertexCount": 1828,
       "sourceBoundsMetres": {
-        "min": [-0.903316353505943, 0.00020572543144226074, -0.4776984825730324],
-        "max": [0.9038509977399372, 0.7096946537494659, 0.34005289524793625]
+        "min": [
+          -0.903316353505943,
+          0.00020572543144226074,
+          -0.4776984825730324
+        ],
+        "max": [
+          0.9038509977399372,
+          0.7096946537494659,
+          0.34005289524793625
+        ]
       },
       "sourceSizeMetres": {
         "width": 1.8071673512458801,
@@ -239,8 +269,13 @@
         "depth": 0.8177513778209686
       },
       "upAxis": "+Y",
-      "nodeNames": ["sofa_02_Base", "sofa_02_Seat"],
-      "materialNames": ["sofa_02"],
+      "nodeNames": [
+        "sofa_02_Base",
+        "sofa_02_Seat"
+      ],
+      "materialNames": [
+        "sofa_02"
+      ],
       "dependenciesVerified": true,
       "recolourNote": "Frame and upholstery share one atlas material; use the separate Seat node for seat-only colour changes or keep original texture.",
       "provider": "Poly Haven",
@@ -323,13 +358,25 @@
           "sha256": "f1935436b460ad5c03ac7ff9d1e1b4aaedcdc9a503d79c257beb8cdac2e9e1f7"
         }
       ],
-      "sourceDimensionsMillimetres": [820.3444182872772, 986.5616858005524, 1022.8520567470696],
+      "sourceDimensionsMillimetres": [
+        820.3444182872772,
+        986.5616858005524,
+        1022.8520567470696
+      ],
       "providerPolygonCount": 8916,
       "triangleCount": 8916,
       "vertexCount": 5851,
       "sourceBoundsMetres": {
-        "min": [-0.4068087339401245, 0.0003815953677985817, -0.5754517316818237],
-        "max": [0.4135356843471527, 1.0232336521148682, 0.41110995411872864]
+        "min": [
+          -0.4068087339401245,
+          0.0003815953677985817,
+          -0.5754517316818237
+        ],
+        "max": [
+          0.4135356843471527,
+          1.0232336521148682,
+          0.41110995411872864
+        ]
       },
       "sourceSizeMetres": {
         "width": 0.8203444182872772,
@@ -337,10 +384,17 @@
         "depth": 0.9865616858005524
       },
       "upAxis": "+Y",
-      "nodeNames": ["modern_arm_chair_01"],
-      "materialNames": ["modern_arm_chair_01_legs", "modern_arm_chair_01_pillow"],
+      "nodeNames": [
+        "modern_arm_chair_01"
+      ],
+      "materialNames": [
+        "modern_arm_chair_01_legs",
+        "modern_arm_chair_01_pillow"
+      ],
       "dependenciesVerified": true,
-      "recolourMaterialNames": ["modern_arm_chair_01_pillow"],
+      "recolourMaterialNames": [
+        "modern_arm_chair_01_pillow"
+      ],
       "provider": "Poly Haven",
       "license": "CC0-1.0",
       "licenseUrl": "https://polyhaven.com/license"
@@ -397,13 +451,25 @@
           "sha256": "43e0d317d0f8418b130c0058c645225ee83b808b1dc0e5e7236bead3bdd77139"
         }
       ],
-      "sourceDimensionsMillimetres": [1201.8300294876099, 600.0000834465027, 389.99998569488525],
+      "sourceDimensionsMillimetres": [
+        1201.8300294876099,
+        600.0000834465027,
+        389.99998569488525
+      ],
       "providerPolygonCount": 4504,
       "triangleCount": 4504,
       "vertexCount": 3995,
       "sourceBoundsMetres": {
-        "min": [-0.2999998927116394, -0.00011512637138366699, -0.6006690263748169],
-        "max": [0.3000001311302185, 0.3898848593235016, 0.601161003112793]
+        "min": [
+          -0.2999998927116394,
+          -0.00011512637138366699,
+          -0.6006690263748169
+        ],
+        "max": [
+          0.3000001311302185,
+          0.3898848593235016,
+          0.601161003112793
+        ]
       },
       "sourceSizeMetres": {
         "width": 0.6000000238418579,
@@ -411,8 +477,12 @@
         "depth": 1.2018300294876099
       },
       "upAxis": "+Y",
-      "nodeNames": ["modern_coffee_table_01"],
-      "materialNames": ["modern_coffee_table_01"],
+      "nodeNames": [
+        "modern_coffee_table_01"
+      ],
+      "materialNames": [
+        "modern_coffee_table_01"
+      ],
       "dependenciesVerified": true,
       "longAxis": "Z",
       "recommendedYawRadians": 1.5707963267948966,
@@ -452,14 +522,145 @@
           "sha256": "ce92afd0dc7d5d98165dd01ce1570e35925840fed10a5df97151c6ef5e1d4321"
         }
       ]
+    },
+    {
+      "id": "potted_plant_02",
+      "providerId": "potted_plant_02",
+      "provider": "Poly Haven",
+      "name": "Potted Plant 02",
+      "kind": "model",
+      "sourcePage": "https://polyhaven.com/a/potted_plant_02",
+      "authors": {
+        "Rico Cilliers": "All"
+      },
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "resolution": "1k",
+      "sourceDimensionsMillimetres": [
+        701.1570334434509,
+        657.3865860700607,
+        841.1787391305552
+      ],
+      "providerPolygonCount": 69806,
+      "triangleCount": 69806,
+      "vertexCount": 44794,
+      "sourceBoundsMetres": {
+        "min": [
+          -0.3966600392013788,
+          5.296462768455967e-05,
+          -0.42031260282965377
+        ],
+        "max": [
+          0.3044969942420721,
+          0.8412317037582397,
+          0.23707397282123566
+        ]
+      },
+      "sourceSizeMetres": {
+        "width": 0.7011570334434509,
+        "height": 0.8411787391305552,
+        "depth": 0.6573865756508894
+      },
+      "upAxis": "+Y",
+      "nodeNames": [
+        "potted_plant_02_pot",
+        "potted_plant_02_leaves",
+        "potted_plant_02_dirt"
+      ],
+      "materialNames": [
+        "potted_plant_02_pot",
+        "potted_plant_02_leaves"
+      ],
+      "recolourMaterialNames": [
+        "potted_plant_02_pot"
+      ],
+      "renderingNotes": [
+        "Retain original double-sided leaf material and alpha-mask settings.",
+        "Keep foliage source textures; pot can be recoloured independently.",
+        "69,806 triangles: use a small number of instances.",
+        "Pot and dirt meshes share the pot material; clone and recolour only the pot node to preserve soil colour."
+      ],
+      "dependenciesVerified": true,
+      "files": [
+        {
+          "role": "model",
+          "path": "/assets/models/potted_plant_02/potted_plant_02_1k.gltf",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/potted_plant_02/potted_plant_02_1k.gltf",
+          "bytes": 6653,
+          "md5": "9999d7e6c51018a85551840e1bdae656",
+          "sha256": "c533dcce0d1aa4379eb7db04601a04983f8df2422b28578de922655a416e64a9"
+        },
+        {
+          "role": "dependency",
+          "path": "/assets/models/potted_plant_02/textures/potted_plant_02_leaves_diff_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/potted_plant_02/potted_plant_02_leaves_diff_1k.jpg",
+          "bytes": 167700,
+          "md5": "e8a026bd7bfa6497729d855c59da03ce",
+          "sha256": "3643dce6e6c0a9f40129bd837ec1a11802e8f43ea43cb29e58219d82e0ac632b"
+        },
+        {
+          "role": "dependency",
+          "path": "/assets/models/potted_plant_02/potted_plant_02.bin",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/potted_plant_02/potted_plant_02.bin",
+          "bytes": 1852244,
+          "md5": "cdbd4619b2596c9c469ad34676085fa8",
+          "sha256": "9c9812482c78a59789ed32fa842b4cbd9365e09c900c31ebb998e5efe627fe97"
+        },
+        {
+          "role": "dependency",
+          "path": "/assets/models/potted_plant_02/textures/potted_plant_02_pot_rough_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/potted_plant_02/potted_plant_02_pot_rough_1k.jpg",
+          "bytes": 114886,
+          "md5": "68ed80fa32791fb0e81df61a75de40b4",
+          "sha256": "4e92ad8ee0f098050785d9a025e2c5a7d55bc7a7f7e1916cc7627fc7824a938f"
+        },
+        {
+          "role": "dependency",
+          "path": "/assets/models/potted_plant_02/textures/potted_plant_02_leaves_rough_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/potted_plant_02/potted_plant_02_leaves_rough_1k.jpg",
+          "bytes": 102396,
+          "md5": "ba934a78cc6496d934c014eb8a33af37",
+          "sha256": "ac8959f70c0e91e77f3cd6fd3f73578b8aed64ac6c33fc34ac027a4e88276960"
+        },
+        {
+          "role": "dependency",
+          "path": "/assets/models/potted_plant_02/textures/potted_plant_02_pot_diff_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/potted_plant_02/potted_plant_02_pot_diff_1k.jpg",
+          "bytes": 155244,
+          "md5": "97e149c93eb0d962e491d4c82d3ce477",
+          "sha256": "684949bf24821d7e951d46915366b5a388d2e4ccaaa9d5284e718c83604705e9"
+        },
+        {
+          "role": "dependency",
+          "path": "/assets/models/potted_plant_02/textures/potted_plant_02_leaves_nor_gl_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/potted_plant_02/potted_plant_02_leaves_nor_gl_1k.jpg",
+          "bytes": 127232,
+          "md5": "2420d5c0ab87426f5318a5e91d1ea3bb",
+          "sha256": "e0fe090ff7a511729c9bbe59df7288b400430fdab178529443dec75e0f06007d"
+        },
+        {
+          "role": "dependency",
+          "path": "/assets/models/potted_plant_02/textures/potted_plant_02_pot_nor_gl_1k.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/potted_plant_02/potted_plant_02_pot_nor_gl_1k.jpg",
+          "bytes": 108343,
+          "md5": "fbb44ccc1c6564b2837b79a11ed45d58",
+          "sha256": "981a68721c8b7b9ac26b96d0210334599d5e8f529362f505082c071a0a58e86c"
+        }
+      ],
+      "recolourNodeNames": [
+        "potted_plant_02_pot"
+      ]
     }
   ],
-  "totalBytes": 12555688,
+  "totalBytes": 15190386,
   "notes": [
     "All assets are downloaded locally; the app does not depend on the live Poly Haven API.",
     "The source dimensions field is millimetres per the official API schema.",
     "PBR map channels: diffuse/basecolor sRGB; OpenGL normal and packed ARM remain linear.",
     "Furniture glTF buffer and image references, byte lengths and source checksums were verified locally."
   ],
-  "providers": ["Poly Haven", "Wikimedia Commons"]
+  "providers": [
+    "Poly Haven",
+    "Wikimedia Commons"
+  ]
 }

@@ -95,13 +95,15 @@ export const catalogue: CatalogueEntry[] = [
   },
   {
     assetId: 'catalogue/plant',
-    label: 'Olive tree',
+    label: 'Variegated houseplant',
     kind: 'decor',
-    dimensions: { width: 0.65, height: 1.65, depth: 0.65 },
+    dimensions: { width: 0.7, height: 0.84, depth: 0.66 },
     materials: { body: finishes.olive, frame: finishes.sand },
     behaviours: [],
     renderer: 'plant',
-    description: 'A little green, a little life.',
+    description: 'Variegated leaves and a terracotta pot.',
+    modelUrl: '/assets/models/potted_plant_02/potted_plant_02_1k.gltf',
+    tintMaterials: [],
   },
 ];
 
