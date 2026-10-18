@@ -1,13 +1,11 @@
 import { z } from 'zod';
 import { buildingSchema } from '@refloor/scene/schema';
 import { commandSchema } from '@refloor/scene/command';
-import { idSchema, pointSchema } from '@refloor/scene/primitives';
+import { pointSchema } from '@refloor/scene/primitives';
 import { playerSchema, generationUsageSchema } from '@refloor/scene/contracts';
+import { editTargetSchema, editMemorySchema } from '@refloor/scene/edit-memory';
 
-export const chatTargetSchema = z.strictObject({
-  kind: z.enum(['house', 'object', 'wall', 'floor', 'door']),
-  id: idSchema,
-});
+export const chatTargetSchema = editTargetSchema;
 export const languageEditRequestSchema = z.strictObject({
   requestId: z.uuid(),
   building: buildingSchema,
@@ -15,6 +13,7 @@ export const languageEditRequestSchema = z.strictObject({
   message: z.string().trim().min(1).max(500),
   view: pointSchema,
   player: playerSchema.nullable(),
+  context: editMemorySchema.optional(),
 });
 export const languageEditResponseSchema = z.strictObject({
   requestId: z.uuid(),

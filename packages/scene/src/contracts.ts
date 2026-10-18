@@ -3,17 +3,20 @@ import { buildingSchema } from '@refloor/scene/schema';
 import { editSchema } from '@refloor/scene/command';
 import { revisionSchema } from '@refloor/scene/revision';
 import { positionSchema, idSchema } from '@refloor/scene/primitives';
+import { editMemorySchema } from '@refloor/scene/edit-memory';
 
 export const playerSchema = z.strictObject({ floorId: idSchema, position: positionSchema });
 export const requestIdSchema = z.uuid();
 export const projectCreateSchema = z.strictObject({
   requestId: requestIdSchema,
   building: buildingSchema,
+  memory: editMemorySchema.optional(),
 });
 export const projectSaveSchema = z.strictObject({
   requestId: requestIdSchema,
   expectedVersion: z.number().int().nonnegative(),
   building: buildingSchema,
+  memory: editMemorySchema.optional(),
 });
 export const projectEditSchema = z.strictObject({
   edit: editSchema,
@@ -37,7 +40,10 @@ export const projectSummarySchema = z.strictObject({
   canUndo: z.boolean(),
   canRedo: z.boolean(),
 });
-export const projectSchema = projectSummarySchema.extend({ building: buildingSchema });
+export const projectSchema = projectSummarySchema.extend({
+  building: buildingSchema,
+  memory: editMemorySchema.optional(),
+});
 export const projectWriteSchema = z.strictObject({
   project: projectSchema,
   acceptedVersion: z.number().int().nonnegative(),
