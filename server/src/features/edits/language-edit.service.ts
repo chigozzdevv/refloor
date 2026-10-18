@@ -2,18 +2,18 @@ import OpenAI from 'openai';
 import { validatePlacement } from '@refloor/engine';
 import type { LanguageEditRequest } from '@refloor/scene/chat';
 import type { ServerConfig } from '@refloor/server/shared/config/env';
-import { Luna } from '@refloor/server/shared/ai/luna';
+import { HouseAI } from '@refloor/server/shared/ai/house-ai';
 import { chatTargetExists, languageCommands } from '@refloor/server/shared/planning/language-edit';
 import { validateAssets } from '@refloor/server/features/houses/house.validation';
 import { ApiError } from '@refloor/server/shared/http/errors';
 
 export class LanguageEditService {
-  private readonly luna: Luna | null;
+  private readonly ai: HouseAI | null;
   constructor(ai: ServerConfig['ai']) {
-    this.luna = ai ? new Luna(ai.apiKey, ai.model) : null;
+    this.ai = ai ? new HouseAI(ai.apiKey, ai.model) : null;
   }
   async interpret(input: LanguageEditRequest) {
-    if (!this.luna)
+    if (!this.ai)
       throw new ApiError(
         503,
         'CHAT_UNAVAILABLE',
@@ -29,9 +29,9 @@ export class LanguageEditService {
     validateAssets(input.building);
     if (input.context && input.context.sceneId !== input.building.id)
       throw new ApiError(422, 'CONTEXT_MISMATCH', 'Edit context belongs to another house.');
-    let result: Awaited<ReturnType<Luna['edit']>>;
+    let result: Awaited<ReturnType<HouseAI['edit']>>;
     try {
-      result = await this.luna.edit(input);
+      result = await this.ai.edit(input);
     } catch (error) {
       throw new ApiError(
         502,

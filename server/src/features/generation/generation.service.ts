@@ -58,7 +58,7 @@ export class GenerationService {
       throw new ApiError(
         503,
         'GENERATION_UNAVAILABLE',
-        'Add OPENAI_API_KEY on the server to enable Luna generation.',
+        'Add OPENAI_API_KEY on the server to enable house generation.',
       );
     const now = new Date();
     const record = {

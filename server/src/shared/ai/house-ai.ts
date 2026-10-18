@@ -15,7 +15,7 @@ export type GenerationUsage = {
   durationMs: number;
 };
 
-export class LunaGenerationError extends Error {
+export class HouseGenerationError extends Error {
   constructor(
     message: string,
     public readonly usage: GenerationUsage,
@@ -24,11 +24,11 @@ export class LunaGenerationError extends Error {
   }
 }
 
-export class Luna {
+export class HouseAI {
   private readonly client: OpenAI;
   constructor(
     apiKey: string,
-    private readonly model = 'gpt-6-luna',
+    private readonly model = 'gpt-6.1-sol',
   ) {
     this.client = new OpenAI({ apiKey, maxRetries: 0, timeout: 90000 });
   }
@@ -58,19 +58,19 @@ export class Luna {
       durationMs: Math.round(performance.now() - started),
     };
     if (response.status !== 'completed' || !response.output_parsed)
-      throw new LunaGenerationError(
-        'Luna did not return a complete house programme. Try a simpler description.',
+      throw new HouseGenerationError(
+        'The model did not return a complete house programme. Try a simpler description.',
         usage,
       );
     const result = response.output_parsed;
     if (result.unsupported.length)
-      throw new LunaGenerationError(
+      throw new HouseGenerationError(
         `This request needs unsupported features: ${result.unsupported.join('; ')}`,
         usage,
       );
     if (!result.requirements)
-      throw new LunaGenerationError(
-        'Luna did not provide a house programme. Please describe the rooms you want.',
+      throw new HouseGenerationError(
+        'The model did not provide a house programme. Please describe the rooms you want.',
         usage,
       );
     return { requirements: { ...result.requirements, unsupported: [] }, usage };

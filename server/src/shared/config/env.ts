@@ -15,7 +15,7 @@ const environmentSchema = z.object({
       'http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:4173,http://localhost:4173',
     ),
   OPENAI_API_KEY: z.string().optional(),
-  OPENAI_MODEL: z.literal('gpt-6-luna').default('gpt-6-luna'),
+  OPENAI_MODEL: z.literal('gpt-6.1-sol').default('gpt-6.1-sol'),
 });
 
 export type ServerConfig = {
@@ -25,7 +25,7 @@ export type ServerConfig = {
   mongoUri: string;
   database: string;
   clientOrigins: string[];
-  ai?: { apiKey: string; model: 'gpt-6-luna' };
+  ai?: { apiKey: string; model: 'gpt-6.1-sol' };
 };
 
 export function readConfig(environment: NodeJS.ProcessEnv = process.env): ServerConfig {
