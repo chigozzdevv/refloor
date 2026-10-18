@@ -37,6 +37,7 @@ export function NavigationControls() {
   const outside = exteriorCamera(compiled, size.width / size.height);
   const exteriorPosition = outside.position;
   const previous = useRef(mode),
+    framing = useRef<{ mode: typeof mode; buildingId: string; epoch: number } | null>(null),
     stairs = useRef<StairAssist | null>(null),
     transition = useRef<number | null>(null),
     entry = entryPose(compiled),
@@ -55,6 +56,15 @@ export function NavigationControls() {
     right = useRef(new Vector3()),
     target = useRef(new Vector3());
   useEffect(() => {
+    const framed = framing.current;
+    if (
+      mode === 'walk' &&
+      framed?.mode === 'walk' &&
+      framed.buildingId === compiled.building.id &&
+      framed.epoch === epoch
+    )
+      return;
+    framing.current = { mode, buildingId: compiled.building.id, epoch };
     camera.rotation.order = 'YXZ';
     if (mode !== 'walk') useNavigation.getState().stop();
     route.current = null;
@@ -316,6 +326,7 @@ export function NavigationControls() {
       const lookAt = route.current?.lookAt;
       const remaining = Math.hypot(
         world.feet.x - request.target.position.x,
+        world.feet.y - request.target.position.y,
         world.feet.z - request.target.position.z,
       );
       if (
