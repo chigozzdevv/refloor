@@ -1,14 +1,14 @@
 # Refloor
 
 Refloor is a browser studio for generating, furnishing and exploring editable 3D houses.
-Describe a house, generate it with GPT-6 Luna, then enter and edit the saved space.
+Describe a house, generate it with GPT-6.1 Sol, then enter and edit the saved space.
 
 `@refloor/scene` validates building documents and applies atomic, reversible commands.
 `@refloor/engine` compiles those documents into meshes, colliders and walking routes,
 then checks furniture placement, door clearance and stair access. The client renders
 parameter-based starting homes with physical materials, scanned furniture, HDR daylight,
 shadows and cutaway views. The Node API stores projects and reversible
-edit history in MongoDB. Luna interprets house descriptions; Z3 solves room layouts,
+edit history in MongoDB. GPT-6.1 Sol interprets house descriptions; Z3 solves room layouts,
 and the engine validates the assembled building before it can be saved.
 
 ## Requirements
@@ -33,7 +33,7 @@ configured MongoDB replica set or sharded cluster; standalone MongoDB cannot pro
 the transactions used by project revisions.
 
 Set `OPENAI_API_KEY` in the root `.env` to enable generation. `OPENAI_MODEL` is
-`gpt-6-luna`; there is no fallback to another model. In **New space**, enter a description,
+`gpt-6.1-sol`; there is no fallback to another model. In **New space**, enter a description,
 choose **Generate my house**, then **Open generated house** when it is ready. The current
 space stays editable while generation runs. Completed houses appear in saved spaces.
 The API key stays on the server. Responses use Structured Outputs with storage disabled,
@@ -88,7 +88,7 @@ The server follows the feature layout: `features/houses` owns house routes,
 controllers, services, schemas, models and repositories; `features/edits` owns commands,
 transactional revision storage and undo/redo. `features/sessions` handles private browser
 sessions. `features/generation` owns session-scoped generation jobs and its worker;
-`shared/ai` contains the Luna provider and house prompt, and `shared/planning` contains
+`shared/ai` contains the HouseAI provider and house prompt, and `shared/planning` contains
 requirements, Z3 constraints, layout assembly and furniture placement.
 HTTP handlers stay in controllers, database queries stay in repositories, and
 services apply the scene and engine rules. `shared/config`, `shared/database` and
@@ -109,7 +109,7 @@ uses `@refloor/server/*` so compiled imports resolve without a runtime alias loa
 
 Tests execute the real implementation without mocked services or replacement modules.
 Their input documents describe buildings, room programmes and edits; automated tests
-run the real Z3 solver and MongoDB without spending API credits. Live Luna checks are
+run the real Z3 solver and MongoDB without spending API credits. Live GPT-6.1 Sol checks are
 separate from `pnpm check`. Engine tests instantiate Rapier and walk a capsule through
 the generated colliders, including entrance-to-upstairs routes, both stair types and
 rotated flights. This verifies the geometry in a headless physics world. The browser
@@ -121,7 +121,7 @@ in a bounded browser worker, preserves the house layout, validates access and ca
 as one change. It upgrades legacy fittings and adds room essentials where clear space permits.
 The scene has no persistent inspector, left toolbar, floor buttons
 or statistics overlays. Clicking an item, wall, floor or door opens a small chat anchored
-beside it with a speech-bubble tail and a selection outline. Luna interprets supported changes; the server validates commands and placement,
+beside it with a speech-bubble tail and a selection outline. GPT-6.1 Sol interprets supported changes; the server validates commands and placement,
 and the client checks that the scene has not changed before applying them. Item chat
 can only affect the selected entity; house chat can change finishes or devices across
 the current building. Drag or swipe to look around, then select a floor ring to travel
@@ -277,7 +277,7 @@ portable copy. Use HTTPS in production and configure exact `CLIENT_ORIGINS`.
 - `PUT /api/projects/:id`: save a snapshot with `requestId`, `expectedVersion` and `building`.
 - `POST /api/projects/:id/edits`: apply `{ edit, player }` through the shared placement engine.
 - `POST /api/edits/interpret`: interpret `{ requestId, building, target, message, view, player }`
-  with Luna. Returns scoped, validated commands, their base revision and token usage. It
+  with GPT-6.1 Sol. Returns scoped, validated commands, their base revision and token usage. It
   does not write a project; the client applies the commands to its current draft and uses
   the normal save flow. `target` contains an existing entity `kind` and `id`; `view` is the
   horizontal camera direction used for relative movement. Requests require a session,
