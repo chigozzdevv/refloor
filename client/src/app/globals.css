@@ -314,73 +314,81 @@ textarea:focus-visible,
   padding: 5px 7px;
   font-size: 10px;
 }
-.movement-control {
-  position: absolute;
-  z-index: 50;
-  right: 26px;
-  bottom: 26px;
-  width: 132px;
-  height: 132px;
-  border-radius: 50%;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  backdrop-filter: blur(15px);
-  box-shadow: 0 8px 35px #0003;
-  touch-action: none;
-  user-select: none;
-}
-.movement-arrow {
-  position: absolute;
+.navigation-marker {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 42px;
-  color: var(--muted);
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
+  border: 1px solid #ffffff9c;
+  background: #171e2766;
+  color: #fff;
+  box-shadow:
+    0 2px 12px #0004,
+    inset 0 0 0 5px #ffffff12;
+  backdrop-filter: blur(5px);
+  transition:
+    background 140ms,
+    box-shadow 140ms;
+  touch-action: manipulation;
+}
+.navigation-marker[hidden] {
+  display: none;
+}
+.navigation-marker:hover,
+.navigation-marker:focus-visible {
+  background: #d1b886b3;
+  box-shadow:
+    0 2px 16px #0004,
+    inset 0 0 0 5px #ffffff26;
+}
+.marker-room {
+  transform: scaleY(0.6);
+}
+.marker-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fff;
+}
+.marker-stairs {
+  background: #171e27d9;
+  border-color: #d1b886;
+  color: #e4cda3;
+}
+.walk-mode canvas {
   touch-action: none;
-}
-.movement-arrow:active {
-  background: var(--field);
-  color: var(--accent);
-}
-.movement-w {
-  left: 44px;
-  top: 0;
-}
-.movement-s {
-  left: 44px;
-  bottom: 0;
-}
-.movement-a {
-  left: 0;
-  top: 44px;
-}
-.movement-d {
-  right: 0;
-  top: 44px;
-}
-.movement-thumb {
-  position: absolute;
-  inset: 43px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   cursor: grab;
-  touch-action: none;
 }
-.movement-thumb:active {
+.walk-mode canvas:active {
   cursor: grabbing;
 }
-.movement-thumb span {
-  width: 29px;
-  height: 29px;
-  pointer-events: none;
-  border-radius: 50%;
-  background: radial-gradient(circle at 40% 30%, #ffffff29, #ffffff0a);
+.journey-stop,
+.tour-hint {
+  position: absolute;
+  z-index: 50;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  margin: 0;
+  white-space: nowrap;
+  border-radius: 30px;
+  padding: 11px 16px;
+  background: var(--panel);
   border: 1px solid var(--line);
-  box-shadow: 0 3px 7px #0003;
+  backdrop-filter: blur(12px);
+  font-size: 11px;
+}
+.journey-stop {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+}
+.tour-hint {
+  pointer-events: none;
+  color: var(--muted);
 }
 .entry-actions {
   position: absolute;
@@ -775,16 +783,10 @@ select option {
     width: auto;
     max-height: calc(100dvh - 210px);
   }
-  .movement-control {
-    right: 18px;
-    bottom: 20px;
-    transform: scale(0.9);
-    transform-origin: right bottom;
-  }
   .walk-mode .notice {
     left: 16px;
-    right: 155px;
-    bottom: 20px;
+    right: 16px;
+    bottom: 80px;
     padding: 9px;
     font-size: 10px;
   }

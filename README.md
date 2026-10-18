@@ -116,11 +116,16 @@ or statistics overlays. Clicking an item, wall, floor or door opens a small chat
 beside it. Luna interprets supported changes; the server validates commands and placement,
 and the client checks that the scene has not changed before applying them. Item chat
 can only affect the selected entity; house chat can change finishes or devices across
-the current building. Keyboard WASD, arrow keys and the right-hand movement control
-support continuous movement. Hold forward to follow the staircase, including its turn;
-release to stop and resume from the current step. Left/right arrows and the thumb control
-steer the view, while keyboard A/D strafe. The player physically climbs the steps; floor
-state follows its elevation. The furniture library adds items into validated clear spaces.
+the current building. Drag or swipe to look around, then select a floor ring to travel
+to a clear spot. Room and doorway markers come from the current navigation graph and
+update after edits. Doorway trips open required doors before following a route through
+the actual colliders. Stair arrows handle the full climb or descent with one click;
+the camera follows the turn and smooths changes in height. A Stop button appears during
+travel; dragging, selecting an item, Escape or leaving the tab also stops it. A stair
+arrow can resume from the current step. House overview in the globe menu resets the
+outside view; returning to Walk preserves the previous position and viewing direction
+on that floor. Keyboard WASD and arrow keys remain available. The player physically
+climbs the steps; floor state follows its elevation. The furniture library adds items into validated clear spaces.
 Chat moves, rotates, resizes, recolours, replaces or removes compatible items and controls
 televisions, lights and doors. Accepted edits
 update collision geometry and support undo/redo (also Cmd/Ctrl+Z and Shift+Cmd/Ctrl+Z).

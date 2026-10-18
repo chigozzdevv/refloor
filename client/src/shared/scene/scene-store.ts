@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { createEditorState } from '@/shared/editor/editor-store';
 import type { EditorState } from '@/shared/editor/editor-store';
 import { createHouse } from '@refloor/catalogue/houses';
-import { buildNavigation, compileBuilding } from '@refloor/engine';
+import { compileBuilding } from '@refloor/engine';
 import type { CompiledBuilding } from '@refloor/engine';
 import { physicsSession } from '@/shared/navigation/physics-session';
 import { entryPose } from '@/shared/navigation/entry';
@@ -10,6 +10,7 @@ import { draftKey, restoreDraft } from '@/shared/scene/draft';
 import { encodeProject } from '@/shared/scene/files';
 import { persistRemoteLink, restoreRemoteLink } from '@/shared/scene/remote';
 import type { RemoteLink } from '@/shared/scene/remote';
+import { navigationFor } from '@/shared/navigation/destinations';
 
 export type ViewMode = 'entry' | 'orbit' | 'walk';
 export type ProjectState = EditorState & {
@@ -101,12 +102,17 @@ export const useProject = create<ProjectState>((set, get, store) => ({
       physicsSession.current?.teleport(entry.inside);
       set({ floorId: entry.floorId });
     }
-    if (mode === 'walk' && state.mode === 'orbit' && physicsSession.current) {
-      const navigation = buildNavigation(state.compiled, 'current'),
+    if (
+      mode === 'walk' &&
+      state.mode === 'orbit' &&
+      physicsSession.current &&
+      physicsSession.current.player.floorId !== state.floorId
+    ) {
+      const navigation = navigationFor(state.compiled, 'current'),
         floor = state.compiled.building.floors.find((value) => value.id === state.floorId);
       if (floor) {
-        const x = floor.footprint.width * 0.35,
-          z = floor.footprint.depth * 0.45;
+        const x = floor.footprint.x + floor.footprint.width / 2,
+          z = floor.footprint.z + floor.footprint.depth / 2;
         const node = navigation.nodes
           .filter((value) => value.floorId === floor.id)
           .sort(

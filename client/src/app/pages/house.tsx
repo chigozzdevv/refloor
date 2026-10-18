@@ -1,5 +1,5 @@
 import { useProject } from '@/shared/scene/scene-store';
-import { MovementControl } from '@/components/navigation/movement-control';
+import { JourneyControls } from '@/components/navigation/journey-controls';
 import { FurniturePicker } from '@/components/editor/furniture-picker';
 
 export type HousePageProps = {
@@ -8,10 +8,10 @@ export type HousePageProps = {
 };
 
 export function HousePage({ libraryOpen, closeLibrary }: HousePageProps) {
-  const { mode, floorId } = useProject();
+  const { mode, floorId, projectEpoch } = useProject();
   return (
     <>
-      {mode === 'walk' && <MovementControl />}
+      {mode === 'walk' && <JourneyControls key={projectEpoch} />}
       {libraryOpen && <FurniturePicker key={floorId} close={closeLibrary} />}
     </>
   );

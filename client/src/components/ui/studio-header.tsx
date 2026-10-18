@@ -15,6 +15,7 @@ import {
 import { useProject } from '@/shared/scene/scene-store';
 import { ProjectActions } from '@/components/editor/project-actions';
 import { ElementChat } from '@/components/editor/element-chat';
+import { useNavigation } from '@/shared/navigation/navigation-store';
 
 export function StudioHeader({
   openNewHome,
@@ -66,6 +67,7 @@ export function StudioHeader({
           aria-label="House controls"
           aria-expanded={open}
           onClick={() => {
+            useNavigation.getState().stop();
             select(null);
             setOpen(!open);
           }}
@@ -95,14 +97,16 @@ export function StudioHeader({
               {(
                 [
                   ['walk', 'Walk', Footprints],
-                  ['orbit', 'Explore', Rotate3D],
+                  ['orbit', 'Overview', Rotate3D],
                   ['entry', 'Entrance', DoorOpen],
                 ] as const
               ).map(([value, label, Icon]) => (
                 <button
                   key={value}
                   className={mode === value ? 'active' : ''}
+                  aria-label={value === 'orbit' ? 'House overview' : label}
                   onClick={() => {
+                    if (value === 'orbit') useNavigation.getState().resetOverview();
                     if (value === 'walk' && mode === 'entry') enterHome();
                     else setMode(value);
                     setOpen(false);
