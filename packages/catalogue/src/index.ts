@@ -13,3 +13,4 @@ export {
 } from '@refloor/catalogue/furniture';
 export type { CatalogueEntry, FurnitureRenderer } from '@refloor/catalogue/furniture';
 export { validateBuildingAssets } from '@refloor/catalogue/validation';
+export { lightTuning, lightOutput, validateCommandTuning } from '@refloor/catalogue/tuning';

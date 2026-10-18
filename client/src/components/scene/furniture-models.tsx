@@ -4,7 +4,7 @@ import type { PointLight } from 'three';
 import { RoundedBox } from '@react-three/drei';
 import type { SceneObject } from '@refloor/scene';
 import type { FurnitureRenderer } from '@refloor/catalogue';
-import { finishes } from '@refloor/catalogue';
+import { finishes, lightOutput, lightTuning } from '@refloor/catalogue';
 import { useSurface } from '@/shared/scene/asset-loader';
 import { useProject } from '@/shared/scene/scene-store';
 import { TelevisionScreen } from '@/components/objects/television';
@@ -149,16 +149,18 @@ function Pendant({ object }: { object: SceneObject }) {
       lastShadow.current = now;
     }
   });
-  const powered = state?.powered ?? false,
+  const intensity = lightOutput(object),
+    normal = lightTuning(object)?.normal ?? 3,
+    powered = intensity > 0,
     shade = useSurface(object.materials.body ?? finishes.linen),
     frame = useSurface(object.materials.frame ?? finishes.brass);
   useEffect(() => {
     shade.transmission = 0.15;
     shade.thickness = 0.08;
     shade.emissive.set(state?.color ?? '#ffe6bf');
-    shade.emissiveIntensity = powered ? 0.8 : 0;
+    shade.emissiveIntensity = (intensity / normal) * 0.8;
     shade.needsUpdate = true;
-  }, [shade, powered, state?.color]);
+  }, [shade, intensity, normal, state?.color]);
   return (
     <>
       <mesh position={[0, 0.2, 0]} material={shade}>
@@ -181,7 +183,7 @@ function Pendant({ object }: { object: SceneObject }) {
           shadow-autoUpdate={false}
           position={[0, 0.18, 0]}
           color={state?.color ?? '#ffe6bf'}
-          intensity={(state?.intensity ?? 3) * (lighting === 'day' ? 4 : 7)}
+          intensity={intensity * (lighting === 'day' ? 4 : 7)}
           distance={8}
           decay={2}
         />

@@ -88,6 +88,24 @@ describe('MongoDB project API', () => {
     return { type: 'set-wall-material', wallId: wall.id, material: { ...wall.material, color } };
   }
 
+  it('rejects excessive brightness through the typed edit API without changing the project', async () => {
+    const cookies = await session(),
+      current = await create(cookies),
+      light = building.objects.find((object) => object.kind === 'light')!;
+    const rejected = await edit(cookies, current, [
+      { type: 'set-light', objectId: light.id, state: { intensity: 100 } },
+    ]);
+    expect(rejected.statusCode).toBe(422);
+    expect(rejected.json().error.code).toBe('TUNING_LIMIT');
+    const allowed = await edit(cookies, current, [
+      { type: 'set-light', objectId: light.id, state: { intensity: 6 } },
+    ]);
+    expect(allowed.statusCode).toBe(200);
+    expect(projectWriteSchema.parse(allowed.json()).project.revision).toBe(
+      current.project.revision + 1,
+    );
+  });
+
   it('reports readiness and requires a session for private projects', async () => {
     const health = await app.inject('/api/health');
     expect(health.json()).toEqual({ ready: true });

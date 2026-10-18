@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { assetFromCatalogue, catalogue, finishes } from '@refloor/catalogue';
+import {
+  assetFromCatalogue,
+  catalogue,
+  finishes,
+  lightTuning,
+  validateCommandTuning,
+} from '@refloor/catalogue';
 import type { Building, Material, SceneCommand } from '@refloor/scene';
 import type { ChatTarget, LanguageEditRequest } from '@refloor/scene/chat';
 
@@ -22,6 +28,7 @@ export const languagePlanSchema = z.strictObject({
           'volume',
           'intensity',
           'light-color',
+          'reset-light',
           'open',
           'source',
         ]),
@@ -71,6 +78,7 @@ export function languageContext(input: LanguageEditRequest) {
     objects: input.building.objects.map(
       ({
         id,
+        assetId,
         label,
         kind,
         dimensions,
@@ -82,6 +90,7 @@ export function languageContext(input: LanguageEditRequest) {
         behaviours,
       }) => ({
         id,
+        tuning: { light: lightTuning({ assetId }) },
         label,
         kind,
         dimensions,
@@ -304,9 +313,14 @@ export function languageCommands(input: LanguageEditRequest, plan: LanguagePlan)
               .parse(required(action.value)),
           },
         });
-      else throw new Error('This item does not support that action.');
+      else if (action.action === 'reset-light' && light) {
+        const tuning = lightTuning(object);
+        if (!tuning) throw new Error('This light has no default settings.');
+        commands.push({ type: 'set-light', objectId: object.id, state: tuning.defaults });
+      } else throw new Error('This item does not support that action.');
     } else throw new Error('This element does not support that action.');
   }
   if (commands.length > 100) throw new Error('Please change fewer items at once.');
+  validateCommandTuning(building, commands);
   return commands;
 }

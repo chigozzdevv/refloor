@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { createHouse } from '@refloor/catalogue/houses';
 import { validatePlacement } from '@refloor/engine';
 import type { LanguageEditRequest } from '@refloor/scene/chat';
-import { languageCommands, chatTargetExists } from '@refloor/server/shared/planning/language-edit';
+import {
+  languageCommands,
+  chatTargetExists,
+  languageContext,
+} from '@refloor/server/shared/planning/language-edit';
 import type { LanguagePlan } from '@refloor/server/shared/planning/language-edit';
 
 const building = createHouse({ id: 'chat-home', name: 'Chat home', storeys: 1 });
@@ -37,6 +41,31 @@ const edit = (request: LanguageEditRequest, actions: LanguagePlan['actions']) =>
 });
 
 describe('scoped language edits', () => {
+  it('exposes actual light limits and translates reset to catalogue settings', () => {
+    const light = building.objects.find((object) => object.kind === 'light')!,
+      request = { ...input, target: { kind: 'object' as const, id: light.id } };
+    expect(
+      languageContext(request).objects.find((item) => item.id === light.id)?.tuning.light,
+    ).toMatchObject({ min: 0, normal: 3, max: 6 });
+    expect(
+      languageCommands(request, {
+        message: 'Normal lighting restored.',
+        actions: [action({ action: 'reset-light', targetId: light.id })],
+      }),
+    ).toEqual([
+      {
+        type: 'set-light',
+        objectId: light.id,
+        state: { powered: true, intensity: 3, color: '#ffe6bf' },
+      },
+    ]);
+    expect(() =>
+      languageCommands(request, {
+        message: 'Too bright',
+        actions: [action({ action: 'intensity', targetId: light.id, amount: 100 })],
+      }),
+    ).toThrow('200%');
+  });
   it('translates view-relative movement and television power into actual validated commands', () => {
     const result = validatePlacement(
       building,

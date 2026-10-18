@@ -1,6 +1,18 @@
-import { validateBuildingAssets } from '@refloor/catalogue';
-import type { Building } from '@refloor/scene';
+import { validateBuildingAssets, validateCommandTuning } from '@refloor/catalogue';
+import type { Building, SceneCommand } from '@refloor/scene';
 import { ApiError } from '@refloor/server/shared/http/errors';
+
+export function validateTuning(building: Building, commands: SceneCommand[]) {
+  try {
+    validateCommandTuning(building, commands);
+  } catch (error) {
+    throw new ApiError(
+      422,
+      'TUNING_LIMIT',
+      error instanceof Error ? error.message : 'This setting exceeds its limit.',
+    );
+  }
+}
 
 export function validateAssets(building: Building) {
   try {
