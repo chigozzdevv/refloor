@@ -34,7 +34,7 @@ export function furnishFloor(
     place('sideboard', 'cabinet', 'living', seatingX, depth - 0.37, Math.PI),
     place('olive-tree', 'plant', 'living', 0.7, depth - 0.75),
     place('pendant', 'pendant', 'living', split * 0.59, depth * 0.72, 0, 2.33),
-    place('bed', 'bed', 'front-room', split + (width - split) * 0.58, middle * 0.44, Math.PI),
+    place('bed', 'bed', 'front-room', split + (width - split) * 0.58, middle - 1.25, Math.PI),
     place(
       'bedroom-light',
       'pendant',
@@ -44,7 +44,7 @@ export function furnishFloor(
       0,
       2.33,
     ),
-    place('bedroom-plant', 'plant', 'front-room', width - 0.65, middle - 0.65),
+    place('bedroom-plant', 'plant', 'front-room', width - 0.65, 0.9),
   ];
   if (!upper) {
     const kitchen = place(

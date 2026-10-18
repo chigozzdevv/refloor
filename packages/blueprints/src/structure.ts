@@ -60,7 +60,7 @@ export function createFloor(
       material: finishes.glass,
     });
   window(south, 'front-window', width * 0.73, 1.9);
-  window(north, 'rear-window', 2.8, 2.8);
+  window(north, 'rear-window', 0.9, 1.8);
   window(north, 'bedroom-window', width * 0.74, 1.8);
   window(west, 'side-window', depth * 0.64, 2.5);
   window(east, 'east-window-1', 1.4, 2);
