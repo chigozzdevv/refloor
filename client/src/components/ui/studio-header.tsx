@@ -5,10 +5,12 @@ import {
   Footprints,
   Globe2,
   History,
+  LoaderCircle,
   Moon,
   Plus,
   Rotate3D,
   Sun,
+  WandSparkles,
   X,
 } from 'lucide-react';
 import { useProject } from '@/shared/scene/scene-store';
@@ -16,6 +18,7 @@ import { ProjectActions } from '@/components/editor/project-actions';
 import { ElementChat } from '@/components/editor/element-chat';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 import { EditHistory } from '@/components/editor/edit-history';
+import { useFurnishings } from '@/shared/editor/use-furnishings';
 
 export function StudioHeader({
   openNewHome,
@@ -38,6 +41,7 @@ export function StudioHeader({
   } = useProject();
   const [open, setOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const { furnishing, complete } = useFurnishings();
   const panel = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const outside = (event: PointerEvent) => {
@@ -136,6 +140,19 @@ export function StudioHeader({
               ))}
             </div>
             <div className="house-actions">
+              <button
+                disabled={furnishing}
+                onClick={() => {
+                  void complete();
+                }}
+              >
+                {furnishing ? (
+                  <LoaderCircle size={16} className="spinning" />
+                ) : (
+                  <WandSparkles size={16} />
+                )}
+                {furnishing ? 'Furnishing…' : 'Complete furnishings'}
+              </button>
               <button
                 onClick={() => {
                   if (mode === 'entry') setMode('orbit');
