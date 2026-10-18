@@ -7,6 +7,7 @@ import {
   entrancePoints,
   findPath,
   validateBuilding,
+  isPlayerPositionValid,
 } from '@refloor/engine';
 import {
   createTwoStorey,
@@ -20,6 +21,47 @@ import {
 import { createPhysics, RAPIER, walkPath } from '@engine-test/physics';
 
 describe('physical stair geometry', () => {
+  it('supports player clearance on a tread and rejects positions without support', () => {
+    const compiled = validateBuilding(createTwoStorey()),
+      stair = first(compiled.stairs),
+      point = stair.path[4];
+    if (!point) throw new Error('Stair tread missing');
+    expect(
+      isPlayerPositionValid(compiled, {
+        floorId: stair.lower.floorId,
+        position: { ...point, y: point.y + 0.01 },
+      }),
+    ).toBe(true);
+    expect(
+      isPlayerPositionValid(compiled, {
+        floorId: stair.upper.floorId,
+        position: { x: 2, y: 3.01, z: 3 },
+      }),
+    ).toBe(false);
+    expect(
+      isPlayerPositionValid(compiled, {
+        floorId: stair.lower.floorId,
+        position: { x: 8, y: 0.01, z: 3 },
+      }),
+    ).toBe(true);
+  });
+
+  it('uses real balcony colliders to prevent walking into the upper opening', async () => {
+    const compiled = validateBuilding(createTwoStorey()),
+      world = await createPhysics(compiled);
+    try {
+      expect(compiled.parts.some((part) => part.role === 'stair-railing')).toBe(true);
+      expect(() =>
+        walkPath(world, compiled, [
+          { x: 0.4, y: 3, z: 3 },
+          { x: 1.2, y: 3, z: 3 },
+        ]),
+      ).toThrow(/stuck/);
+    } finally {
+      world.free();
+    }
+  });
+
   it.each(['u-shaped', 'straight'] as const)(
     'walks from the entrance into an upstairs bedroom through %s stairs',
     async (kind) => {

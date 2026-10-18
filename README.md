@@ -76,7 +76,7 @@ compare expected revisions and enforce unique edit IDs.
 - `validateBuilding(document, options?)`: compile and require enclosure, collision,
   clearance and reachability checks to pass. Failures throw entity-specific `EngineError` issues.
 - `validatePlacement(document, edit, options?, player?)`: apply real scene commands and
-  validate the result. The optional player check accepts a floor-level navigation position.
+  validate the result. The optional player check accepts a supported floor or stair-tread position.
 - `buildNavigation(compiled, policy?)`: build a bounded graph with adaptive samples at
   obstacles, door centres and stair landings.
 - `entrancePoints(navigation)`: return interior approach positions at exterior doorways.
@@ -103,6 +103,7 @@ actual leaf positions. The browser must animate the same hinges and update its p
   explicit sill heights. Slabs extend below finished floor elevations.
 - IDs are unique across the building. Stairs reference adjacent storeys and an upper
   floor opening covering their module, with supported approach landings outside it.
+  Flights and upper openings include railings with matching physics geometry.
 - Mesh vertices are local. Apply `part.collider.position` and `part.collider.rotation`
   when rendering. Cuboid sizes are full extents; divide by two for physics half extents.
 - Surfaces describe slab, tread and landing tops. Their footprints rotate around their
@@ -122,7 +123,7 @@ handles continuous motion and live collision updates. Mesh clearance checks use 
 bounds. Defaults cap geometry parts and object instances at 10,000 combined, candidate
 navigation nodes at 40,000, and node/collider work separately. Geometry uses a 0.000001 m
 numerical tolerance. These are application constraints; structural engineering, regulatory
-compliance, railings, detailed asset silhouettes and arbitrary furniture support are outside
+compliance, detailed asset silhouettes and arbitrary furniture support are outside
 the current validation.
 
 TV, light and door commands update validated state. Browser playback, lighting, hinge

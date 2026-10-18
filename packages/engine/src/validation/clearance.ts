@@ -6,11 +6,8 @@ import {
   rectPolygon,
   rotate,
 } from '@refloor/engine/math';
-import {
-  blockingCollider,
-  colliderBounds,
-  standingBlocked,
-} from '@refloor/engine/collision/bounds';
+import { colliderBounds } from '@refloor/engine/collision/bounds';
+import { blockingCollider, standingBlocked } from '@refloor/engine/collision/probes';
 import type { CompiledBuilding, EngineIssue, Point2 } from '@refloor/engine/types';
 
 export function checkClearance(compiled: CompiledBuilding): EngineIssue[] {
@@ -84,7 +81,9 @@ export function checkClearance(compiled: CompiledBuilding): EngineIssue[] {
       if (
         collider.entityId === door.id ||
         collider.entityId === door.wallId ||
-        !['wall', 'window', 'furniture', 'stair-tread', 'stair-landing'].includes(collider.role)
+        !['wall', 'window', 'furniture', 'stair-tread', 'stair-landing', 'stair-railing'].includes(
+          collider.role,
+        )
       )
         continue;
       const box = colliderBounds(collider);

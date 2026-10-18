@@ -1,12 +1,11 @@
 import type { SceneObject } from '@refloor/scene';
-import type {
-  BoxCollider,
+import type { BoxCollider, Collider, Point3, MeshData } from '@refloor/engine/types';
+import { worldPoint } from '@refloor/engine/math';
+
+const meshBounds = new WeakMap<
   Collider,
-  CompiledBuilding,
-  Point3,
-  StairConnection,
-} from '@refloor/engine/types';
-import { distanceToBox, worldPoint } from '@refloor/engine/math';
+  { position: Point3; rotation: number; mesh: MeshData; bounds: BoxCollider }
+>();
 
 export function objectBounds(object: SceneObject, elevation: number): BoxCollider {
   return {
@@ -27,6 +26,16 @@ export function objectBounds(object: SceneObject, elevation: number): BoxCollide
 
 export function colliderBounds(collider: Collider): BoxCollider {
   if (collider.shape === 'box') return collider;
+  const cached = meshBounds.get(collider);
+  if (
+    cached &&
+    cached.rotation === collider.rotation &&
+    cached.mesh === collider.mesh &&
+    cached.position.x === collider.position.x &&
+    cached.position.y === collider.position.y &&
+    cached.position.z === collider.position.z
+  )
+    return cached.bounds;
   const points: Point3[] = [];
   for (let i = 0; i < collider.mesh.positions.length; i += 3)
     points.push(
@@ -49,45 +58,18 @@ export function colliderBounds(collider: Collider): BoxCollider {
     maxX = Math.max(...xs),
     maxY = Math.max(...ys),
     maxZ = Math.max(...zs);
-  return {
+  const bounds: BoxCollider = {
     ...collider,
     shape: 'box',
     rotation: 0,
     position: { x: (minX + maxX) / 2, y: (minY + maxY) / 2, z: (minZ + maxZ) / 2 },
     size: { x: maxX - minX, y: maxY - minY, z: maxZ - minZ },
   };
-}
-
-export function blockingCollider(
-  compiled: CompiledBuilding,
-  point: Point3,
-  doorPolicy: 'openable' | 'current' = 'openable',
-  stair?: StairConnection,
-): Collider | undefined {
-  const profile = compiled.options;
-  return compiled.colliders.find((collider) => {
-    if (collider.entityId === stair?.id) return false;
-    if (doorPolicy === 'openable' && collider.role === 'door') return false;
-    const box = colliderBounds(collider);
-    // Stair path heights interpolate between tread centres before the final landing riser.
-    const lowerOffset =
-      profile.stepHeight +
-      (collider.role === 'slab' && collider.floorId === stair?.upper.floorId
-        ? stair.riserHeight
-        : 0);
-    if (
-      box.position.y + box.size.y / 2 <= point.y + lowerOffset + 1e-6 ||
-      box.position.y - box.size.y / 2 >= point.y + profile.headroom - 1e-6
-    )
-      return false;
-    return distanceToBox(point, box) < profile.radius + profile.clearance - 1e-6;
+  meshBounds.set(collider, {
+    position: { ...collider.position },
+    rotation: collider.rotation,
+    mesh: collider.mesh,
+    bounds,
   });
-}
-
-export function standingBlocked(
-  compiled: CompiledBuilding,
-  point: Point3,
-  doorPolicy: 'openable' | 'current' = 'openable',
-): boolean {
-  return blockingCollider(compiled, point, doorPolicy) !== undefined;
+  return bounds;
 }

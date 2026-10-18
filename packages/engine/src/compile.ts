@@ -3,6 +3,7 @@ import { buildFloor } from '@refloor/engine/geometry/floor';
 import { buildWall } from '@refloor/engine/geometry/wall';
 import { buildStaircase } from '@refloor/engine/geometry/staircase';
 import { buildRoof } from '@refloor/engine/geometry/roof';
+import { buildRailings } from '@refloor/engine/geometry/railings';
 import { objectBounds } from '@refloor/engine/collision/bounds';
 import { resolveOptions } from '@refloor/engine/options';
 import { fail } from '@refloor/engine/errors';
@@ -63,6 +64,7 @@ export function compileBuilding(
       fail('GEOMETRY_LIMIT', stair.id, 'Staircase exceeds the geometry budget');
     const result = buildStaircase(building, stair, options);
     compiled.parts.push(...result.parts);
+    compiled.parts.push(...buildRailings(building, stair));
     compiled.surfaces.push(...result.surfaces);
     compiled.stairs.push(result.connection);
   }

@@ -1,5 +1,5 @@
 import { contains, distanceToBox } from '@refloor/engine/math';
-import { standingBlocked } from '@refloor/engine/collision/bounds';
+import { standingBlocked } from '@refloor/engine/collision/probes';
 import type { CompiledBuilding, NavigationPoint, Point3 } from '@refloor/engine/types';
 
 export function isWalkable(

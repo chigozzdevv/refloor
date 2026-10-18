@@ -58,6 +58,7 @@ export function buildNavigation(
     );
     const margin = compiled.options.radius + compiled.options.clearance + 0.0001;
     for (const collider of compiled.colliders) {
+      if (collider.role === 'stair-railing') continue;
       if (doorPolicy === 'openable' && collider.role === 'door') continue;
       const box = colliderBounds(collider);
       if (
@@ -71,12 +72,19 @@ export function buildNavigation(
       xs.push(Math.min(...px) - margin, Math.max(...px) + margin);
       zs.push(Math.min(...pz) - margin, Math.max(...pz) + margin);
     }
-    for (const stair of compiled.stairs)
+    for (const stair of compiled.stairs) {
+      if (stair.lower.floorId === floor.id || stair.upper.floorId === floor.id) {
+        const rect = stair.footprint,
+          padding = margin + 0.045;
+        xs.push(rect.x - padding, rect.x + rect.width + padding);
+        zs.push(rect.z - padding, rect.z + rect.depth + padding);
+      }
       for (const landing of [stair.lower, stair.upper])
         if (landing.floorId === floor.id) {
           xs.push(landing.position.x);
           zs.push(landing.position.z);
         }
+    }
     for (const door of compiled.doors)
       if (door.floorId === floor.id) {
         xs.push(door.centre.x);

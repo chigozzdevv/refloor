@@ -1,6 +1,7 @@
 export { compileBuilding } from '@refloor/engine/compile';
 export { validateBuilding } from '@refloor/engine/validation/building';
 export { validatePlacement } from '@refloor/engine/validation/placement';
+export { isPlayerPositionValid } from '@refloor/engine/validation/player';
 export {
   buildNavigation,
   nearestNode,

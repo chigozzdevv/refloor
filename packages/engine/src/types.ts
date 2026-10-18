@@ -3,7 +3,15 @@ import type { Building, Footprint, Material, SceneObject } from '@refloor/scene'
 export type Point2 = { x: number; z: number };
 export type Point3 = Point2 & { y: number };
 export type PartRole =
-  'slab' | 'wall' | 'door' | 'window' | 'stair-tread' | 'stair-landing' | 'roof' | 'furniture';
+  | 'slab'
+  | 'wall'
+  | 'door'
+  | 'window'
+  | 'stair-tread'
+  | 'stair-landing'
+  | 'stair-railing'
+  | 'roof'
+  | 'furniture';
 export type MeshData = { positions: number[]; normals: number[]; uvs: number[]; indices: number[] };
 export type ColliderBase = {
   id: string;
