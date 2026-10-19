@@ -2,7 +2,18 @@ import { boxPolygon, distance } from '@refloor/engine/math';
 import { colliderBounds } from '@refloor/engine/collision/bounds';
 import { fail } from '@refloor/engine/errors';
 import { clearSegment, isWalkable } from '@refloor/engine/navigation/surfaces';
+import {
+  restoreTopology,
+  snapshotTopology,
+  topologyKey,
+} from '@refloor/engine/navigation/topology';
 import type { CompiledBuilding, Navigation, NavigationPoint } from '@refloor/engine/types';
+
+const graphs = new WeakMap<
+  CompiledBuilding,
+  Partial<Record<Navigation['doorPolicy'], Navigation>>
+>();
+let openable: { key: string; topology: ReturnType<typeof snapshotTopology> } | null = null;
 
 export function nearestNode(navigation: Navigation, point: NavigationPoint): number | null {
   if (!isWalkable(navigation.compiled, point, navigation.doorPolicy)) return null;
@@ -34,6 +45,26 @@ export function nearestNode(navigation: Navigation, point: NavigationPoint): num
 export function buildNavigation(
   compiled: CompiledBuilding,
   doorPolicy: 'openable' | 'current' = 'openable',
+): Navigation {
+  let cached = graphs.get(compiled);
+  if (!cached) graphs.set(compiled, (cached = {}));
+  const existing = cached[doorPolicy];
+  if (existing) return existing;
+  const key = doorPolicy === 'openable' ? topologyKey(compiled) : null;
+  if (key !== null && openable?.key === key) {
+    const navigation = restoreTopology(openable.topology, compiled);
+    cached[doorPolicy] = navigation;
+    return navigation;
+  }
+  const navigation = computeNavigation(compiled, doorPolicy);
+  cached[doorPolicy] = navigation;
+  if (key !== null) openable = { key, topology: snapshotTopology(navigation) };
+  return navigation;
+}
+
+function computeNavigation(
+  compiled: CompiledBuilding,
+  doorPolicy: 'openable' | 'current',
 ): Navigation {
   const navigation: Navigation = {
     compiled,
