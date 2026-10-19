@@ -8,6 +8,7 @@ import {
   NoColorSpace,
   RepeatWrapping,
   SRGBColorSpace,
+  ShaderChunk,
   Vector2,
 } from 'three';
 import type { Material } from '@refloor/scene';
@@ -16,6 +17,10 @@ const scales: Record<string, [number, number]> = {
   'wood-floor': [1.2, 1.2],
   plaster: [1.998063, 1.998064],
   fabric: [0.263603, 0.2638],
+  brick: [3, 3],
+  marble: [1.5, 1.5],
+  'roof-asphalt': [20, 20],
+  'metal-roof': [2, 2],
 };
 
 export function useSurface(finish: Material, glass = false): MeshPhysicalMaterial {
@@ -45,13 +50,14 @@ export function useSurface(finish: Material, glass = false): MeshPhysicalMateria
       map: cloned[0] ?? null,
       normalMap: cloned[1] ?? null,
       roughnessMap: cloned[2] ?? null,
+      metalnessMap: id === 'metal-roof' ? (cloned[2] ?? null) : null,
       aoMap: cloned[2] ?? null,
       aoMapIntensity: 0.5,
       normalScale: new Vector2(id === 'plaster' ? 0.28 : 0.65, id === 'plaster' ? 0.28 : 0.65),
       sheen: id === 'fabric' ? 0.7 : 0,
       sheenRoughness: 0.85,
       sheenColor: new Color('#e8dcc6'),
-      clearcoat: id === 'wood-floor' ? 0.12 : 0,
+      clearcoat: id === 'wood-floor' ? 0.12 : id === 'marble' ? 0.18 : 0,
       clearcoatRoughness: 0.45,
       transmission: glass ? 0.94 : 0,
       thickness: glass ? 0.015 : 0,
@@ -60,6 +66,18 @@ export function useSurface(finish: Material, glass = false): MeshPhysicalMateria
       opacity: glass ? 1 : opacity,
       envMapIntensity: glass ? 1 : 0.65,
     });
+    if (id === 'metal-roof') {
+      material.onBeforeCompile = (shader) => {
+        shader.fragmentShader = shader.fragmentShader.replace(
+          '#include <map_fragment>',
+          ShaderChunk.map_fragment.replace(
+            'diffuseColor *= sampledDiffuseColor;',
+            'sampledDiffuseColor.rgb = vec3(dot(sampledDiffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722))); diffuseColor *= sampledDiffuseColor;',
+          ),
+        );
+      };
+      material.customProgramCacheKey = () => 'refloor-tintable-metal-roof';
+    }
     return { material, cloned };
   }, [color, roughness, metalness, opacity, glass, id, base, normal, arm]);
   useEffect(

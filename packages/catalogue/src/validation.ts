@@ -1,7 +1,15 @@
 import type { Building } from '@refloor/scene';
 import { getCatalogueEntry } from '@refloor/catalogue/furniture';
 
-const textures = new Set(['wood-floor', 'fabric', 'plaster']);
+const textures = new Set([
+  'wood-floor',
+  'fabric',
+  'plaster',
+  'brick',
+  'marble',
+  'roof-asphalt',
+  'metal-roof',
+]);
 
 export function validateBuildingAssets(building: Building) {
   const materials = [
@@ -9,6 +17,7 @@ export function validateBuildingAssets(building: Building) {
       ...floor.rooms.map((room) => room.floorMaterial),
       ...floor.walls.flatMap((wall) => [
         wall.material,
+        ...(wall.exteriorMaterial ? [wall.exteriorMaterial] : []),
         ...wall.openings.map((opening) => opening.material),
       ]),
     ]),

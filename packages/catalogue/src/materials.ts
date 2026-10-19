@@ -23,6 +23,10 @@ export const finishes = {
   brass: finish('#c4a36a', null, 0.3, 0.85),
   black: finish('#20211e', null, 0.35, 0.25),
   glass: { ...finish('#e4eee9', null, 0.08), opacity: 0.16 },
+  brick: finish('#ffffff', 'brick', 0.9),
+  marble: finish('#ffffff', 'marble', 0.32),
+  asphalt: finish('#ffffff', 'roof-asphalt', 0.95),
+  metalRoof: finish('#a9afb3', 'metal-roof', 0.42, 1),
 };
 
 export const wallFinishes = ['chalk', 'sand', 'sage', 'clay', 'ink'] as const;

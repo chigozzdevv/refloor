@@ -35,7 +35,7 @@ export function createHouse({ id, name, storeys, width = 12, depth = 10 }: House
     floors: [createFloor('ground', 0, width, depth, false)],
     stairs: [],
     objects: [],
-    roof: { id: 'roof', kind: 'flat', pitch: 0, overhang: 0.24, material: finishes.chalk },
+    roof: { id: 'roof', kind: 'flat', pitch: 0, overhang: 0.24, material: finishes.asphalt },
   };
   if (storeys === 2) {
     const upper = createFloor('first', 3, width, depth, true),

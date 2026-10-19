@@ -45,7 +45,9 @@ export function assembleHouse(
       kind: requirements.roof,
       pitch: requirements.roof === 'gable' ? Math.PI / 8 : 0,
       overhang: 0.24,
-      material: structuredClone(finishes.chalk),
+      material: structuredClone(
+        requirements.roof === 'gable' ? finishes.metalRoof : finishes.asphalt,
+      ),
     },
   };
   for (let level = 0; level < requirements.storeys; level++) {
