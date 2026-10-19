@@ -15,10 +15,16 @@ import { SelectedFloor } from '@/components/editor/selected-floor';
 import { EntranceCamera } from '@/components/entrance/entrance-camera';
 import { ActionEvents } from '@/components/scene/action-events';
 import { useExperience } from '@/shared/scene/experience-store';
+import { exteriorUpgradeCommands } from '@/shared/editor/exterior-upgrade';
 
 function SceneReady() {
   const setReady = useProject((state) => state.setSceneReady);
-  useEffect(() => setReady(true), [setReady]);
+  useEffect(() => {
+    const state = useProject.getState(),
+      commands = exteriorUpgradeCommands(state.compiled.building, state.memory);
+    if (commands.length) state.edit(commands, { label: 'Add editable exterior fixtures' });
+    setReady(true);
+  }, [setReady]);
   return null;
 }
 
