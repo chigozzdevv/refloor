@@ -139,11 +139,12 @@ the current building. Drag or swipe to look around, then select a floor ring to 
 to a clear spot. Navigation uses named room views, doorways and stair landings, updated after edits. Floor rings are useful standing views;
 door icons open and enter the adjoining room, and stair rings mark the real steps. Up to three
 separated markers appear in the scene. Every reachable adjoining doorway and the current floor's
-stair route remains available at the screen edge when it is outside the view or hidden by furniture.
-These cues carry their destination names, including the room to return to.
+stair route remains available in a fixed row at the bottom, including when its world marker is visible.
+Single-door rooms explicitly name their exit; stair controls appear first and use fixed up/down icons.
 The same walkthrough controller drives dots, door clicks and map trips. It turns before advancing,
-opens one required door at a time from a safe approach, crosses using Rapier, and settles the camera
-on a visible interaction. Stops stay outside door swings, and the controller replans when the building changes.
+opens the selected door immediately when its swing is safe, crosses using Rapier, and settles the camera
+on a visible interaction. Door clicks stop just inside the room, while room dots and map trips use room viewpoints.
+The handle depresses before the leaf swings, with opening completed in 0.4 seconds; automatic closure runs after arrival. Stops stay outside door swings, and the controller replans when the building changes.
 The compact map shows rooms, walls, doors, stairs and the current position; the expanded plan adds furniture. Door leaves follow their actual open or closed state. The small floor plan opens the larger view without a duplicate toolbar icon.
 Choose a room on either floor to follow a validated walking route there.
 Obstructing open leaves are closed only after moving clear of their swing. Tour-opened doors return to their original state after the player clears their swing. Explicit manual door changes are preserved; saved navigation-owned openings are recovered from edit history. Stair arrows handle the full climb or descent with one click;
@@ -151,7 +152,7 @@ the camera follows the turn and smooths changes in height. A centered, transluce
 travel; dragging, selecting an item or Escape also stops it. Losing focus releases manual input without silently cancelling a chosen tour. A stair
 arrow can resume from the current step. House overview in the globe menu resets the
 outside view; returning to Walk preserves the previous position and viewing direction
-on that floor. On the translucent bottom-right pad, left/right turn the camera and up/down walk forward/backward. Dragging the centre steers while walking. Stair actions use the actual landing and elevation: upstairs at the bottom, downstairs at the top, and both destinations if stopped mid-flight. Actions hide during travel, and the camera waits until it is near the destination in all three dimensions before turning towards its arrival view. Near a staircase, forward movement aligns with the steps and follows the climb while held; releasing stops it. Keyboard WASD and arrow keys remain available. The player physically
+on that floor. On the translucent bottom-right pad, the four arrows and centre joystick move forward, backward, sideways and diagonally. Two separate buttons below rotate the camera. Movement and rotation support simultaneous touches. Stair actions use the actual landing and elevation: upstairs at the bottom, downstairs at the top, and both destinations if stopped mid-flight. Actions hide during travel, and the camera waits until it is near the destination in all three dimensions before turning towards its arrival view. Near a staircase, forward movement aligns with the steps and follows the climb while held; releasing stops it. Keyboard WASD and arrow keys remain available. The player physically
 climbs the steps; floor state follows its elevation. Doors validate their full swing before edits and undo/redo, and walking waits briefly outside a nearby moving door. The entry arrival point stays clear of the entrance swing, and an already-open entrance offers Enter house.
 The exterior overview shows every storey, exterior wall and the complete roof; the interior cutaway is used when focusing furniture. Window frames, floor bands, roof edges, entrance canopy, paving, planting and porch lighting derive from the actual building and entrance. The compound uses instanced block paving with a matching flat physical surface, curbs and planting. New generated and starting houses include two separately identified, editable exterior floodlights, initially off. The overview fits the whole house at phone and desktop aspect ratios. Tour routes and the map cover the interior; roof and site decoration remain architectural details. The furniture library adds items into validated clear spaces.
 Chat moves, rotates, resizes, recolours, replaces or removes compatible items and controls
