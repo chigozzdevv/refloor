@@ -15,7 +15,9 @@ export function ElementChat({
   close?: () => void;
 }) {
   const [message, setMessage] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(
+    target.kind === 'wall' && target.side === 'exterior',
+  );
   const input = useRef<HTMLTextAreaElement>(null);
   const { send, busy, reply } = useLanguageEdit(target);
   useLayoutEffect(() => {
