@@ -174,14 +174,16 @@ export function ExteriorModel({ compiled }: { compiled: CompiledBuilding }) {
         ))
       ) : (
         <>
-          <RoofSeams
-            x={roofX}
-            y={site.eaves}
-            z={roofZ}
-            width={roofWidth}
-            depth={roofDepth}
-            rise={site.height - site.eaves}
-          />
+          {roof.material.textureId === 'metal-roof' && (
+            <RoofSeams
+              x={roofX}
+              y={site.eaves}
+              z={roofZ}
+              width={roofWidth}
+              depth={roofDepth}
+              rise={site.height - site.eaves}
+            />
+          )}
           {[-1, 1].map((side) => (
             <group key={side}>
               <Beam
