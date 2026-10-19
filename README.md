@@ -154,14 +154,17 @@ arrow can resume from the current step. House overview in the globe menu resets 
 outside view; returning to Walk preserves the previous position and viewing direction
 on that floor. On the translucent bottom-right pad, the four arrows and centre joystick move forward, backward, sideways and diagonally. Two separate buttons below rotate the camera. Movement and rotation support simultaneous touches. Stair actions use the actual landing and elevation: upstairs at the bottom, downstairs at the top, and both destinations if stopped mid-flight. Actions hide during travel, and the camera waits until it is near the destination in all three dimensions before turning towards its arrival view. Near a staircase, forward movement aligns with the steps and follows the climb while held; releasing stops it. Keyboard WASD and arrow keys remain available. The player physically
 climbs the steps; floor state follows its elevation. Doors validate their full swing before edits and undo/redo, and walking waits briefly outside a nearby moving door. The entry arrival point stays clear of the entrance swing, and an already-open entrance offers Enter house.
-The exterior overview shows every storey, exterior wall and the complete roof; the interior cutaway is used when focusing furniture. Window frames, floor bands, roof edges, entrance canopy, paving, planting and porch lighting derive from the actual building and entrance. The compound uses instanced block paving with a matching flat physical surface, curbs and planting. New generated and starting houses include two separately identified, editable exterior floodlights, initially off. The overview fits the whole house at phone and desktop aspect ratios. Tour routes and the map cover the interior; roof and site decoration remain architectural details. The furniture library adds items into validated clear spaces.
+The exterior overview shows every storey, exterior wall and the complete roof; the interior cutaway is used when focusing furniture. Window frames, floor bands, roof edges, entrance canopy, paving, planting and porch lighting derive from the actual building and entrance. The compound uses instanced block paving with a matching flat physical surface, curbs and planting. Door thresholds sit below the interior finish and interrupt the facade plinth, with matching walking colliders.
+New houses include two editable floodlights, initially off, two powered warm up/down wall lanterns and two selectable planted stone boxes. Existing houses receive missing exterior fixtures as one undoable change; removed or undone fixtures stay removed after reload. Exterior objects use the same placement, device, material, history and saved-action system as indoor objects. Outdoor access is checked against the building and compound rather than requiring an indoor navigation node.
+Click an exterior wall face to edit its finish independently from the inside; brick, marble, plaster and colour changes use real physical material maps. Roof selection supports bitumen and profiled metal finishes and colour changes. Original and previous finishes remain available to chat and undo. New flat roofs use bitumen; generated pitched roofs use metal sheet. Older placeholder roofs upgrade with the exterior fixtures while custom roof finishes are preserved. The overview fits the whole house at phone and desktop aspect ratios. Tour routes and the map cover the interior. The furniture library adds items into validated clear spaces.
 Chat moves, rotates, resizes, recolours, replaces or removes compatible items and controls
 televisions, lights and doors. Accepted edits
 update collision geometry and support undo/redo (also Cmd/Ctrl+Z and Shift+Cmd/Ctrl+Z).
 TV controls play the included clip or a compatible direct video URL on the 3D screen;
 power, mute and volume update the actual media player. Light controls update fixture
-emission, intensity, colour and cached local shadows in high quality mode. Geometry changes schedule shadow refreshes on rendered frames; paused tabs cannot expire the refresh window, and animated doors refresh shadows through their movement. Chat can restore
-a light's original power, brightness and illumination colour. Chat and typed edits enforce
+emission, intensity, colour and cached local shadows in high quality mode. Geometry changes schedule shadow refreshes on rendered frames; paused tabs cannot expire the refresh window, and animated doors refresh shadows through their movement.
+Local lighting stays within the GPU's texture budget, prioritizing the occupied area and selected or newly powered fixtures. Paired wall-light beams share that allocation.
+Chat can restore a light's original power, brightness and illumination colour. Chat and typed edits enforce
 brightness bounds of 0–200% of the catalogue default; legacy brighter values remain loadable
 with capped rendering. Item chats show the selected item name and accept changes through text.
 
@@ -214,8 +217,8 @@ The TV clip is [BMKME's CC0 waterfall video](https://commons.wikimedia.org/wiki/
   the revision counter. Undoing that result provides redo.
 - `getObjectCapabilities(object)`: derive supported editor and device actions.
 
-Commands add, remove, move, rotate, resize or replace furniture, change object or wall
-materials, change room floor finishes, and set door, TV or light state. An edit carries an ID, timestamp, expected
+Commands add, remove, move, rotate, resize or replace furniture, change object, interior wall,
+exterior wall or roof materials, change room floor finishes, and set door, TV or light state. An edit carries an ID, timestamp, expected
 revision and typed commands. Failed batches preserve the original document; successful
 batches increment its revision once and record inverse commands. Replacement preserves
 instance identity, room, floor and transform.
@@ -254,6 +257,7 @@ actual leaf positions. The browser must animate the same hinges and update its p
   rotates local +Z towards world +X. A heading-zero staircase ascends along +Z.
 - Floors and rooms use axis-aligned rectangular X/Z footprints. Object X/Z positions
   are footprint centres; object Y is its bottom offset above the owning finished floor.
+  Exterior decor and lights may sit up to 0.25 m below that elevation on compound paving.
 - Wall opening offsets measure from the wall start. Door sills are zero; windows have
   explicit sill heights. Slabs extend below finished floor elevations.
 - IDs are unique across the building. Stairs reference adjacent storeys and an upper
