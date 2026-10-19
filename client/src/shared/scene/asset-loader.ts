@@ -17,7 +17,7 @@ const scales: Record<string, [number, number]> = {
   'wood-floor': [1.2, 1.2],
   plaster: [1.998063, 1.998064],
   fabric: [0.263603, 0.2638],
-  brick: [3, 3],
+  brick: [1.12, 1.12],
   marble: [1.5, 1.5],
   'roof-asphalt': [20, 20],
   'metal-roof': [2, 2],
