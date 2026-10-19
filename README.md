@@ -33,13 +33,19 @@ configured MongoDB replica set or sharded cluster; standalone MongoDB cannot pro
 the transactions used by project revisions.
 
 Set `OPENAI_API_KEY` in the root `.env` to enable generation. `OPENAI_MODEL` is
-`gpt-6-luna`; there is no fallback to another model. The opening screen has a centered
+`gpt-6-luna`; there is no fallback to another model. The first-visit screen has a centered
 description field over the blurred current house. Submit with the paper-plane button or Enter
 (Shift+Enter adds a line). Generation shows real job stages, opens the saved result automatically,
 reveals its paved compound, then approaches the entrance. Reduced-motion preferences skip the
 animated approach; a skip button is also available. A failed job keeps the description and previous
-house available. Continue the current draft or choose a validated starting house without generating.
+house available. Choose a validated starting house without generating.
 Completed houses also appear in saved spaces.
+Reloading or returning opens the current house directly, restoring its camera, floor, walking
+position, lighting and overview target. Older drafts without a saved view open at the entrance.
+Reloading an active generation resumes its saved job rather than submitting another request.
+New house opens the prompt without moving the player; Back to your house restores the prior view.
+Before generation or a starting house replaces the current draft, its latest contents are saved
+to MongoDB. A failed save keeps the current house open and prevents replacement.
 The API key stays on the server. Responses use Structured Outputs with storage disabled,
 a 6,000-token output limit, a 90-second provider timeout and no automatic provider retries.
 
