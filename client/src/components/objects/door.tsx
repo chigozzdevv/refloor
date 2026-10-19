@@ -10,6 +10,7 @@ import { rotate } from '@refloor/engine/math';
 import { useProject } from '@/shared/scene/scene-store';
 import { useSurface } from '@/shared/scene/asset-loader';
 import { physicsSession } from '@/shared/navigation/physics-session';
+import { DoorHint } from '@/components/objects/door-hint';
 import { DoorMotion } from '@/shared/behaviours/door-motion';
 import { activateDoor, traverseDoor } from '@/shared/behaviours/door';
 import { hiddenExterior } from '@/shared/scene/visibility';
@@ -149,6 +150,18 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
               id: portal.id,
               point: { x: event.point.x, y: event.point.y, z: event.point.z },
             });
+          }}
+        />
+        <DoorHint
+          doorId={portal.id}
+          floorId={portal.floorId}
+          open={portal.open}
+          x={sign * (source.size.x - 0.17)}
+          depth={source.size.z}
+          pivot={pivot}
+          onOpen={() => {
+            motion.current.press();
+            traverseDoor(portal.id);
           }}
         />
         {[-1, 1].map((side) => (
