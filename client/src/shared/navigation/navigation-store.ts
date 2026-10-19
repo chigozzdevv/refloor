@@ -1,13 +1,12 @@
 import { create } from 'zustand';
 import type { NavigationPoint, Point3 } from '@refloor/engine';
-import type { Destination } from '@/shared/navigation/destinations';
+import type { PortalCue } from '@/shared/navigation/portals';
 
-export type PortalPin = { destination: Destination; x: number; y: number; angle: number };
 type TourContext = {
   location: string;
   player: NavigationPoint;
   heading: number;
-  edgePortals: PortalPin[];
+  portals: PortalCue[];
 };
 
 export type TravelRequest = {
@@ -15,19 +14,20 @@ export type TravelRequest = {
   target: NavigationPoint;
   lookAt?: Point3;
   label: string;
+  doorId?: string;
 };
 type NavigationState = {
   request: TravelRequest | null;
   location: string;
   player: NavigationPoint | null;
   heading: number;
-  edgePortals: PortalPin[];
+  portals: PortalCue[];
   mapOpen: boolean;
   setMapOpen: (open: boolean) => void;
   setContext: (context: TourContext) => void;
   overview: number;
   resetOverview: () => void;
-  go: (target: NavigationPoint, lookAt?: Point3, label?: string) => void;
+  go: (target: NavigationPoint, lookAt?: Point3, label?: string, doorId?: string) => void;
   stop: () => void;
 };
 
@@ -36,7 +36,7 @@ export const useNavigation = create<NavigationState>((set) => ({
   location: '',
   player: null,
   heading: 0,
-  edgePortals: [],
+  portals: [],
   mapOpen: false,
   setMapOpen: (mapOpen) => set({ mapOpen }),
   setContext: (context) =>
@@ -47,25 +47,24 @@ export const useNavigation = create<NavigationState>((set) => ({
       state.player?.position.y === context.player.position.y &&
       state.player?.position.z === context.player.position.z &&
       state.heading === context.heading &&
-      state.edgePortals.length === context.edgePortals.length &&
-      state.edgePortals.every(
+      state.portals.length === context.portals.length &&
+      state.portals.every(
         (pin, index) =>
-          pin.destination === context.edgePortals[index]?.destination &&
-          pin.x === context.edgePortals[index]?.x &&
-          pin.y === context.edgePortals[index]?.y &&
-          pin.angle === context.edgePortals[index]?.angle,
+          pin.destination === context.portals[index]?.destination &&
+          pin.label === context.portals[index]?.label,
       )
         ? state
         : context,
     ),
   overview: 0,
   resetOverview: () => set((state) => ({ overview: state.overview + 1, request: null })),
-  go: (target, lookAt, label = 'Moving') =>
+  go: (target, lookAt, label = 'Moving', doorId) =>
     set({
       request: {
         id: crypto.randomUUID(),
         target,
         label,
+        ...(doorId ? { doorId } : {}),
         ...(lookAt ? { lookAt } : {}),
       },
     }),

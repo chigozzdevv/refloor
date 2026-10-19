@@ -1,34 +1,44 @@
-import { ArrowUp } from 'lucide-react';
+import { ArrowDown, ArrowUp, DoorOpen } from 'lucide-react';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 import { useProject } from '@/shared/scene/scene-store';
+import { useExperience } from '@/shared/scene/experience-store';
 
 export function PortalDots() {
-  const { edgePortals, request, mapOpen, go } = useNavigation();
-  const { mode, selection } = useProject();
-  if (mode !== 'walk' || request || mapOpen || selection) return null;
+  const { portals, request, mapOpen, go } = useNavigation();
+  const { mode, selection, interacting } = useProject();
+  const stage = useExperience((state) => state.stage);
+  if (stage !== 'ready' || mode !== 'walk' || request || mapOpen || selection || interacting)
+    return null;
   return (
-    <div className="tour-portals" aria-label="Tour exits">
-      {edgePortals.map(({ destination, x, y, angle }) => {
+    <nav className="tour-portals" aria-label="Room navigation">
+      {portals.map(({ destination, label }) => {
+        const Icon =
+          destination.kind === 'stairs'
+            ? destination.direction === 'down'
+              ? ArrowDown
+              : ArrowUp
+            : DoorOpen;
         return (
           <button
             key={destination.id}
-            className={`navigation-marker marker-edge ${x < 30 ? 'edge-left' : 'edge-right'}`}
-            style={{ left: x, top: y }}
-            aria-label={destination.label}
-            title={destination.label}
+            className="portal-action"
+            data-navigation-cue={destination.id}
+            data-direction={destination.direction}
+            aria-label={destination.kind === 'door' ? label : destination.label}
+            title={label}
             onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => {
               event.stopPropagation();
               if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
               useProject.getState().select(null);
-              go(destination.target, destination.lookAt, destination.label);
+              go(destination.target, destination.lookAt, destination.label, destination.doorId);
             }}
           >
-            <ArrowUp size={19} strokeWidth={1.7} style={{ transform: `rotate(${angle}deg)` }} />
-            <span className="marker-caption">{destination.caption ?? destination.label}</span>
+            <Icon size={18} strokeWidth={1.7} />
+            <span>{label}</span>
           </button>
         );
       })}
-    </div>
+    </nav>
   );
 }

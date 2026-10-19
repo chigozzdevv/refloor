@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
-import { Raycaster, Shape, Vector3 } from 'three';
+import { Raycaster, Vector3 } from 'three';
 import { contains } from '@refloor/engine/math';
 import type { Destination } from '@/shared/navigation/destinations';
 import {
@@ -10,23 +10,13 @@ import {
   stairContinuation,
 } from '@/shared/navigation/destinations';
 import { organizeMarkers } from '@/shared/navigation/marker-layout';
-import { portalPosition, tourPortals } from '@/shared/navigation/portals';
+import { navigationCues, tourPortals } from '@/shared/navigation/portals';
 import { useNavigation } from '@/shared/navigation/navigation-store';
-import type { PortalPin } from '@/shared/navigation/navigation-store';
 import { physicsSession } from '@/shared/navigation/physics-session';
 import { useProject } from '@/shared/scene/scene-store';
 import { belongsToDoor, isVisible } from '@/shared/editor/picking';
-import { DoorClosed, DoorOpen } from 'lucide-react';
+import { ArrowDown, ArrowUp, DoorClosed, DoorOpen } from 'lucide-react';
 import { useExperience } from '@/shared/scene/experience-store';
-
-const chevron = new Shape();
-chevron.moveTo(-0.075, -0.035);
-chevron.lineTo(0, 0.045);
-chevron.lineTo(0.075, -0.035);
-chevron.lineTo(0.075, 0.005);
-chevron.lineTo(0, 0.085);
-chevron.lineTo(-0.075, 0.005);
-chevron.closePath();
 
 function Marker({ destination, primary }: { destination: Destination; primary: boolean }) {
   const [hovered, setHovered] = useState(false);
@@ -36,10 +26,13 @@ function Marker({ destination, primary }: { destination: Destination; primary: b
     (state) => state.compiled.doors.find((door) => door.id === destination.doorId)?.open,
   );
   const DoorIcon = open ? DoorOpen : DoorClosed;
+  const StairIcon = destination.direction === 'down' ? ArrowDown : ArrowUp;
   const travel = () => {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     useProject.getState().select(null);
-    useNavigation.getState().go(destination.target, destination.lookAt, destination.label);
+    useNavigation
+      .getState()
+      .go(destination.target, destination.lookAt, destination.label, destination.doorId);
   };
   return (
     <group position={[destination.anchor.x, destination.anchor.y, destination.anchor.z]}>
@@ -76,19 +69,7 @@ function Marker({ destination, primary }: { destination: Destination; primary: b
               toneMapped={false}
             />
           </mesh>
-          {portal ? (
-            <mesh
-              position={[0, 0, 0.002]}
-              rotation={[0, 0, destination.bearing ?? 0]}
-              raycast={() => undefined}
-            >
-              <shapeGeometry args={[chevron]} />
-              <meshBasicMaterial
-                color={primary || hovered ? '#e6c58c' : '#ffffff'}
-                toneMapped={false}
-              />
-            </mesh>
-          ) : (
+          {!portal && (
             <mesh position={[0, 0, 0.002]} raycast={() => undefined}>
               <circleGeometry args={[0.026, 20]} />
               <meshBasicMaterial color={primary ? '#e6c58c' : '#ffffff'} toneMapped={false} />
@@ -98,8 +79,9 @@ function Marker({ destination, primary }: { destination: Destination; primary: b
       )}
       <Html center zIndexRange={[15, 10]}>
         <button
-          className={`navigation-marker marker-floor ${portal ? 'marker-portal' : ''} ${primary ? 'marker-primary' : ''} ${doorway ? 'marker-door' : ''}`}
+          className={`navigation-marker marker-floor ${portal ? 'marker-portal' : ''} ${primary ? 'marker-primary' : ''} ${doorway ? 'marker-door' : ''} ${destination.kind === 'stairs' ? 'marker-stairs' : ''}`}
           data-navigation-target={destination.id}
+          data-direction={destination.direction}
           aria-label={destination.label}
           onPointerEnter={() => setHovered(true)}
           onPointerLeave={() => setHovered(false)}
@@ -112,6 +94,7 @@ function Marker({ destination, primary }: { destination: Destination; primary: b
           }}
         >
           {doorway && <DoorIcon size={19} strokeWidth={1.6} />}
+          {destination.kind === 'stairs' && <StairIcon size={20} strokeWidth={1.8} />}
           <span className="marker-caption">{destination.caption ?? destination.label}</span>
         </button>
       </Html>
@@ -143,7 +126,7 @@ export function NavigationMarkers() {
     const heading = Math.atan2(projected.x, -projected.z),
       location = continuing.length ? 'Stairs' : (room?.name ?? floor?.name ?? '');
     if (request || mapOpen || interacting || selection) {
-      useNavigation.getState().setContext({ player, heading, location, edgePortals: [] });
+      useNavigation.getState().setContext({ player, heading, location, portals: [] });
       return;
     }
     camera.updateMatrixWorld();
@@ -222,19 +205,12 @@ export function NavigationMarkers() {
       size.width,
       size.height,
     ).map((value) => links.find((link) => link.id === value.destination.id) ?? value.destination);
-    const edgePortals: PortalPin[] = links
-      .filter((destination) => !layout.some((value) => value.id === destination.id))
-      .map((destination) => ({
-        destination,
-        ...portalPosition(player, destination, heading, size.width, size.height),
-      }));
-    for (const side of [22, size.width - 22]) {
-      const pins = edgePortals.filter((pin) => pin.x === side);
-      pins.forEach((pin, index) => {
-        pin.y = Math.max(120, size.height * 0.46 - ((pins.length - 1) * 64) / 2) + index * 64;
-      });
-    }
-    useNavigation.getState().setContext({ player, heading, location, edgePortals });
+    useNavigation.getState().setContext({
+      player,
+      heading,
+      location,
+      portals: navigationCues(compiled, player, links),
+    });
     setVisible((previous) =>
       previous.length === layout.length &&
       previous.every(

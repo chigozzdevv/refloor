@@ -4,6 +4,7 @@ export const walkInput = {
   yaw: 0,
   pitch: 0,
   pad: { x: 0, y: 0 },
+  turn: 0,
 };
 
 export function joystickVector(x: number, y: number, radius: number) {
@@ -16,7 +17,7 @@ export function joystickVector(x: number, y: number, radius: number) {
 
 export function movementInput() {
   const { keys, pad } = walkInput;
-  const x = Number(keys.has('d')) - Number(keys.has('a'));
+  const x = Number(keys.has('d')) - Number(keys.has('a')) + pad.x;
   const y =
     Number(keys.has('w') || keys.has('arrowup')) -
     Number(keys.has('s') || keys.has('arrowdown')) +
@@ -26,16 +27,17 @@ export function movementInput() {
 }
 
 export function turningInput() {
-  const { keys, pad } = walkInput;
+  const { keys, turn } = walkInput;
   return Math.max(
     -1,
-    Math.min(1, Number(keys.has('arrowright')) - Number(keys.has('arrowleft')) + pad.x),
+    Math.min(1, Number(keys.has('arrowright')) - Number(keys.has('arrowleft')) + turn),
   );
 }
 
 export function resetWalkInput() {
   walkInput.keys.clear();
   walkInput.pad = { x: 0, y: 0 };
+  walkInput.turn = 0;
 }
 export function isTyping(target: EventTarget | null): boolean {
   return (

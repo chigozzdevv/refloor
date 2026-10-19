@@ -22,21 +22,28 @@ export function tourPortals(
   return links.sort((a, b) => a.id.localeCompare(b.id));
 }
 
-export function portalPosition(
+export type PortalCue = { destination: Destination; label: string };
+
+export function navigationCues(
+  compiled: CompiledBuilding,
   player: NavigationPoint,
-  destination: Destination,
-  heading: number,
-  width: number,
-  height: number,
-) {
-  const bearing = Math.atan2(
-    destination.anchor.x - player.position.x,
-    player.position.z - destination.anchor.z,
-  );
-  const angle = Math.atan2(Math.sin(bearing - heading), Math.cos(bearing - heading));
-  return {
-    x: angle < 0 ? 22 : width - 22,
-    y: Math.max(110, Math.min(height - 210, height * 0.48)),
-    angle: (angle * 180) / Math.PI,
-  };
+  links: Destination[],
+): PortalCue[] {
+  const room = compiled.building.floors
+    .find((floor) => floor.id === player.floorId)
+    ?.rooms.find((value) => contains(value.footprint, player.position));
+  const exit =
+    room &&
+    room.kind !== 'corridor' &&
+    room.kind !== 'stairwell' &&
+    links.filter((link) => link.kind === 'door').length === 1;
+  return links
+    .toSorted((a, b) => Number(b.kind === 'stairs') - Number(a.kind === 'stairs'))
+    .map((destination) => ({
+      destination,
+      label:
+        exit && destination.kind === 'door'
+          ? `Exit to ${destination.caption ?? destination.label}`
+          : (destination.caption ?? destination.label),
+    }));
 }

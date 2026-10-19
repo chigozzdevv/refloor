@@ -4,7 +4,9 @@ import type { Building } from '@refloor/scene';
 import { compileBuilding } from '@refloor/engine';
 import { createHouse } from '@refloor/catalogue/houses';
 import { destinations, stairContinuation } from '@/shared/navigation/destinations';
-import { portalPosition, tourPortals } from '@/shared/navigation/portals';
+import { navigationCues, tourPortals } from '@/shared/navigation/portals';
+import { organizeMarkers } from '@/shared/navigation/marker-layout';
+import { useNavigation } from '@/shared/navigation/navigation-store';
 
 const generated = JSON.parse(
   readFileSync(new URL('fixtures/generated-two-storey.json', import.meta.url), 'utf8'),
@@ -90,13 +92,81 @@ describe('tour portal access', () => {
       }
     },
   );
-  it('keeps a hidden doorway cue at the screen edge and points relative to the camera', () => {
-    const compiled = compileBuilding(createHouse({ id: 'edge', name: 'Edge', storeys: 1 })),
-      stop = destinations(compiled).find((value) => value.kind === 'door')!,
-      player = { floorId: stop.floorId, position: { ...stop.anchor, x: stop.anchor.x - 2 } };
-    expect(portalPosition(player, stop, 0, 320, 600)).toEqual({ x: 298, y: 288, angle: 90 });
-    const rotated = portalPosition(player, stop, Math.PI, 320, 600);
-    expect(rotated.x).toBe(22);
-    expect(rotated.angle).toBeCloseTo(-90);
+  it('keeps a closed room exit available whether its doorway marker is visible or offscreen', () => {
+    const compiled = compileBuilding(
+      createHouse({ id: 'persistent-exit', name: 'Persistent exit', storeys: 2 }),
+    );
+    const stops = destinations(compiled),
+      room = compiled.building.floors[1]!.rooms.find((value) => value.kind === 'workspace')!,
+      player = stops.find((stop) => stop.kind === 'room' && stop.roomId === room.id)!.target,
+      links = tourPortals(compiled, player, stops),
+      exit = links.find((stop) => stop.kind === 'door')!;
+    expect(exit).toBeDefined();
+    for (const x of [400, -400]) {
+      const layout = organizeMarkers([{ destination: exit, x, y: 250, distance: 3 }], 800, 600);
+      expect(layout).toHaveLength(x > 0 ? 1 : 0);
+      const cues = navigationCues(compiled, player, links);
+      expect(cues).toEqual(
+        links.map((destination) => ({
+          destination,
+          label: `Exit to ${destination.caption}`,
+        })),
+      );
+      expect(cues[0]!.destination.doorId).toBe(exit.doorId);
+    }
+  });
+  it('preserves semantic stair directions and names throughout a turn or mid-flight stop', () => {
+    const compiled = compileBuilding(
+      createHouse({ id: 'stair-cues', name: 'Stair cues', storeys: 2 }),
+    );
+    const stair = compiled.stairs[0]!,
+      player = {
+        floorId: stair.lower.floorId,
+        position: stair.path[Math.floor(stair.path.length / 2)]!,
+      },
+      links = stairContinuation(compiled, player),
+      cues = navigationCues(compiled, player, links);
+    expect(cues.map((cue) => cue.label)).toEqual(['Upstairs', 'Downstairs']);
+    expect(cues.map((cue) => cue.destination.direction)).toEqual(['up', 'down']);
+    expect(cues.find((cue) => cue.destination.direction === 'up')!.destination.target).toEqual(
+      stair.upper,
+    );
+    expect(cues.find((cue) => cue.destination.direction === 'down')!.destination.target).toEqual(
+      stair.lower,
+    );
+  });
+  it('places stairs before room doors in the persistent hall cues on both floors', () => {
+    const compiled = compileBuilding(
+      createHouse({ id: 'hall-cue-order', name: 'Hall cue order', storeys: 2 }),
+    );
+    const stops = destinations(compiled),
+      stair = compiled.stairs[0]!;
+    for (const [player, direction] of [
+      [stair.lower, 'up'],
+      [stair.upper, 'down'],
+    ] as const) {
+      const links = tourPortals(compiled, player, stops),
+        cues = navigationCues(compiled, player, links);
+      expect(links.some((link) => link.kind === 'door')).toBe(true);
+      expect(cues[0]!.destination.kind).toBe('stairs');
+      expect(cues[0]!.destination.direction).toBe(direction);
+      expect(cues.map((cue) => cue.destination).slice(1)).toEqual(
+        links.filter((link) => link.kind !== 'stairs'),
+      );
+    }
+  });
+  it('passes the clicked doorway through the shared journey request', () => {
+    const compiled = compileBuilding(
+      createHouse({ id: 'clicked-exit', name: 'Clicked exit', storeys: 1 }),
+    );
+    const door = destinations(compiled).find((stop) => stop.kind === 'door')!;
+    useNavigation.getState().go(door.target, door.lookAt, door.label, door.doorId);
+    expect(useNavigation.getState().request).toMatchObject({
+      target: door.target,
+      label: door.label,
+      doorId: door.doorId,
+    });
+    useNavigation.getState().stop();
+    expect(useNavigation.getState().request).toBeNull();
   });
 });

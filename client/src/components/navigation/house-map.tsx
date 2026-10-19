@@ -24,7 +24,7 @@ export function HouseMap() {
     useNavigation.setState({
       player: null,
       heading: 0,
-      edgePortals: [],
+      portals: [],
       request: null,
       mapOpen: false,
     });
