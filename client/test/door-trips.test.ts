@@ -9,6 +9,7 @@ import { DoorMotion } from '@/shared/behaviours/door-motion';
 import { destinations } from '@/shared/navigation/destinations';
 import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
 import { Walkthrough } from '@/shared/navigation/walkthrough';
+import { arrivalView } from '@/shared/navigation/arrival';
 
 beforeAll(initializePhysics);
 const houses = [
@@ -80,6 +81,14 @@ it.each(houses)(
         expect(arrived, stop.id).toBe(true);
         expect(compiled.doors.find((value) => value.id === door.id)!.open, stop.id).toBe(false);
         expect(motions.get(door.id)!.fraction, stop.id).toBe(0);
+        const facing = arrivalView(compiled, stop.target, undefined, stop.doorId);
+        expect(facing, stop.id).not.toBeNull();
+        expect(facing!.entityId, stop.id).not.toBe(stop.doorId);
+        const yaw = Math.atan2(world.feet.x - facing!.point.x, world.feet.z - facing!.point.z);
+        expect(
+          Math.abs(Math.atan2(Math.sin(view.yaw - yaw), Math.cos(view.yaw - yaw))),
+          stop.id,
+        ).toBeLessThan(0.08);
       } finally {
         world.dispose();
       }

@@ -83,7 +83,7 @@ export class CharacterWorld {
       RAPIER.ColliderDesc.capsule(height / 2 - radius, radius),
       this.body,
     );
-    this.controller = this.world.createCharacterController(0.01);
+    this.controller = this.world.createCharacterController(compiled.options.clearance + 0.005);
     this.controller.enableAutostep(stepHeight, 0.2, false);
     this.controller.enableSnapToGround(stepHeight + 0.05);
     this.controller.setMaxSlopeClimbAngle(Math.PI / 4);
@@ -178,7 +178,10 @@ export class CharacterWorld {
       pose.position.y - pose.size.y / 2 >= feet.y + this.compiled.options.height
     )
       return false;
-    return distanceToBox(feet, pose) < this.compiled.options.radius + 0.025;
+    return (
+      distanceToBox(feet, pose) <
+      this.compiled.options.radius + this.compiled.options.clearance + 0.005
+    );
   }
   doorFraction(id: string): number {
     return (

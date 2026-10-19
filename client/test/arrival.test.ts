@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { Building } from '@refloor/scene';
 import { compileBuilding } from '@refloor/engine';
+import { contains } from '@refloor/engine/math';
 import { createHouse } from '@refloor/catalogue/houses';
 import { arrivalView } from '@/shared/navigation/arrival';
 import { destinations } from '@/shared/navigation/destinations';
@@ -48,7 +49,11 @@ describe('tour arrival views', () => {
               view!.kind === 'stairs' ? stair.id : view!.entityId,
             ),
           ).toBe(true);
+          const room = building.floors
+            .find((floor) => floor.id === landing.floorId)
+            ?.rooms.find((value) => contains(value.footprint, landing.position));
           if (
+            (room?.kind === 'corridor' || room?.kind === 'stairwell') &&
             stop.lookAt &&
             clearView(
               compiled,
@@ -62,6 +67,53 @@ describe('tour arrival views', () => {
       }
     },
   );
+
+  it.each([createHouse({ id: 'door-arrival-default', name: 'Default', storeys: 2 }), generated])(
+    'faces the next interaction after crossing every door in $name',
+    (building) => {
+      const compiled = compileBuilding(building);
+      for (const stop of destinations(compiled).filter((value) => value.kind === 'door')) {
+        const view = arrivalView(compiled, stop.target, stop.anchor, stop.doorId);
+        expect(view, stop.id).not.toBeNull();
+        expect(view!.entityId, stop.id).not.toBe(stop.doorId);
+        expect(
+          clearView(
+            compiled,
+            { ...stop.target.position, y: stop.target.position.y + 1.62 },
+            view!.point,
+            view!.kind === 'stairs' ? view!.entityId.split(':')[1] : view!.entityId,
+          ),
+          stop.id,
+        ).toBe(true);
+      }
+    },
+  );
+
+  it('faces useful routes rather than the entry door in empty halls', () => {
+    const halls = generated.floors.flatMap((floor) =>
+      floor.rooms.filter((room) => room.kind === 'corridor').map((room) => room.id),
+    );
+    const compiled = compileBuilding({
+      ...generated,
+      objects: generated.objects.filter((object) => !halls.includes(object.roomId)),
+    });
+    const stops = destinations(compiled).filter(
+      (stop) =>
+        stop.kind === 'door' &&
+        compiled.building.floors
+          .find((floor) => floor.id === stop.target.floorId)
+          ?.rooms.some(
+            (room) => halls.includes(room.id) && contains(room.footprint, stop.target.position),
+          ),
+    );
+    expect(stops.length).toBeGreaterThan(0);
+    for (const stop of stops) {
+      const view = arrivalView(compiled, stop.target, stop.anchor, stop.doorId);
+      expect(view, stop.id).not.toBeNull();
+      expect(['door', 'stairs', 'route'], stop.id).toContain(view!.kind);
+      expect(view!.entityId, stop.id).not.toBe(stop.doorId);
+    }
+  });
 });
 
 describe('exterior layout', () => {

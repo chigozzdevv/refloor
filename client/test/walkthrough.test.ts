@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { MathUtils, PerspectiveCamera, Vector3 } from 'three';
 import { createHouse } from '@refloor/catalogue/houses';
-import { compileBuilding } from '@refloor/engine';
+import { compileBuilding, isPlayerPositionValid } from '@refloor/engine';
+import { doorCrossings } from '@refloor/engine/navigation/doors';
 import { createEditMemory } from '@refloor/scene/edit-memory';
 import { applyCommands } from '@refloor/scene';
 import type { Building } from '@refloor/scene';
@@ -44,6 +45,7 @@ describe('complete walkthrough', () => {
             ...(stop.lookAt ? { lookAt: stop.lookAt } : {}),
           };
           let arrived = false;
+          let entryDoorId: string | undefined;
           const trace: string[] = [];
           for (let frame = 0; frame < 9000; frame++) {
             for (const door of compiled.doors) {
@@ -51,7 +53,12 @@ describe('complete walkthrough', () => {
               if (!world.doorBlocked(door.id, next)) fractions.set(door.id, next);
               world.setDoorFraction(door.id, fractions.get(door.id)!);
             }
+            const before = world.feet;
             const result = tour.step(world, arrived ? null : request, view, 1 / 60);
+            entryDoorId =
+              doorCrossings(compiled, [before, world.feet])
+                .filter(({ door }) => door.floorId === stop.target.floorId)
+                .at(-1)?.door.id ?? entryDoorId;
             view = result;
             if (result.commands.length) {
               expect(
@@ -81,7 +88,17 @@ describe('complete walkthrough', () => {
               result.status,
               JSON.stringify({ stop: stop.label, feet: world.feet, trace, reason: result.reason }),
             ).not.toBe('blocked');
-            if (result.status === 'arrived') arrived = true;
+            if (result.status === 'arrived') {
+              arrived = true;
+              expect(
+                isPlayerPositionValid(compiled, world.player),
+                JSON.stringify({
+                  stop: stop.label,
+                  target: stop.target,
+                  player: world.player,
+                }),
+              ).toBe(true);
+            }
             if (arrived && compiled.doors.every((door) => !door.open)) break;
           }
           expect(arrived, JSON.stringify({ stop: stop.label, feet: world.feet, trace })).toBe(true);
@@ -89,7 +106,7 @@ describe('complete walkthrough', () => {
             compiled.doors.filter((door) => door.open),
             stop.label,
           ).toEqual([]);
-          const facing = arrivalView(compiled, stop.target, stop.lookAt);
+          const facing = arrivalView(compiled, stop.target, stop.lookAt, entryDoorId);
           expect(facing, stop.label).not.toBeNull();
           const camera = new PerspectiveCamera(65, 1.6, 0.08, 200);
           camera.position.set(world.feet.x, world.feet.y + 1.62, world.feet.z);

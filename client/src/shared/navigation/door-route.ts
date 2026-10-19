@@ -1,8 +1,9 @@
 import { applyCommands } from '@refloor/scene';
 import type { SceneCommand } from '@refloor/scene';
-import { compileBuilding } from '@refloor/engine';
+import { compileBuilding, isPlayerPositionValid, isWalkable } from '@refloor/engine';
 import type { CompiledBuilding, NavigationPoint, NavigationPath } from '@refloor/engine';
 import { doorCrossings } from '@refloor/engine/navigation/doors';
+import { clearSegment } from '@refloor/engine/navigation/surfaces';
 import { distanceToBox, rotate } from '@refloor/engine/math';
 import { destinationRoute, navigationFor } from '@/shared/navigation/destinations';
 
@@ -19,7 +20,41 @@ export function doorRoute(
   target: NavigationPoint,
   options: { doorId?: string; canSwing?: (id: string, open: boolean) => boolean } = {},
 ): DoorRoute | null {
-  const selected = compiled.doors.find((door) => door.id === options.doorId && !door.open);
+  const portal = compiled.doors.find((door) => door.id === options.doorId);
+  const selected = portal && !portal.open ? portal : undefined;
+  const validPlayer = isPlayerPositionValid(compiled, from);
+  if (
+    portal &&
+    from.floorId === portal.floorId &&
+    from.floorId === target.floorId &&
+    Math.hypot(from.position.x - portal.centre.x, from.position.z - portal.centre.z) < 2.5 &&
+    (portal.open || (validPlayer && options.canSwing?.(portal.id, true)))
+  ) {
+    const start = { ...from.position, y: portal.centre.y };
+    if (
+      clearSegment(
+        compiled,
+        from.floorId,
+        start,
+        target.position,
+        portal.open ? 'current' : 'openable',
+      )
+    )
+      return {
+        path: {
+          points: [from.position, target.position],
+          length: Math.hypot(
+            target.position.x - from.position.x,
+            target.position.y - from.position.y,
+            target.position.z - from.position.z,
+          ),
+          doorIds: selected ? [selected.id] : [],
+          stairIds: [],
+        },
+        commands: selected ? [{ type: 'set-door', doorId: selected.id, open: true }] : [],
+        staging: false,
+      };
+  }
   const current = selected ? null : destinationRoute(compiled, from, target, 'current');
   if (current) return { path: current, commands: [], staging: false };
   const path = destinationRoute(compiled, from, target, 'openable');
@@ -41,6 +76,7 @@ export function doorRoute(
     if (
       door.floorId === from.floorId &&
       Math.hypot(from.position.x - door.centre.x, from.position.z - door.centre.z) < 2.5 &&
+      validPlayer &&
       options.canSwing?.(door.id, true)
     )
       return {
@@ -50,12 +86,17 @@ export function doorRoute(
       };
     const normal = rotate({ x: 0, z: side }, door.rotation);
     const graph = navigationFor(compiled, 'current');
+    const stagingSpace = {
+      ...compiled,
+      options: { ...compiled.options, clearance: compiled.options.clearance + 0.06 },
+    };
     const candidates = (graph.byFloor.get(door.floorId) ?? [])
       .map((node) => graph.nodes[node]!)
       .filter((node) => {
         const dx = node.position.x - door.centre.x,
           dz = node.position.z - door.centre.z;
         return (
+          isWalkable(stagingSpace, node, 'current') &&
           dx * normal.x + dz * normal.z > 0.4 &&
           Math.hypot(dx, dz) < 2.8 &&
           Math.hypot(node.position.x - door.hinge.x, node.position.z - door.hinge.z) >
@@ -74,6 +115,7 @@ export function doorRoute(
         path: approach,
         commands: [{ type: 'set-door', doorId: door.id, open: true }],
         staging:
+          !validPlayer ||
           Math.hypot(
             from.position.x - candidate.position.x,
             from.position.y - candidate.position.y,

@@ -1,4 +1,6 @@
+import { isPlayerPositionValid } from '@refloor/engine';
 import type { CompiledBuilding, Point3 } from '@refloor/engine';
+import { doorCrossings } from '@refloor/engine/navigation/doors';
 import type { EditMemory } from '@refloor/scene/edit-memory';
 import type { SceneCommand } from '@refloor/scene';
 import { MathUtils } from 'three';
@@ -27,6 +29,7 @@ export class Walkthrough {
     journey: Journey;
     commands: SceneCommand[];
     facing?: Point3;
+    entryDoorId?: string;
   } | null = null;
 
   reset() {
@@ -43,7 +46,10 @@ export class Walkthrough {
     const dt = Math.min(delta, 0.05),
       compiled = world.compiled;
     const result: WalkStep = { ...view, status: request ? 'moving' : 'idle', commands: [] };
-    const closures = request ? [] : this.doors.closures(world, false, memory);
+    const closures =
+      !request && isPlayerPositionValid(compiled, world.player)
+        ? this.doors.closures(world, false, memory)
+        : [];
     if (closures.length) return { ...result, commands: closures };
     if (!request) {
       this.reset();
@@ -59,15 +65,22 @@ export class Walkthrough {
         this.doors.record(compiled, world.player, plan.commands);
         return { ...result, commands: plan.commands };
       }
+      const entryDoorId =
+        request.doorId ??
+        doorCrossings(compiled, plan.path.points)
+          .filter(({ door }) => door.floorId === request.target.floorId)
+          .at(-1)?.door.id ??
+        (this.leg?.requestId === request.id ? this.leg.entryDoorId : undefined);
       const facing = plan.staging
         ? plan.facing
-        : arrivalView(compiled, request.target, request.lookAt)?.point;
+        : arrivalView(compiled, request.target, request.lookAt, entryDoorId)?.point;
       this.leg = {
         requestId: request.id,
         compiled,
         journey: createJourney(smoothRoute(compiled, plan.path.points)),
         commands: plan.staging ? plan.commands : [],
         ...(facing ? { facing } : {}),
+        ...(entryDoorId ? { entryDoorId } : {}),
       };
     }
     const { journey, facing, commands } = this.leg;
