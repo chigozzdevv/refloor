@@ -128,7 +128,13 @@ export function entranceArrival(compiled: CompiledBuilding): Point3 {
       undefined,
       entry.doorId,
     );
-  if (view) return view.point;
+  if (view) {
+    const dx = view.point.x - entry.inside.x,
+      dz = view.point.z - entry.inside.z,
+      distance = Math.hypot(dx, dz),
+      forward = dx * entry.normal.x + dz * entry.normal.z;
+    if (distance > 1.6 && forward > 1 && forward / distance > 0.7) return view.point;
+  }
   return {
     x: entry.inside.x + entry.normal.x * 4,
     y: entry.inside.y + 1.3,

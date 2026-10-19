@@ -4,7 +4,7 @@ import type { Building } from '@refloor/scene';
 import { compileBuilding } from '@refloor/engine';
 import { contains } from '@refloor/engine/math';
 import { createHouse } from '@refloor/catalogue/houses';
-import { arrivalView } from '@/shared/navigation/arrival';
+import { arrivalView, entranceArrival } from '@/shared/navigation/arrival';
 import { destinations } from '@/shared/navigation/destinations';
 import { clearView } from '@/shared/navigation/viewpoints';
 import { exteriorCamera, exteriorLayout } from '@/shared/scene/exterior';
@@ -16,6 +16,21 @@ const generated = JSON.parse(
 ) as Building;
 
 describe('tour arrival views', () => {
+  it.each([
+    createHouse({ id: 'entrance-forward', name: 'Entrance forward', storeys: 2 }),
+    generated,
+  ])(
+    'keeps the entrance facing into the house rather than turning toward a side door in $name',
+    (building) => {
+      const compiled = compileBuilding(building),
+        entry = entryPose(compiled),
+        view = entranceArrival(compiled),
+        dx = view.x - entry.inside.x,
+        dz = view.z - entry.inside.z;
+      expect((dx * entry.normal.x + dz * entry.normal.z) / Math.hypot(dx, dz)).toBeGreaterThan(0.7);
+    },
+  );
+
   it.each([createHouse({ id: 'arrival-default', name: 'Default', storeys: 2 }), generated])(
     'faces visible interactions at every room stop in $name',
     (building) => {
