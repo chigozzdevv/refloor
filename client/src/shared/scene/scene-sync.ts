@@ -29,6 +29,7 @@ type SavedState = {
   conflict: boolean;
   refresh: (more?: boolean) => Promise<void>;
   save: (asNew?: boolean) => Promise<void>;
+  preserve: () => Promise<boolean>;
   open: (id: string) => Promise<boolean>;
 };
 let pending: PendingSave | null = null;
@@ -137,6 +138,29 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
     } finally {
       set({ saving: false });
     }
+  },
+  preserve: async () => {
+    const state = useProject.getState();
+    if (
+      !state.saved &&
+      state.projectEpoch === 0 &&
+      !state.past.length &&
+      !state.memory.turns.length
+    )
+      return true;
+    const saved = () => {
+      const current = useProject.getState();
+      return (
+        current.remote?.savedFingerprint === fingerprintBuilding(current.compiled.building) &&
+        current.remote.savedMemoryFingerprint === fingerprintEditMemory(current.memory)
+      );
+    };
+    if (saved()) return true;
+    await get().save();
+    if (saved()) return true;
+    if (!get().error)
+      set({ error: 'Your current house must finish saving before starting another.' });
+    return false;
   },
   open: async (id) => {
     if (get().saving || get().opening) return false;

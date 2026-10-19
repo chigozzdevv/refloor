@@ -22,12 +22,13 @@ export function HousePrompt({
   const [job, setJob] = useState<Generation | null>(null),
     [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0),
-    [opening, setOpening] = useState(false);
+    [opening, setOpening] = useState(false),
+    [starting, setStarting] = useState(false);
   const openingJob = useRef<string | null>(null),
     mounted = useRef(true),
     completed = useRef(close);
   completed.current = close;
-  const busy = pending !== null && job?.status !== 'failed';
+  const busy = starting || (pending !== null && job?.status !== 'failed');
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -38,6 +39,17 @@ export function HousePrompt({
     if (opening) return;
     setOpening(true);
     setError(null);
+    if (!(await useSavedProjects.getState().preserve())) {
+      if (mounted.current) {
+        setOpening(false);
+        setError(
+          useSavedProjects.getState().error ??
+            'Your existing house could not be saved. Try opening the new house again.',
+        );
+      }
+      return;
+    }
+    if (!mounted.current) return;
     const success = await useSavedProjects.getState().open(projectId);
     if (!mounted.current) return;
     setOpening(false);
@@ -85,8 +97,19 @@ export function HousePrompt({
     openingJob.current = job.id;
     void open(job.projectId);
   });
-  const submit = () => {
+  const submit = async () => {
     if (busy || prompt.trim().length < 10) return;
+    setStarting(true);
+    setError(null);
+    const preserved = await useSavedProjects.getState().preserve();
+    if (!mounted.current) return;
+    setStarting(false);
+    if (!preserved) {
+      setError(
+        useSavedProjects.getState().error ?? 'Your existing house could not be saved. Try again.',
+      );
+      return;
+    }
     const next = { requestId: crypto.randomUUID(), prompt: prompt.trim(), jobId: null };
     persistGeneration(next);
     setJob(null);
@@ -100,7 +123,7 @@ export function HousePrompt({
         className="prompt-form"
         onSubmit={(event) => {
           event.preventDefault();
-          submit();
+          void submit();
         }}
       >
         <textarea
@@ -116,7 +139,7 @@ export function HousePrompt({
           onKeyDown={(event) => {
             if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
               event.preventDefault();
-              submit();
+              void submit();
             }
           }}
         />
@@ -135,6 +158,11 @@ export function HousePrompt({
           </button>
         </div>
       </form>
+      {starting && (
+        <p className="generation-status" role="status">
+          Saving your current house…
+        </p>
+      )}
       {pending && <GenerationProgress job={job} />}
       {opening && (
         <p className="generation-status" role="status">
@@ -169,8 +197,13 @@ export function HousePrompt({
         <div className="prompt-alternatives">
           {canResume && (
             <>
-              <button onClick={resume}>
-                Continue your space <ArrowRight size={14} />
+              <button
+                onClick={() => {
+                  if (job?.status === 'failed') persistGeneration(null);
+                  resume();
+                }}
+              >
+                Back to your house <ArrowRight size={14} />
               </button>
               <span />
             </>
