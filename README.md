@@ -148,7 +148,7 @@ Nearby clear door crossings use a direct, collision-checked route. Walking retai
 The compact map shows rooms, walls, doors, stairs and the current position; the expanded plan adds furniture. Door leaves follow their actual open or closed state. The small floor plan opens the larger view without a duplicate toolbar icon.
 Choose a room on either floor to follow a validated walking route there.
 Obstructing open leaves are closed only after moving clear of their swing. Tour-opened doors return to their original state after the player clears their swing. Explicit manual door changes are preserved; saved navigation-owned openings are recovered from edit history. Stair arrows handle the full climb or descent with one click;
-the camera follows the turn and smooths changes in height. A centered, translucent stop icon appears during
+the camera follows the turn and smooths changes in height. Stair alignment releases at each landing so held forward movement continues onto the floor; turning or moving sideways also gives control back immediately. Walking across a landing does not start another climb unless the person faces the flight. A centered, translucent stop icon appears during
 travel; dragging, selecting an item or Escape also stops it. Losing focus releases manual input without silently cancelling a chosen tour. A stair
 arrow can resume from the current step. House overview in the globe menu resets the
 outside view; returning to Walk preserves the previous position and viewing direction
