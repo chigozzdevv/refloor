@@ -23,7 +23,7 @@ describe('house navigation destinations', () => {
       for (const side of sides) expect(isWalkable(compiled, side.target, 'openable')).toBe(true);
     }
   });
-  it('offers doors and stairs throughout a long entrance hall without intermediate dot hunting', () => {
+  it('keeps room doors available through a long hall and offers stairs at their landing', () => {
     const compiled = compileBuilding(
       createHouse({ id: 'long-hall', name: 'Long hall', storeys: 2, width: 14, depth: 12 }),
     );
@@ -31,8 +31,14 @@ describe('house navigation destinations', () => {
       stops = destinations(compiled);
     const player = { floorId: entry.floorId, position: entry.inside };
     const links = tourPortals(compiled, player, stops);
-    expect(links.some((link) => link.kind === 'stairs' && link.direction === 'up')).toBe(true);
+    expect(links.some((link) => link.kind === 'stairs')).toBe(false);
     expect(links.some((link) => link.kind === 'door')).toBe(true);
+    const stair = compiled.stairs[0]!;
+    expect(
+      tourPortals(compiled, stair.lower, stops).some(
+        (link) => link.kind === 'stairs' && link.direction === 'up',
+      ),
+    ).toBe(true);
     for (const link of links)
       expect(destinationRoute(compiled, player, link.target, 'openable')).not.toBeNull();
     for (const room of compiled.building.floors.flatMap((floor) => floor.rooms))

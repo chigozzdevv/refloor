@@ -41,7 +41,9 @@ export function tourPortals(
     if (room && stop.kind === 'stairs' && !contains(room.footprint, stop.approach.position))
       return false;
     const path = destinationRoute(compiled, player, stop.approach, 'current');
-    return path !== null && path.stairIds.length === 0;
+    return (
+      path !== null && path.stairIds.length === 0 && (stop.kind !== 'stairs' || path.length <= 2)
+    );
   });
   return links.sort((a, b) => a.id.localeCompare(b.id));
 }
@@ -72,11 +74,24 @@ export function navigationCues(
         destination,
         label: destination.caption ?? destination.label,
       }));
-  const circulation = circulationRooms(compiled);
-  if (!room || circulation.has(room.id)) return stairs;
+  const circulation = circulationRooms(compiled),
+    doorLinks = links
+      .filter((link) => link.kind === 'door' && (!room || link.roomId === room.id))
+      .toSorted((a, b) => a.id.localeCompare(b.id))
+      .filter(
+        (link, index, values) =>
+          !values.slice(0, index).some((previous) => previous.doorId === link.doorId),
+      );
+  if (!room || circulation.has(room.id))
+    return [
+      ...doorLinks.map((destination) => ({
+        destination,
+        label: destination.caption ?? destination.label,
+      })),
+      ...stairs,
+    ];
   const doors = destinations(compiled).filter((destination) => destination.kind === 'door'),
-    exits = links
-      .filter((link) => link.kind === 'door' && link.roomId === room.id)
+    exits = doorLinks
       .map((destination) => {
         const target = floor?.rooms.find((value) =>
           contains(value.footprint, destination.target.position),
@@ -95,14 +110,14 @@ export function navigationCues(
           b.connections - a.connections ||
           a.destination.id.localeCompare(b.destination.id),
       );
-  const exit = exits[0]?.destination;
-  return exit
-    ? [
-        ...stairs,
-        {
-          destination: exit,
-          label: `Exit to ${exit.caption ?? exit.label}`,
-        },
-      ]
-    : stairs;
+  return [
+    ...stairs,
+    ...exits.map(({ destination }, index) => ({
+      destination,
+      label:
+        index === 0
+          ? `Exit to ${destination.caption ?? destination.label}`
+          : (destination.caption ?? destination.label),
+    })),
+  ];
 }
