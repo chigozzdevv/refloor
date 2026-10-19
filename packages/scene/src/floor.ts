@@ -40,6 +40,7 @@ export const wallSchema = z.strictObject({
   height: dimensionSchema,
   thickness: dimensionSchema,
   material: materialSchema,
+  exteriorMaterial: materialSchema.optional(),
   openings: z.array(openingSchema),
 });
 export const floorSchema = z.strictObject({

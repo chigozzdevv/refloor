@@ -2,10 +2,13 @@ import { z } from 'zod';
 import { buildingSchema } from '@refloor/scene/schema';
 import { editSchema } from '@refloor/scene/command';
 import { revisionSchema } from '@refloor/scene/revision';
-import { positionSchema, idSchema } from '@refloor/scene/primitives';
+import { coordinateSchema, pointSchema, idSchema } from '@refloor/scene/primitives';
 import { editMemorySchema } from '@refloor/scene/edit-memory';
 
-export const playerSchema = z.strictObject({ floorId: idSchema, position: positionSchema });
+export const playerSchema = z.strictObject({
+  floorId: idSchema,
+  position: pointSchema.extend({ y: coordinateSchema }),
+});
 export const requestIdSchema = z.uuid();
 export const projectCreateSchema = z.strictObject({
   requestId: requestIdSchema,

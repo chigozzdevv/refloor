@@ -14,6 +14,7 @@ export const colorSchema = z
   .toLowerCase();
 export const pointSchema = z.strictObject({ x: coordinateSchema, z: coordinateSchema });
 export const positionSchema = pointSchema.extend({ y: coordinateSchema.nonnegative() });
+export const objectPositionSchema = pointSchema.extend({ y: coordinateSchema.min(-0.25) });
 export const footprintSchema = pointSchema.extend({
   width: dimensionSchema,
   depth: dimensionSchema,

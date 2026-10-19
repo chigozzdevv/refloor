@@ -6,7 +6,7 @@ import {
   dimensionsSchema,
   idSchema,
   labelSchema,
-  positionSchema,
+  objectPositionSchema,
 } from '@refloor/scene/primitives';
 
 export const objectAssetSchema = z.strictObject({
@@ -34,7 +34,7 @@ export const sceneObjectSchema = objectAssetSchema.extend({
   floorId: idSchema,
   roomId: idSchema,
   placement: z.literal('exterior').optional(),
-  position: positionSchema,
+  position: objectPositionSchema,
   rotation: coordinateSchema,
 });
 

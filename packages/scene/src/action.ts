@@ -6,7 +6,7 @@ import {
   coordinateSchema,
   dimensionsSchema,
   idSchema,
-  positionSchema,
+  objectPositionSchema,
 } from '@refloor/scene/primitives';
 
 export const sceneActionSchema = z.discriminatedUnion('type', [
@@ -20,7 +20,7 @@ export const sceneActionSchema = z.discriminatedUnion('type', [
     type: z.literal('move-object'),
     objectId: idSchema,
     roomId: idSchema,
-    position: positionSchema,
+    position: objectPositionSchema,
     rotation: coordinateSchema,
   }),
   z.strictObject({
@@ -47,6 +47,18 @@ export const sceneActionSchema = z.discriminatedUnion('type', [
   z.strictObject({
     type: z.literal('set-wall-material'),
     wallId: idSchema,
+    material: materialSchema,
+    preserveExterior: z.boolean().optional(),
+    exteriorMaterial: materialSchema.nullable().optional(),
+  }),
+  z.strictObject({
+    type: z.literal('set-wall-exterior-material'),
+    wallId: idSchema,
+    material: materialSchema.nullable(),
+  }),
+  z.strictObject({
+    type: z.literal('set-roof-material'),
+    roofId: idSchema,
     material: materialSchema,
   }),
   z.strictObject({

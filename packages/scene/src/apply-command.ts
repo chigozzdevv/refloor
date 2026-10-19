@@ -1,3 +1,4 @@
+import { wallExteriorSide } from '@refloor/scene/wall-exterior';
 import type { Building } from '@refloor/scene/building';
 import type { SceneCommand } from '@refloor/scene/command';
 import { editSchema } from '@refloor/scene/command';
@@ -123,16 +124,55 @@ function execute(building: Building, command: SceneCommand): SceneCommand {
       return inverse;
     }
     case 'set-wall-material': {
+      const floor = building.floors.find((value) =>
+          value.walls.some((wall) => wall.id === command.wallId),
+        ),
+        wall = floor?.walls.find((value) => value.id === command.wallId);
+      if (!floor || !wall)
+        throw new SceneError('NOT_FOUND', `Wall does not exist: ${command.wallId}`);
+      const inverse: SceneCommand = {
+        type: 'set-wall-material',
+        wallId: wall.id,
+        material: structuredClone(wall.material),
+        ...(command.preserveExterior || command.exteriorMaterial !== undefined
+          ? {
+              exteriorMaterial: wall.exteriorMaterial
+                ? structuredClone(wall.exteriorMaterial)
+                : null,
+            }
+          : {}),
+      };
+      if (command.exteriorMaterial === null) delete wall.exteriorMaterial;
+      else if (command.exteriorMaterial !== undefined)
+        wall.exteriorMaterial = structuredClone(command.exteriorMaterial);
+      else if (command.preserveExterior && !wall.exteriorMaterial && wallExteriorSide(floor, wall))
+        wall.exteriorMaterial = structuredClone(wall.material);
+      wall.material = structuredClone(command.material);
+      return inverse;
+    }
+    case 'set-wall-exterior-material': {
       const wall = building.floors
         .flatMap((floor) => floor.walls)
         .find((value) => value.id === command.wallId);
       if (!wall) throw new SceneError('NOT_FOUND', `Wall does not exist: ${command.wallId}`);
       const inverse: SceneCommand = {
-        type: 'set-wall-material',
+        type: 'set-wall-exterior-material',
         wallId: wall.id,
-        material: structuredClone(wall.material),
+        material: wall.exteriorMaterial ? structuredClone(wall.exteriorMaterial) : null,
       };
-      wall.material = structuredClone(command.material);
+      if (command.material === null) delete wall.exteriorMaterial;
+      else wall.exteriorMaterial = structuredClone(command.material);
+      return inverse;
+    }
+    case 'set-roof-material': {
+      if (building.roof.id !== command.roofId)
+        throw new SceneError('NOT_FOUND', `Roof does not exist: ${command.roofId}`);
+      const inverse: SceneCommand = {
+        type: 'set-roof-material',
+        roofId: building.roof.id,
+        material: structuredClone(building.roof.material),
+      };
+      building.roof.material = structuredClone(command.material);
       return inverse;
     }
     case 'set-room-floor-material': {

@@ -1,5 +1,6 @@
 import { buildingModelSchema } from '@refloor/scene/building';
 import type { Footprint } from '@refloor/scene/primitives';
+import { wallExteriorSide } from '@refloor/scene/wall-exterior';
 import { eventTargetExists } from '@refloor/scene/rules';
 
 const epsilon = 1e-6;
@@ -55,6 +56,8 @@ export const buildingSchema = buildingModelSchema.superRefine((building, context
     floor.walls.forEach((wall, wi) => {
       const wp = [...fp, 'walls', wi];
       register(wall.id, [...wp, 'id']);
+      if (wall.exteriorMaterial && !wallExteriorSide(floor, wall))
+        report('Only exterior walls have an exterior finish', [...wp, 'exteriorMaterial']);
       const length = Math.hypot(wall.end.x - wall.start.x, wall.end.z - wall.start.z);
       if (length <= epsilon) report('A wall must have nonzero length', wp);
       if (wall.height > floor.height + epsilon) report('Wall is taller than its floor', wp);
@@ -127,7 +130,10 @@ export const buildingSchema = buildingModelSchema.superRefine((building, context
     )
       report('Rotated object extends outside its room', op);
     if (object.placement === 'exterior') {
-      if (object.kind !== 'light') report('Only exterior light fixtures are supported outside', op);
+      if (!['light', 'decor'].includes(object.kind))
+        report('Only exterior light fixtures and decor are supported outside', op);
+      if (object.position.y < -0.25)
+        report('Exterior fixture extends below the compound paving', op);
       if (
         !contains(
           {
@@ -146,6 +152,8 @@ export const buildingSchema = buildingModelSchema.superRefine((building, context
       )
         report('Exterior fixture extends outside the compound', op);
     }
+    if (object.placement !== 'exterior' && object.position.y < 0)
+      report('Interior object cannot extend below its floor', [...op, 'position', 'y']);
     if (object.position.y + object.dimensions.height > floor.height + epsilon)
       report('Object extends above its floor ceiling', op);
     const kinds = object.behaviours.map((value) => value.kind);
@@ -199,6 +207,8 @@ export const buildingSchema = buildingModelSchema.superRefine((building, context
         !building.floors.some((floor) => floor.rooms.some((room) => room.id === action.roomId))
       )
         report('Saved action refers to a missing room', [...rp, 'actions']);
+      if ('roofId' in action && action.roofId !== building.roof.id)
+        report('Saved action refers to a missing roof', [...rp, 'actions']);
       if (
         'wallId' in action &&
         !building.floors.some((floor) => floor.walls.some((wall) => wall.id === action.wallId))

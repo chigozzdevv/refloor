@@ -3,6 +3,7 @@ import { sha256 } from '@noble/hashes/sha2.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
 import { idSchema } from '@refloor/scene/primitives';
 import { sceneObjectSchema } from '@refloor/scene/object';
+import { roofSchema } from '@refloor/scene/building';
 import { doorSchema, wallSchema } from '@refloor/scene/floor';
 import { roomSchema } from '@refloor/scene/room';
 import { revisionSchema } from '@refloor/scene/revision';
@@ -10,7 +11,8 @@ import type { Building } from '@refloor/scene/building';
 import type { SceneCommand } from '@refloor/scene/command';
 
 export const editTargetSchema = z.strictObject({
-  kind: z.enum(['house', 'object', 'wall', 'floor', 'door']),
+  kind: z.enum(['house', 'object', 'wall', 'floor', 'door', 'roof']),
+  side: z.literal('exterior').optional(),
   id: idSchema,
 });
 export const elementSnapshotSchema = z
@@ -18,6 +20,7 @@ export const elementSnapshotSchema = z
     z.strictObject({ kind: z.literal('object'), id: idSchema, value: sceneObjectSchema }),
     z.strictObject({ kind: z.literal('wall'), id: idSchema, value: wallSchema }),
     z.strictObject({ kind: z.literal('floor'), id: idSchema, value: roomSchema }),
+    z.strictObject({ kind: z.literal('roof'), id: idSchema, value: roofSchema }),
     z.strictObject({ kind: z.literal('door'), id: idSchema, value: doorSchema }),
   ])
   .refine((snapshot) => snapshot.id === snapshot.value.id, 'Snapshot identity does not match');
@@ -67,6 +70,7 @@ export type EditTransition = EditMemory['transitions'][number];
 
 export function captureElements(building: Building): ElementSnapshot[] {
   return structuredClone([
+    { kind: 'roof', id: building.roof.id, value: building.roof },
     ...building.objects.map((value): ElementSnapshot => ({ kind: 'object', id: value.id, value })),
     ...building.floors.flatMap((floor) => [
       ...floor.rooms.map((value): ElementSnapshot => ({ kind: 'floor', id: value.id, value })),
@@ -149,7 +153,16 @@ export function commandTouches(command: SceneCommand, target: EditTarget): boole
     return 'objectId' in command
       ? command.objectId === target.id
       : command.type === 'add-object' && command.object.id === target.id;
-  if (target.kind === 'wall') return 'wallId' in command && command.wallId === target.id;
+  if (target.kind === 'roof')
+    return command.type === 'set-roof-material' && command.roofId === target.id;
+  if (target.kind === 'wall')
+    return (
+      'wallId' in command &&
+      command.wallId === target.id &&
+      (target.side === 'exterior'
+        ? command.type === 'set-wall-exterior-material' || command.type === 'set-wall-material'
+        : command.type === 'set-wall-material')
+    );
   if (target.kind === 'floor')
     return (
       'roomId' in command &&
@@ -175,7 +188,9 @@ export function scopedEditMemory(memory: EditMemory, target: EditTarget): EditMe
       .filter(
         (turn) =>
           target.kind === 'house' ||
-          (turn.target.kind === target.kind && turn.target.id === target.id) ||
+          (turn.target.kind === target.kind &&
+            turn.target.id === target.id &&
+            turn.target.side === target.side) ||
           (turn.revisionId !== null && related.has(turn.revisionId)),
       )
       .slice(-8),
@@ -183,6 +198,8 @@ export function scopedEditMemory(memory: EditMemory, target: EditTarget): EditMe
 }
 
 export function snapshotFor(building: Building, target: EditTarget): ElementSnapshot | null {
+  if (target.kind === 'roof' && building.roof.id === target.id)
+    return structuredClone({ kind: 'roof', id: target.id, value: building.roof });
   if (target.kind === 'object') {
     const value = building.objects.find((item) => item.id === target.id);
     return value ? structuredClone({ kind: 'object', id: value.id, value }) : null;

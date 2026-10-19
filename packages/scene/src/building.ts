@@ -25,6 +25,13 @@ export const staircaseSchema = z.strictObject({
   risers: z.number().int().min(2).max(100),
   material: materialSchema,
 });
+export const roofSchema = z.strictObject({
+  id: idSchema,
+  kind: z.enum(['flat', 'gable']),
+  pitch: coordinateSchema.min(0).max(Math.PI / 3),
+  overhang: coordinateSchema.nonnegative(),
+  material: materialSchema,
+});
 export const buildingModelSchema = z.strictObject({
   schemaVersion: z.literal(1),
   units: z.literal('metres'),
@@ -35,13 +42,7 @@ export const buildingModelSchema = z.strictObject({
   stairs: z.array(staircaseSchema),
   objects: z.array(sceneObjectSchema),
   rules: z.array(sceneRuleSchema).max(32).optional(),
-  roof: z.strictObject({
-    id: idSchema,
-    kind: z.enum(['flat', 'gable']),
-    pitch: coordinateSchema.min(0).max(Math.PI / 3),
-    overhang: coordinateSchema.nonnegative(),
-    material: materialSchema,
-  }),
+  roof: roofSchema,
 });
 
 export type Building = z.infer<typeof buildingModelSchema>;
