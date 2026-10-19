@@ -137,14 +137,15 @@ and the client checks that the scene has not changed before applying them. Item 
 can only affect the selected entity; house chat can change finishes or devices across
 the current building. Drag or swipe to look around, then select a floor ring to travel
 to a clear spot. Navigation uses named room views, doorways and stair landings, updated after edits. Floor rings are useful standing views;
-door icons open and enter the adjoining room, and stair rings mark the real steps. Up to three
-separated markers appear in the scene. Every reachable adjoining doorway and the current floor's
-stair route remains available in a fixed row at the bottom, including when its world marker is visible.
-Single-door rooms explicitly name their exit; stair controls appear first and use fixed up/down icons.
+door handles show a small Click to open hint, and stair rings mark the real steps. Up to three
+separated floor/stair markers appear in the scene. Private rooms have one canonical Exit to … action,
+chosen toward the hall or shared circulation space. Hubs show stair actions; other rooms are entered
+through their handles or the map. Stair controls use fixed up/down icons.
 The same walkthrough controller drives dots, door clicks and map trips. It turns before advancing,
 opens the selected door immediately when its swing is safe, crosses using Rapier, and settles the camera
-on a visible interaction. Door clicks stop just inside the room, while room dots and map trips use room viewpoints.
-The handle depresses before the leaf swings, with opening completed in 0.4 seconds; automatic closure runs after arrival. Stops stay outside door swings, and the controller replans when the building changes.
+on a visible interaction ahead, excluding the door just crossed. Door clicks stop just inside the room, while room dots and map trips use room viewpoints.
+The handle depresses before the leaf swings; the unobstructed animation completes in 0.4 seconds. Automatic closure runs after arrival.
+Nearby clear door crossings use a direct, collision-checked route. Walking retains the edit validator's collision clearance; tight saved positions first move clear before opening a door. Engine navigation caches reuse openable topology only when compiled physical geometry and walker options match; changed door leaves still rebuild current-state routes. Stops stay outside door swings, and the controller replans when the building changes.
 The compact map shows rooms, walls, doors, stairs and the current position; the expanded plan adds furniture. Door leaves follow their actual open or closed state. The small floor plan opens the larger view without a duplicate toolbar icon.
 Choose a room on either floor to follow a validated walking route there.
 Obstructing open leaves are closed only after moving clear of their swing. Tour-opened doors return to their original state after the player clears their swing. Explicit manual door changes are preserved; saved navigation-owned openings are recovered from edit history. Stair arrows handle the full climb or descent with one click;
