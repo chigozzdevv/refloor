@@ -14,6 +14,7 @@ import { physicsSession } from '@/shared/navigation/physics-session';
 import { useProject } from '@/shared/scene/scene-store';
 import { belongsToDoor, isVisible } from '@/shared/editor/picking';
 import { doorwayBearing } from '@/shared/navigation/marker-facing';
+import { useExperience } from '@/shared/scene/experience-store';
 
 const chevron = new Shape();
 chevron.moveTo(-0.075, -0.035);
@@ -119,6 +120,7 @@ function Marker({ destination, primary }: { destination: Destination; primary: b
 }
 
 export function NavigationMarkers() {
+  const stage = useExperience((state) => state.stage);
   const { compiled, mode, selection, interacting } = useProject();
   const { request, mapOpen } = useNavigation();
   const all = useMemo(() => destinations(compiled), [compiled]);
@@ -129,7 +131,7 @@ export function NavigationMarkers() {
     raycaster = useMemo(() => new Raycaster(), []);
   useFrame(({ camera, scene, size }, delta) => {
     elapsed.current += delta;
-    if (elapsed.current < 0.16 || mode !== 'walk') return;
+    if (elapsed.current < 0.16 || mode !== 'walk' || stage !== 'ready') return;
     elapsed.current = 0;
     const player = physicsSession.current?.player;
     if (!player) return;
@@ -246,7 +248,8 @@ export function NavigationMarkers() {
         : layout,
     );
   });
-  if (mode !== 'walk' || request || selection || interacting || mapOpen) return null;
+  if (stage !== 'ready' || mode !== 'walk' || request || selection || interacting || mapOpen)
+    return null;
   return visible.map((destination, index) => (
     <Marker
       key={`${compiled.building.revision}:${destination.id}`}

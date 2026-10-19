@@ -25,6 +25,13 @@ import { doorRoute } from '@/shared/navigation/door-route';
 import { arrivalView, entranceArrival } from '@/shared/navigation/arrival';
 import { exteriorCamera } from '@/shared/scene/exterior';
 import { TourDoors } from '@/shared/navigation/tour-doors';
+import { useExperience } from '@/shared/scene/experience-store';
+import {
+  applySceneView,
+  flushSceneView,
+  rememberSceneView,
+  takeSceneView,
+} from '@/shared/scene/view';
 
 export function NavigationControls() {
   const { camera, gl, size } = useThree(),
@@ -35,6 +42,7 @@ export function NavigationControls() {
     interacting = useProject((state) => state.interacting),
     selection = useProject((state) => state.selection);
   const overview = useNavigation((state) => state.overview);
+  const stage = useExperience((state) => state.stage);
   const outside = exteriorCamera(compiled, size.width / size.height);
   const exteriorPosition = outside.position;
   const previous = useRef(mode),
@@ -55,10 +63,38 @@ export function NavigationControls() {
     right = useRef(new Vector3()),
     target = useRef(new Vector3());
   useEffect(() => {
+    if (stage !== 'ready') {
+      framing.current = null;
+      return;
+    }
+    const savedView = takeSceneView(compiled);
+    if (savedView) {
+      applySceneView(savedView, camera, controls.current);
+      const world = physicsSession.current;
+      if (
+        savedView.player &&
+        world?.compiled === compiled &&
+        Math.hypot(
+          world.feet.x - savedView.player.position.x,
+          world.feet.y - savedView.player.position.y,
+          world.feet.z - savedView.player.position.z,
+        ) > 0.03
+      )
+        world.teleport(savedView.player.position);
+      walkInput.yaw = camera.rotation.y;
+      walkInput.pitch = camera.rotation.x;
+      resetWalkInput();
+      transition.current = null;
+      route.current = null;
+      stairs.current = null;
+      tourDoors.current.clear();
+      previous.current = mode;
+      framing.current = { mode, buildingId: compiled.building.id, epoch };
+      return;
+    }
     const framed = framing.current;
     if (
-      mode === 'walk' &&
-      framed?.mode === 'walk' &&
+      framed?.mode === mode &&
       framed.buildingId === compiled.building.id &&
       framed.epoch === epoch
     )
@@ -111,8 +147,11 @@ export function NavigationControls() {
     resetWalkInput();
     stairs.current = null;
     previous.current = mode;
-  }, [camera, mode, compiled.building.id, epoch, size.width, size.height]);
+  }, [camera, mode, stage, compiled.building.id, epoch, size.width, size.height]);
+  const previousOverview = useRef(overview);
   useEffect(() => {
+    if (previousOverview.current === overview) return;
+    previousOverview.current = overview;
     if (mode === 'orbit') {
       camera.position.set(exteriorPosition.x, exteriorPosition.y, exteriorPosition.z);
       controls.current?.target.set(outside.target.x, outside.target.y, outside.target.z);
@@ -158,6 +197,7 @@ export function NavigationControls() {
     const down = (event: KeyboardEvent) => {
       if (
         isTyping(event.target) ||
+        useExperience.getState().stage !== 'ready' ||
         useProject.getState().mode !== 'walk' ||
         useNavigation.getState().mapOpen
       )
@@ -187,6 +227,7 @@ export function NavigationControls() {
     const pointerDown = (event: PointerEvent) => {
       if (
         useProject.getState().mode === 'walk' &&
+        useExperience.getState().stage === 'ready' &&
         !useProject.getState().interacting &&
         event.button === 0
       ) {
@@ -196,7 +237,13 @@ export function NavigationControls() {
       }
     };
     const pointerMove = (event: PointerEvent) => {
-      if (!pointer || pointer.id !== event.pointerId || useProject.getState().interacting) return;
+      if (
+        !pointer ||
+        pointer.id !== event.pointerId ||
+        useProject.getState().interacting ||
+        useExperience.getState().stage !== 'ready'
+      )
+        return;
       if (!(event.buttons & 1)) {
         pointer = null;
         return;
@@ -240,7 +287,19 @@ export function NavigationControls() {
       resetWalkInput();
     };
   }, [gl]);
+  useEffect(() => {
+    const hidden = () => {
+      if (document.visibilityState === 'hidden') flushSceneView();
+    };
+    window.addEventListener('pagehide', flushSceneView);
+    document.addEventListener('visibilitychange', hidden);
+    return () => {
+      window.removeEventListener('pagehide', flushSceneView);
+      document.removeEventListener('visibilitychange', hidden);
+    };
+  }, []);
   useFrame((_state, delta) => {
+    if (stage !== 'ready') return;
     camera.getWorldDirection(forward.current);
     forward.current.y = 0;
     forward.current.normalize();
@@ -417,12 +476,44 @@ export function NavigationControls() {
     if (nextFloor && nextFloor !== useProject.getState().floorId)
       useProject.getState().setWalkFloor(nextFloor);
   }, -1);
+  useFrame(({ clock }) => {
+    if (stage !== 'ready' || transition.current !== null) return;
+    const state = useProject.getState(),
+      world = physicsSession.current;
+    if (state.mode === 'walk' && world?.compiled !== state.compiled) return;
+    const player = world?.compiled === state.compiled ? world.player : null;
+    rememberSceneView(
+      {
+        version: 1,
+        buildingId: state.compiled.building.id,
+        mode: state.mode,
+        floorId: state.mode === 'walk' && player ? player.floorId : state.floorId,
+        lighting: state.lighting,
+        cutaway: state.cutaway,
+        camera: {
+          position: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+          rotation: { x: camera.rotation.x, y: camera.rotation.y, z: camera.rotation.z },
+          fov: camera instanceof PerspectiveCamera ? camera.fov : 45,
+        },
+        target:
+          mode === 'orbit' && controls.current
+            ? {
+                x: controls.current.target.x,
+                y: controls.current.target.y,
+                z: controls.current.target.z,
+              }
+            : null,
+        player,
+      },
+      clock.elapsedTime * 1000,
+    );
+  }, -0.2);
   return mode === 'orbit' ? (
     <OrbitControls
       ref={controls}
       makeDefault
       target={[outside.target.x, outside.target.y, outside.target.z]}
-      enabled={!interacting}
+      enabled={stage === 'ready' && !interacting}
       minDistance={3}
       maxDistance={Math.max(35, outside.distance * 2)}
       maxPolarAngle={Math.PI / 2 - 0.07}

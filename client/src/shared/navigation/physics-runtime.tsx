@@ -3,6 +3,7 @@ import type { Point3 } from '@refloor/engine';
 import type { CharacterWorld } from '@/shared/navigation/physics-world';
 import { physicsSession } from '@/shared/navigation/physics-session';
 import { useProject } from '@/shared/scene/scene-store';
+import { viewSession } from '@/shared/scene/view';
 
 export function PhysicsRuntime() {
   const compiled = useProject((state) => state.compiled),
@@ -16,7 +17,10 @@ export function PhysicsRuntime() {
       last.current = undefined;
       house.current = epoch;
     }
-    const position = last.current;
+    const view = viewSession.pending;
+    const position =
+      last.current ??
+      (view?.buildingId === compiled.building.id ? view.player?.position : undefined);
     void import('@/shared/navigation/physics-world')
       .then(async ({ CharacterWorld, initializePhysics }) => {
         await initializePhysics();

@@ -13,6 +13,7 @@ import type { RemoteLink } from '@/shared/scene/remote';
 import { navigationFor } from '@/shared/navigation/destinations';
 import { createEditMemory } from '@refloor/scene/edit-memory';
 import type { EditMemory } from '@refloor/scene/edit-memory';
+import { clearSceneView, restoreSceneView } from '@/shared/scene/view';
 
 export type ViewMode = 'entry' | 'orbit' | 'walk';
 export type ProjectState = EditorState & {
@@ -47,6 +48,7 @@ const restored = restoreDraft();
 const initial =
   restored.compiled ??
   compileBuilding(createHouse({ id: 'linden-house', name: 'The Linden House', storeys: 2 }));
+const restoredView = restored.compiled ? restoreSceneView(initial) : null;
 let noticeTimer: ReturnType<typeof setTimeout> | undefined;
 
 export const useProject = create<ProjectState>((set, get, store) => ({
@@ -70,6 +72,7 @@ export const useProject = create<ProjectState>((set, get, store) => ({
     }
   },
   loadProject: (compiled, remote, memory) => {
+    clearSceneView();
     set({
       sceneReady: false,
       compiled,
@@ -90,11 +93,11 @@ export const useProject = create<ProjectState>((set, get, store) => ({
   past: restored.past,
   future: restored.future,
   memory: restored.memory ?? createEditMemory(initial.building),
-  floorId: entryPose(initial).floorId,
-  mode: 'entry',
-  lighting: 'evening',
+  floorId: restoredView?.floorId ?? entryPose(initial).floorId,
+  mode: restoredView?.mode ?? 'entry',
+  lighting: restoredView?.lighting ?? 'evening',
   quality: 'high',
-  cutaway: false,
+  cutaway: restoredView?.cutaway ?? false,
   notice: restored.historyWarning,
   notify: (notice) => {
     if (noticeTimer) clearTimeout(noticeTimer);
@@ -167,6 +170,7 @@ export const useProject = create<ProjectState>((set, get, store) => ({
       ...(depth === undefined ? {} : { depth }),
     };
     const compiled = compileBuilding(createHouse(options));
+    clearSceneView();
     set({
       compiled,
       sceneReady: false,

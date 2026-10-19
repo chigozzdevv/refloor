@@ -14,7 +14,7 @@ import { useNavigation } from '@/shared/navigation/navigation-store';
 
 export function App() {
   const { sceneReady, mode, lighting, saved } = useProject();
-  const { stage, compose, reveal, skip } = useExperience();
+  const { stage, compose, resume, reveal, skip } = useExperience();
   const [newHome, setNewHome] = useState(false),
     [libraryOpen, setLibraryOpen] = useState(false);
   useCommandShortcuts();
@@ -39,8 +39,8 @@ export function App() {
           minimal={stage !== 'ready'}
           openNewHome={() => {
             useNavigation.getState().stop();
+            useNavigation.getState().setMapOpen(false);
             useProject.getState().select(null);
-            useProject.getState().setMode('entry');
             compose();
           }}
           openLibrary={() => setLibraryOpen(true)}
@@ -50,10 +50,7 @@ export function App() {
           <HousePrompt
             canResume={saved}
             close={reveal}
-            resume={() => {
-              useProject.getState().setMode('entry');
-              reveal();
-            }}
+            resume={resume}
             templates={() => setNewHome(true)}
           />
         )}
