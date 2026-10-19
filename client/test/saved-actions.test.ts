@@ -28,7 +28,15 @@ describe('universal saved scene actions', () => {
   it('runs a multi-device door rule atomically, and round-trips through undo, redo and export', () => {
     const state = initial(),
       building = state.compiled.building;
-    const lights = building.objects.filter((object) => object.placement === 'exterior');
+    const lights = building.objects.filter(
+      (object) =>
+        object.placement === 'exterior' &&
+        object.behaviours.some((value) => value.kind === 'light'),
+    );
+    const unpowered = editDocument(
+      state,
+      lights.map((light) => ({ type: 'set-light', objectId: light.id, state: { powered: false } })),
+    );
     const tv = building.objects.find((object) => object.kind === 'television')!;
     const rule: SceneRule = {
       id: 'welcome',
@@ -45,14 +53,14 @@ describe('universal saved scene actions', () => {
         { type: 'set-television', objectId: tv.id, state: { powered: true, volume: 0.2 } },
       ] as SceneRule['actions'],
     };
-    const configured = editDocument(state, [{ type: 'set-rules', rules: [rule] }]);
+    const configured = editDocument(unpowered, [{ type: 'set-rules', rules: [rule] }]);
     expect(lights.every((light) => !power(configured.compiled.building, light.id))).toBe(true);
     const opened = editDocument(configured, [
       { type: 'set-door', doorId: 'ground/entrance', open: true },
     ]);
     expect(lights.every((light) => power(opened.compiled.building, light.id))).toBe(true);
     expect(power(opened.compiled.building, tv.id)).toBe(true);
-    expect(opened.past.at(-1)!.revision.commands).toHaveLength(4);
+    expect(opened.past.at(-1)!.revision.commands).toHaveLength(lights.length + 2);
     const undo = reverseDocument(opened, 'undo');
     expect(fingerprintBuilding(undo.compiled.building)).toBe(
       fingerprintBuilding(configured.compiled.building),
@@ -115,7 +123,11 @@ describe('universal saved scene actions', () => {
   it('runs chains once per rule, ignores no-op power changes and bounds cycles', () => {
     const building = initial().compiled.building;
     const tv = building.objects.find((object) => object.kind === 'television')!;
-    const light = building.objects.find((object) => object.placement === 'exterior')!;
+    const light = building.objects.find(
+      (object) =>
+        object.placement === 'exterior' &&
+        object.behaviours.some((value) => value.kind === 'light'),
+    )!;
     const rules: SceneRule[] = [
       {
         id: 'tv-lights',

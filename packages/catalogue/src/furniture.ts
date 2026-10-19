@@ -10,6 +10,8 @@ export type FurnitureRenderer =
   | 'television'
   | 'pendant'
   | 'floodlight'
+  | 'wall-light'
+  | 'outdoor-planter'
   | 'cabinet'
   | 'plant'
   | 'kitchen'
@@ -44,6 +46,27 @@ export const catalogue: CatalogueEntry[] = [
     behaviours: [{ kind: 'light', state: { powered: false, intensity: 20, color: '#ffe6c4' } }],
     renderer: 'floodlight',
     description: 'An adjustable exterior light for the entrance and compound.',
+  },
+  {
+    assetId: 'catalogue/wall-light',
+    label: 'Warm up and down wall light',
+    kind: 'light',
+    dimensions: { width: 0.2, height: 0.44, depth: 0.2 },
+    materials: { body: finishes.black },
+    behaviours: [{ kind: 'light', state: { powered: true, intensity: 6, color: '#ffd0a3' } }],
+    renderer: 'wall-light',
+    description: 'A weatherproof lantern with warm, shielded up and down wall wash beams.',
+  },
+  {
+    assetId: 'catalogue/outdoor-planter',
+    label: 'Entrance planter',
+    kind: 'decor',
+    dimensions: { width: 1.2, height: 1.22, depth: 0.72 },
+    materials: { body: finish('#a8a798', null, 0.92) },
+    behaviours: [],
+    renderer: 'outdoor-planter',
+    description:
+      'A stone planter with real scanned foliage, suitable for the entrance and compound.',
   },
   {
     assetId: 'catalogue/sofa',

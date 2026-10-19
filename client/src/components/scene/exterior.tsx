@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
-import { RoundedBox, useGLTF } from '@react-three/drei';
-import { Box3, BufferGeometry, Float32BufferAttribute, Mesh, Quaternion, Vector3 } from 'three';
+import { RoundedBox } from '@react-three/drei';
+import { BufferGeometry, Float32BufferAttribute, Quaternion, Vector3 } from 'three';
 import type { CompiledBuilding, Point3 } from '@refloor/engine';
 import { useProject } from '@/shared/scene/scene-store';
 import { exteriorLayout } from '@/shared/scene/exterior';
@@ -72,62 +72,12 @@ function Beam({
   );
 }
 
-function Planting() {
-  const { scene } = useGLTF('/models/furniture/potted_plant_02/potted_plant_02_1k.gltf', false);
-  const model = useMemo(() => {
-    const clone = scene.clone(true),
-      box = new Box3().setFromObject(clone),
-      size = box.getSize(new Vector3()),
-      centre = box.getCenter(new Vector3());
-    const scale = 1.05 / size.y;
-    clone.scale.setScalar(scale);
-    clone.position.set(-centre.x * scale, 0.12 - box.min.y * scale, -centre.z * scale);
-    clone.traverse((child) => {
-      if (child instanceof Mesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-      }
-    });
-    return clone;
-  }, [scene]);
-  return <primitive object={model} dispose={null} />;
-}
-
-function Planter({ position, rotation }: { position: Point3; rotation: number }) {
-  return (
-    <group position={[position.x, position.y, position.z]} rotation={[0, rotation, 0]}>
-      <RoundedBox
-        args={[1.2, 0.42, 0.72]}
-        radius={0.04}
-        smoothness={3}
-        position={[0, 0.21, 0]}
-        castShadow
-        receiveShadow
-      >
-        <meshStandardMaterial color="#a8a798" roughness={0.95} />
-      </RoundedBox>
-      <mesh position={[0, 0.43, 0]}>
-        <boxGeometry args={[1.08, 0.02, 0.6]} />
-        <meshStandardMaterial color="#373b2b" roughness={1} />
-      </mesh>
-      <Planting />
-    </group>
-  );
-}
-
 export function Exterior() {
-  const compiled = useProject((state) => state.compiled),
-    evening = useProject((state) => state.lighting === 'evening');
-  return <ExteriorModel compiled={compiled} evening={evening} />;
+  const compiled = useProject((state) => state.compiled);
+  return <ExteriorModel compiled={compiled} />;
 }
 
-export function ExteriorModel({
-  compiled,
-  evening = false,
-}: {
-  compiled: CompiledBuilding;
-  evening?: boolean;
-}) {
+export function ExteriorModel({ compiled }: { compiled: CompiledBuilding }) {
   const site = useMemo(() => exteriorLayout(compiled), [compiled]);
   const top = site.top.footprint,
     roof = compiled.building.roof;
@@ -294,30 +244,9 @@ export function ExteriorModel({
         </mesh>
         <mesh position={[0, site.door.height + 0.195, 0.5]}>
           <boxGeometry args={[site.door.width + 0.85, 0.012, 0.8]} />
-          <meshStandardMaterial
-            color="#b49b71"
-            emissive="#ffd8a0"
-            emissiveIntensity={evening ? 0.35 : 0}
-            roughness={0.7}
-          />
+          <meshStandardMaterial color="#b49b71" roughness={0.7} />
         </mesh>
-        {evening && (
-          <pointLight
-            position={[0, site.door.height + 0.1, 0.7]}
-            intensity={7}
-            distance={5}
-            decay={2}
-            color="#ffe0af"
-          />
-        )}
       </group>
-      {[-1, 1].map((side) => (
-        <Planter
-          key={side}
-          position={site.entrancePoint(side * (site.door.width / 2 + 1.3), 0.8, -0.145)}
-          rotation={site.rotation}
-        />
-      ))}
     </group>
   );
 }

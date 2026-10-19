@@ -1,6 +1,7 @@
 import { contains, rotate } from '@refloor/engine/math';
 import { nearestNode, reachableNodes } from '@refloor/engine/navigation/connectivity';
 import type { EngineIssue, Navigation, NavigationPoint } from '@refloor/engine/types';
+import { exteriorInteractionAccess } from '@refloor/engine/navigation/exterior';
 
 export function entrancePoints(navigation: Navigation): NavigationPoint[] {
   const { compiled } = navigation,
@@ -66,6 +67,11 @@ export function checkReachability(navigation: Navigation): EngineIssue[] {
           message: 'Room has no reachable usable centre area',
         });
     }
+  const exteriorAccess = compiled.instances.some(
+    (instance) => instance.object.placement === 'exterior',
+  )
+    ? exteriorInteractionAccess(navigation, reached)
+    : null;
   for (const instance of compiled.instances) {
     const object = instance.object,
       floor = compiled.building.floors.find((value) => value.id === object.floorId);
@@ -109,6 +115,7 @@ export function checkReachability(navigation: Navigation): EngineIssue[] {
             z: object.position.z + delta.z,
           },
         };
+      if (object.placement === 'exterior') return exteriorAccess?.(point.position) ?? false;
       const index = nearestNode(navigation, point);
       return index !== null && reached.has(index);
     });

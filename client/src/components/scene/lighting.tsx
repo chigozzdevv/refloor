@@ -1,6 +1,7 @@
 import { Environment, SoftShadows } from '@react-three/drei';
 import { Bloom, EffectComposer, N8AO, Outline, ToneMapping } from '@react-three/postprocessing';
 import { ToneMappingMode } from 'postprocessing';
+import { LightBudget } from '@/components/scene/light-budget';
 import { useProject } from '@/shared/scene/scene-store';
 import { useLayoutEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
@@ -35,6 +36,7 @@ export function Lighting() {
   const day = lighting === 'day';
   return (
     <>
+      <LightBudget />
       <ShadowUpdates />
       <Environment
         files="/textures/environment/daylight.hdr"

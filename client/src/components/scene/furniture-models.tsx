@@ -8,6 +8,8 @@ import { useProject } from '@/shared/scene/scene-store';
 import { TelevisionScreen } from '@/components/objects/television';
 import { RoomFixtures } from '@/components/scene/room-fixtures';
 import { Floodlight } from '@/components/objects/floodlight';
+import { WallLight } from '@/components/objects/wall-light';
+import { OutdoorPlanter } from '@/components/objects/outdoor-planter';
 
 function Bed({ object }: { object: SceneObject }) {
   const body = useSurface(object.materials.body ?? finishes.linen),
@@ -153,8 +155,15 @@ function Pendant({ object }: { object: SceneObject }) {
       </mesh>
       {powered && (
         <pointLight
-          castShadow={quality === 'high'}
-          shadow-mapSize={[512, 512]}
+          castShadow
+          userData={{
+            lightBudget: {
+              id: object.id,
+              floorId: object.floorId,
+              exterior: object.placement === 'exterior',
+            },
+          }}
+          shadow-mapSize={quality === 'high' ? [512, 512] : [256, 256]}
           shadow-camera-near={0.08}
           shadow-bias={-0.00015}
           shadow-normalBias={0.015}
@@ -206,6 +215,8 @@ export function FurnitureModels({
   if (renderer === 'cabinet') return <Cabinet object={object} />;
   if (renderer === 'pendant') return <Pendant object={object} />;
   if (renderer === 'floodlight') return <Floodlight object={object} />;
+  if (renderer === 'wall-light') return <WallLight object={object} />;
+  if (renderer === 'outdoor-planter') return <OutdoorPlanter object={object} />;
   if (renderer === 'television') return <Television object={object} />;
   return <RoomFixtures object={object} renderer={renderer} />;
 }
