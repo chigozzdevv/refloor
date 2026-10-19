@@ -132,7 +132,7 @@ as one change. It upgrades legacy fittings and adds room essentials where clear 
 The scene has no persistent inspector, left toolbar, floor buttons
 or statistics overlays. Clicking a door or its handle starts a complete trip through it: approach, open, cross and settle inside.
 Shift+click, right-click, or selecting it in overview opens door editing. Clicking other items, walls or floors opens a small chat anchored
-beside it with a speech-bubble tail and a selection outline. Suggestions are collapsed behind a help icon; selecting one fills the composer for review before sending. GPT-6 Luna interprets supported changes; the server validates commands and placement,
+beside it with a speech-bubble tail and a selection outline. Exterior wall chat shows brick and marble finish suggestions; other suggestions are collapsed behind a help icon. Selecting one fills the composer for review before sending. GPT-6 Luna interprets supported changes; the server validates commands and placement,
 and the client checks that the scene has not changed before applying them. Item chat
 can only affect the selected entity; house chat can change finishes or devices across
 the current building. Drag or swipe to look around, then select a floor ring to travel
@@ -143,9 +143,9 @@ Private rooms name their main exit toward the hall or shared circulation space w
 The same walkthrough controller drives dots, door clicks and map trips. It turns before advancing,
 opens the selected door immediately when its swing is safe, crosses using Rapier, and settles the camera
 on a visible interaction ahead, excluding the door just crossed. Door clicks stop just inside the room, while room dots and map trips use room viewpoints.
-The handle depresses before the leaf swings; the unobstructed animation completes in 0.4 seconds. Automatic closure runs after arrival.
+The entrance is closed when its entrance view opens, including old saved open states. Its opening hint sits on the handle, with no floor-level opening button. The handle depresses before the leaf swings; the unobstructed animation completes in 0.4 seconds. Automatic closure runs after arrival.
 Nearby clear door crossings use a direct, collision-checked route. Walking retains the edit validator's collision clearance; tight saved positions first move clear before opening a door. Engine navigation caches reuse openable topology only when compiled physical geometry and walker options match; changed door leaves still rebuild current-state routes. Stops stay outside door swings, and the controller replans when the building changes.
-The compact map shows rooms, walls, doors, stairs and the current position; the expanded plan adds furniture. Door leaves follow their actual open or closed state. The small floor plan opens the larger view without a duplicate toolbar icon.
+The compact map shows rooms, walls, doors, stairs and the current position; the expanded plan adds furniture. Door leaves follow their actual open or closed state. Click a room on either map to walk there; the small expand button opens the larger plan and its floor tabs. Compound routes connect the outside position to the entrance and continue through the house.
 Choose a room on either floor to follow a validated walking route there.
 Obstructing open leaves are closed only after moving clear of their swing. Tour-opened doors return to their original state after the player clears their swing. Explicit manual door changes are preserved; saved navigation-owned openings are recovered from edit history. Stair arrows handle the full climb or descent with one click;
 the camera follows the turn and smooths changes in height. Stair alignment releases at each landing so held forward movement continues onto the floor; turning or moving sideways also gives control back immediately. Walking across a landing does not start another climb unless the person faces the flight. A centered, translucent stop icon appears during
