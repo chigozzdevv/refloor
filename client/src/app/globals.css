@@ -555,12 +555,6 @@ textarea:focus-visible,
 .journey-stop:hover {
   background: #ffffff24;
 }
-.entry-actions {
-  position: absolute;
-  left: 50%;
-  bottom: 30px;
-  transform: translateX(-50%);
-}
 .button {
   display: inline-flex;
   align-items: center;

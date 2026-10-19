@@ -11,6 +11,56 @@ import { selectedContext } from '@/shared/editor/chat-context';
 beforeAll(initializePhysics);
 
 describe('scene and editor state integration', () => {
+  it('closes a saved open entrance before showing it and opens only on entry action', () => {
+    const previous = useProject.getState(),
+      building = createHouse({ id: 'closed-entrance', name: 'Closed entrance', storeys: 1 });
+    const entrance = entryPose(compileBuilding(building));
+    for (const wall of building.floors[0]!.walls)
+      for (const opening of wall.openings)
+        if (opening.kind === 'door' && opening.id === entrance.doorId) opening.state.open = true;
+    try {
+      useProject.getState().loadProject(compileBuilding(building));
+      useProject.getState().setSceneReady(true);
+      const state = useProject.getState();
+      expect(state.compiled.doors.find((door) => door.id === entrance.doorId)?.open).toBe(false);
+      expect(state.past.at(-1)?.source).toBe('navigation');
+      const count = state.past.length;
+      state.setSceneReady(true);
+      expect(useProject.getState().past).toHaveLength(count);
+      state.enterHome();
+      expect(useProject.getState().mode).toBe('walk');
+      expect(
+        useProject.getState().compiled.doors.find((door) => door.id === entrance.doorId)?.open,
+      ).toBe(true);
+      state.setMode('entry');
+      expect(
+        useProject.getState().compiled.doors.find((door) => door.id === entrance.doorId)?.open,
+      ).toBe(false);
+    } finally {
+      useProject.setState(previous, true);
+    }
+  });
+
+  it('preserves an explicitly open door when a walking view becomes ready', () => {
+    const previous = useProject.getState(),
+      compiled = compileBuilding(
+        createHouse({ id: 'resume-open-door', name: 'Resume open door', storeys: 1 }),
+      ),
+      entry = entryPose(compiled);
+    try {
+      useProject.getState().loadProject(compiled);
+      useProject.getState().setMode('walk');
+      expect(useProject.getState().setDoor(entry.doorId, true)).toBe(true);
+      useProject.getState().setSceneReady(true);
+      expect(
+        useProject.getState().compiled.doors.find((door) => door.id === entry.doorId)?.open,
+      ).toBe(true);
+      expect(useProject.getState().past.at(-1)?.source).toBe('manual');
+    } finally {
+      useProject.setState(previous, true);
+    }
+  });
+
   it('rejects a blocked door swing without changing its saved state or chat action', () => {
     const previous = useProject.getState();
     const compiled = compileBuilding(

@@ -54,7 +54,10 @@ let noticeTimer: ReturnType<typeof setTimeout> | undefined;
 
 export const useProject = create<ProjectState>((set, get, store) => ({
   sceneReady: false,
-  setSceneReady: (sceneReady) => set({ sceneReady }),
+  setSceneReady: (sceneReady) => {
+    if (sceneReady && get().mode === 'entry') get().setMode('entry');
+    set({ sceneReady });
+  },
   compiled: initial,
   projectEpoch: 0,
   saveError: restored.error,
@@ -113,7 +116,18 @@ export const useProject = create<ProjectState>((set, get, store) => ({
     if (mode === 'entry') {
       const entry = entryPose(state.compiled);
       physicsSession.current?.teleport(entry.inside);
-      set({ floorId: entry.floorId });
+      set({
+        mode,
+        floorId: entry.floorId,
+        selection: null,
+        focusRequest: null,
+      });
+      if (state.compiled.doors.find((door) => door.id === entry.doorId)?.open)
+        get().edit([{ type: 'set-door', doorId: entry.doorId, open: false }], {
+          source: 'navigation',
+          label: 'Close entrance',
+        });
+      return;
     }
     if (
       mode === 'walk' &&
