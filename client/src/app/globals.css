@@ -767,23 +767,6 @@ select option {
   font-size: 10px;
   color: var(--muted);
 }
-.home-dimensions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 8px;
-}
-.create-dialog .home-footprint {
-  margin: 22px 0 0;
-  color: var(--ink);
-}
-.create-dialog .home-dimension-note {
-  margin: 10px 0 0;
-  font-size: 11px;
-}
-.home-dimensions input[aria-invalid='true'] {
-  border-color: #d39c87;
-}
 @media (max-width: 480px) {
   .home-options {
     grid-template-columns: 1fr;
