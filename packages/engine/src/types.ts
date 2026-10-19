@@ -31,6 +31,7 @@ export type MeshPart = {
   role: PartRole;
   material: Material;
   mesh: MeshData;
+  exterior?: { side: 1 | -1; material: Material };
   collider: Collider;
 };
 export type WalkSurface = {

@@ -16,6 +16,8 @@ function nearbyRooms(floor: Floor, point: Pick<Position, 'x' | 'z'>) {
 
 export function targetIdentity(building: Building, target: ChatTarget, point?: Position) {
   if (target.kind === 'house') return { label: 'House', location: building.name };
+  if (target.kind === 'roof' && building.roof.id === target.id)
+    return { label: 'Roof', location: 'Exterior' };
   if (target.kind === 'object') {
     const object = building.objects.find((item) => item.id === target.id);
     if (!object) return null;
@@ -48,6 +50,7 @@ export function targetIdentity(building: Building, target: ChatTarget, point?: P
     }
     for (const wall of floor.walls) {
       if (target.kind === 'wall' && wall.id === target.id) {
+        if (target.side === 'exterior') return { label: 'Exterior wall', location: floor.name };
         const rooms = nearbyRooms(
           floor,
           point ?? { x: (wall.start.x + wall.end.x) / 2, z: (wall.start.z + wall.end.z) / 2 },

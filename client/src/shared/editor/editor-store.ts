@@ -23,7 +23,8 @@ function checkDoorSwings(before: CompiledBuilding, after: CompiledBuilding, walk
 }
 
 export type Selection = {
-  kind: 'object' | 'wall' | 'floor' | 'door';
+  kind: 'object' | 'wall' | 'floor' | 'door' | 'roof';
+  side?: 'exterior';
   id: string;
   point?: { x: number; y: number; z: number };
 } | null;

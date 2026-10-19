@@ -47,7 +47,15 @@ function beforeCommand(
         break;
       }
     }
-  } else if (before.kind === 'wall' && inverse.type === 'set-wall-material')
+  } else if (before.kind === 'wall' && inverse.type === 'set-wall-material') {
+    before.value.material = inverse.material;
+    if (inverse.exteriorMaterial === null) delete before.value.exteriorMaterial;
+    else if (inverse.exteriorMaterial !== undefined)
+      before.value.exteriorMaterial = inverse.exteriorMaterial;
+  } else if (before.kind === 'wall' && inverse.type === 'set-wall-exterior-material') {
+    if (inverse.material === null) delete before.value.exteriorMaterial;
+    else before.value.exteriorMaterial = inverse.material;
+  } else if (before.kind === 'roof' && inverse.type === 'set-roof-material')
     before.value.material = inverse.material;
   else if (before.kind === 'floor' && inverse.type === 'set-room-floor-material')
     before.value.floorMaterial = inverse.material;
@@ -93,7 +101,13 @@ function propertyOf(
     return property === 'open' ? snapshot.value.state.open : undefined;
   else {
     const material =
-      snapshot.kind === 'wall' ? snapshot.value.material : snapshot.value.floorMaterial;
+      snapshot.kind === 'wall'
+        ? surface === 'exterior'
+          ? (snapshot.value.exteriorMaterial ?? snapshot.value.material)
+          : snapshot.value.material
+        : snapshot.kind === 'roof'
+          ? snapshot.value.material
+          : snapshot.value.floorMaterial;
     if (property === 'appearance') return material;
     if (property === 'color') return material.color;
   }
@@ -104,7 +118,7 @@ export function restoreElement(
   input: LanguageEditRequest,
   id: string,
   reference: string,
-  surface: 'body' | 'frame' | 'walls' | 'floors' | null,
+  surface: 'body' | 'frame' | 'walls' | 'floors' | 'exterior' | 'roof' | null,
 ): SceneCommand[] {
   const match =
     /^(original|previous)\.(position|rotation|size|appearance|color|power|volume|brightness|light-color|source|open|all)$/.exec(
@@ -117,7 +131,11 @@ export function restoreElement(
   const original = memory.originals.find((item) => item.id === id);
   if (!original) throw new Error('This item has no recorded original state.');
   const property = match[2]!,
-    target = { kind: original.kind, id },
+    target = {
+      kind: original.kind,
+      id,
+      ...(surface === 'exterior' ? { side: 'exterior' as const } : {}),
+    },
     current = snapshotFor(input.building, target);
   let saved: ElementSnapshot | null = match[1] === 'original' ? original : null;
   if (match[1] === 'previous') {
@@ -211,21 +229,48 @@ export function restoreElement(
     }
   } else if (saved.kind === 'door' && (property === 'open' || property === 'all'))
     return [{ type: 'set-door', doorId: id, open: saved.value.state.open }];
-  else if (saved.kind === 'wall' || saved.kind === 'floor') {
-    const savedMaterial = saved.kind === 'wall' ? saved.value.material : saved.value.floorMaterial;
+  else if (saved.kind === 'wall' || saved.kind === 'floor' || saved.kind === 'roof') {
+    const savedMaterial =
+      saved.kind === 'wall'
+        ? surface === 'exterior'
+          ? (saved.value.exteriorMaterial ?? saved.value.material)
+          : saved.value.material
+        : saved.kind === 'roof'
+          ? saved.value.material
+          : saved.value.floorMaterial;
     const currentMaterial =
       current?.kind === 'wall'
-        ? current.value.material
-        : current?.kind === 'floor'
-          ? current.value.floorMaterial
-          : null;
+        ? surface === 'exterior'
+          ? (current.value.exteriorMaterial ?? current.value.material)
+          : current.value.material
+        : current?.kind === 'roof'
+          ? current.value.material
+          : current?.kind === 'floor'
+            ? current.value.floorMaterial
+            : null;
     const material =
       property === 'color' && currentMaterial
         ? { ...currentMaterial, color: savedMaterial.color }
         : savedMaterial;
-    return saved.kind === 'wall'
-      ? [{ type: 'set-wall-material', wallId: id, material }]
-      : [{ type: 'set-room-floor-material', roomId: id, material }];
+    if (saved.kind === 'roof') return [{ type: 'set-roof-material', roofId: id, material }];
+    if (saved.kind === 'wall')
+      return surface === 'exterior'
+        ? [
+            {
+              type: 'set-wall-exterior-material',
+              wallId: id,
+              material:
+                property === 'color'
+                  ? material
+                  : (saved.value.exteriorMaterial ??
+                    (current?.kind === 'wall' &&
+                    JSON.stringify(current.value.material) === JSON.stringify(saved.value.material)
+                      ? null
+                      : savedMaterial)),
+            },
+          ]
+        : [{ type: 'set-wall-material', wallId: id, material, preserveExterior: true }];
+    return [{ type: 'set-room-floor-material', roomId: id, material }];
   }
   throw new Error('This element does not support that property.');
 }

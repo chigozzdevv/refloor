@@ -6,7 +6,13 @@ export function describeTarget(building: Building, commands: SceneCommand[]) {
     if (command.type === 'set-rules' || command.type === 'emit-event')
       return { kind: 'house' as const, id: building.id };
     if ('objectId' in command) return { kind: 'object' as const, id: command.objectId };
-    if ('wallId' in command) return { kind: 'wall' as const, id: command.wallId };
+    if ('roofId' in command) return { kind: 'roof' as const, id: command.roofId };
+    if ('wallId' in command)
+      return {
+        kind: 'wall' as const,
+        id: command.wallId,
+        ...(command.type === 'set-wall-exterior-material' ? { side: 'exterior' as const } : {}),
+      };
     if ('roomId' in command) return { kind: 'floor' as const, id: command.roomId };
     if ('doorId' in command) return { kind: 'door' as const, id: command.doorId };
     return { kind: 'object' as const, id: command.object.id };
@@ -66,6 +72,12 @@ export function describeChange(building: Building, commands: SceneCommand[]) {
       break;
     case 'set-wall-material':
       label = 'Change wall finish';
+      break;
+    case 'set-wall-exterior-material':
+      label = 'Change exterior wall finish';
+      break;
+    case 'set-roof-material':
+      label = 'Change roof finish';
       break;
     case 'set-room-floor-material':
       label = 'Change floor finish';

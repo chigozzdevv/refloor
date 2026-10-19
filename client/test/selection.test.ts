@@ -33,6 +33,21 @@ describe('selected element identity', () => {
     expect(targetIdentity(building, { kind: 'object', id: duplicate.id })).toEqual(second);
   });
 
+  it('labels the clicked exterior face and roof independently from interior walls', () => {
+    const building = createHouse({ id: 'exterior-selection', name: 'Exterior', storeys: 1 }),
+      wall = building.floors[0]!.walls[0]!;
+    expect(selectedContext(building, { kind: 'wall', id: wall.id, side: 'exterior' })?.label).toBe(
+      'Exterior wall',
+    );
+    expect(selectedContext(building, { kind: 'wall', id: wall.id })?.label).not.toBe(
+      'Exterior wall',
+    );
+    expect(selectedContext(building, { kind: 'roof', id: building.roof.id })).toMatchObject({
+      label: 'Roof',
+      location: 'Exterior',
+      suggestions: ['Asphalt roofing', 'Change the colour'],
+    });
+  });
   it('labels a selected room floor and door with their location', () => {
     const building = createHouse({ id: 'surfaces', name: 'Surfaces', storeys: 1 }),
       floor = building.floors[0]!,

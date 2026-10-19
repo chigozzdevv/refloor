@@ -9,10 +9,10 @@ import { usePlayback, playMedia } from '@/shared/behaviours/television';
 
 export function SelectionChat() {
   const card = useRef<HTMLDivElement>(null);
-  const { selection, compiled, projectEpoch, mode, select } = useProject();
+  const { selection, compiled, projectEpoch, select } = useProject();
   const context = selectedContext(compiled.building, selection);
   const playback = usePlayback((state) => (selection ? state.players[selection.id] : undefined));
-  if (!context || !selection || mode === 'entry') return null;
+  if (!context || !selection) return null;
   return (
     <Html
       position={[context.position.x, context.position.y, context.position.z]}
@@ -46,7 +46,7 @@ export function SelectionChat() {
       <div
         ref={card}
         className="selection-chat-wrap"
-        key={`${projectEpoch}:${selection.kind}:${selection.id}`}
+        key={`${projectEpoch}:${selection.kind}:${selection.id}:${selection.side ?? 'interior'}`}
         onPointerDown={(event) => event.stopPropagation()}
         onPointerUp={(event) => event.stopPropagation()}
         onPointerMove={(event) => event.stopPropagation()}
@@ -56,7 +56,11 @@ export function SelectionChat() {
         onClick={(event) => event.stopPropagation()}
       >
         <ElementChat
-          target={{ kind: selection.kind, id: selection.id }}
+          target={{
+            kind: selection.kind,
+            id: selection.id,
+            ...(selection.side ? { side: selection.side } : {}),
+          }}
           label={context.label}
           suggestions={context.suggestions}
           close={() => select(null)}

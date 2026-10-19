@@ -1,3 +1,4 @@
+import { wallExteriorSide } from '@refloor/scene/wall-exterior';
 import type { Floor, Wall } from '@refloor/scene';
 import { contains, epsilon, uniqueSorted, worldPoint } from '@refloor/engine/math';
 import { boxPart } from '@refloor/engine/geometry/part';
@@ -14,6 +15,7 @@ export function buildWall(
   if (length <= epsilon)
     fail('DEGENERATE_GEOMETRY', wall.id, 'Wall length must exceed numerical tolerance');
   const rotation = Math.atan2(-(wall.end.z - wall.start.z), wall.end.x - wall.start.x);
+  const exteriorSide = wallExteriorSide(floor, wall);
   const origin = { ...wall.start, y: floor.elevation };
   const cuts = wall.openings.map((opening) => ({
     x: opening.offset,
@@ -37,20 +39,21 @@ export function buildWall(
         continue;
       const centre = { x: (x + nextX) / 2, z: (y + nextY) / 2 };
       if (cuts.some((cut) => contains(cut, centre))) continue;
-      parts.push(
-        boxPart(
-          {
-            id: `${wall.id}:solid:${xi}:${yi}`,
-            entityId: wall.id,
-            floorId: floor.id,
-            role: 'wall',
-            rotation,
-            position: worldPoint({ x: centre.x, y: centre.z, z: 0 }, origin, rotation),
-          },
-          { x: nextX - x, y: nextY - y, z: wall.thickness },
-          wall.material,
-        ),
+      const part = boxPart(
+        {
+          id: `${wall.id}:solid:${xi}:${yi}`,
+          entityId: wall.id,
+          floorId: floor.id,
+          role: 'wall',
+          rotation,
+          position: worldPoint({ x: centre.x, y: centre.z, z: 0 }, origin, rotation),
+        },
+        { x: nextX - x, y: nextY - y, z: wall.thickness },
+        wall.material,
       );
+      if (exteriorSide)
+        part.exterior = { side: exteriorSide, material: wall.exteriorMaterial ?? wall.material };
+      parts.push(part);
     }
   const openings = buildOpenings(floor, wall, rotation);
   parts.push(...openings.parts);

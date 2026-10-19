@@ -12,7 +12,10 @@ export function useLanguageEdit(target: ChatTarget) {
   const busy = useProject((state) => state.chatPending !== null),
     lastTurn = useProject((state) =>
       state.memory.turns.findLast(
-        (turn) => turn.target.kind === target.kind && turn.target.id === target.id,
+        (turn) =>
+          turn.target.kind === target.kind &&
+          turn.target.id === target.id &&
+          turn.target.side === target.side,
       ),
     );
   const send = async (message: string) => {

@@ -6,6 +6,19 @@ export function selectedContext(building: Building, selection: Selection) {
   if (!selection) return null;
   const identity = targetIdentity(building, selection, selection.point);
   if (!identity) return null;
+  if (selection.kind === 'roof') {
+    const top = [...building.floors].sort((a, b) => b.elevation - a.elevation)[0]!;
+    return {
+      ...identity,
+      position: selection.point ?? {
+        x: top.footprint.x + top.footprint.width / 2,
+        y: top.elevation + top.height,
+        z: top.footprint.z + top.footprint.depth / 2,
+      },
+      suggestions: ['Asphalt roofing', 'Change the colour'],
+      object: null,
+    };
+  }
   for (const floor of building.floors) {
     if (selection.kind === 'object') {
       const object = building.objects.find(
@@ -40,7 +53,10 @@ export function selectedContext(building: Building, selection: Selection) {
             y: floor.elevation + 1.5,
             z: (wall.start.z + wall.end.z) / 2,
           },
-          suggestions: ['Paint it cream', 'Paint it sage'],
+          suggestions:
+            selection.side === 'exterior'
+              ? ['Brick finish', 'Marble finish']
+              : ['Paint it cream', 'Paint it sage'],
           object: null,
         };
     }

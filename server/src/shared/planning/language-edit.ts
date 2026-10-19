@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { wallExteriorSide } from '@refloor/scene/wall-exterior';
 import { sceneEventSchema, ruleConditionSchema } from '@refloor/scene/rules';
 import {
   assetFromCatalogue,
@@ -34,7 +35,7 @@ export const languageActionSchema = z.strictObject({
     'source',
   ]),
   targetId: z.string(),
-  surface: z.enum(['body', 'frame', 'walls', 'floors']).nullable(),
+  surface: z.enum(['body', 'frame', 'walls', 'floors', 'exterior', 'roof']).nullable(),
   vector: vector.nullable(),
   relative: z.boolean().nullable(),
   space: z.enum(['world', 'view']).nullable(),
@@ -62,12 +63,20 @@ export const languagePlanSchema = z.strictObject({
 export type LanguagePlan = z.infer<typeof languagePlanSchema>;
 
 export function chatTargetExists(building: Building, target: ChatTarget): boolean {
+  if (target.side && target.kind !== 'wall') return false;
+  if (target.kind === 'roof') return target.id === building.roof.id;
   return target.kind === 'house'
     ? target.id === building.id
     : target.kind === 'object'
       ? building.objects.some((object) => object.id === target.id)
       : target.kind === 'wall'
-        ? building.floors.some((floor) => floor.walls.some((wall) => wall.id === target.id))
+        ? building.floors.some((floor) =>
+            floor.walls.some(
+              (wall) =>
+                wall.id === target.id &&
+                (target.side !== 'exterior' || wallExteriorSide(floor, wall) !== null),
+            ),
+          )
         : target.kind === 'door'
           ? building.floors.some((floor) =>
               floor.walls.some((wall) =>
@@ -91,6 +100,7 @@ export function languageContext(input: LanguageEditRequest) {
     view: input.view,
     houseId: input.building.id,
     savedActions: input.building.rules ?? [],
+    roof: input.building.roof,
     supportedEvents: [
       'door opens/closes',
       'device powers on/off',
@@ -127,22 +137,24 @@ export function languageContext(input: LanguageEditRequest) {
         behaviours,
       }),
     ),
-    floors: input.building.floors.map(({ id, elevation, height, rooms, walls }) => ({
-      id,
-      elevation,
-      height,
-      rooms: rooms.map(({ id, name, footprint, floorMaterial }) => ({
+    floors: input.building.floors.map((floor) => ({
+      id: floor.id,
+      elevation: floor.elevation,
+      height: floor.height,
+      rooms: floor.rooms.map(({ id, name, footprint, floorMaterial }) => ({
         id,
         name,
         footprint,
         floorMaterial,
       })),
-      walls: walls.map(({ id, start, end, material, openings }) => ({
-        id,
-        start,
-        end,
-        material,
-        doors: openings
+      walls: floor.walls.map((wall) => ({
+        id: wall.id,
+        start: wall.start,
+        end: wall.end,
+        material: wall.material,
+        exteriorMaterial: wall.exteriorMaterial ?? wall.material,
+        exterior: wallExteriorSide(floor, wall) !== null,
+        doors: wall.openings
           .filter((opening) => opening.kind === 'door')
           .map(({ id, state }) => ({ id, state })),
       })),
@@ -194,12 +206,28 @@ export function languageCommands(input: LanguageEditRequest, plan: LanguagePlan)
           { ...input, building },
           action.targetId,
           required(action.value),
-          action.surface,
+          target.kind === 'wall' && target.side === 'exterior' ? 'exterior' : action.surface,
         ),
       );
     } else if (action.action === 'color' || action.action === 'finish') {
+      const exteriorWalls = building.floors.flatMap((floor) =>
+        floor.walls.filter((item) => wallExteriorSide(floor, item) !== null),
+      );
       if (wholeHouse) {
-        if (action.surface === 'floors')
+        if (action.surface === 'roof')
+          commands.push({
+            type: 'set-roof-material',
+            roofId: building.roof.id,
+            material: material(building.roof.material),
+          });
+        else if (action.surface === 'exterior')
+          for (const item of exteriorWalls)
+            commands.push({
+              type: 'set-wall-exterior-material',
+              wallId: item.id,
+              material: material(item.exteriorMaterial ?? item.material),
+            });
+        else if (action.surface === 'floors')
           for (const item of rooms)
             commands.push({
               type: 'set-room-floor-material',
@@ -212,6 +240,7 @@ export function languageCommands(input: LanguageEditRequest, plan: LanguagePlan)
               type: 'set-wall-material',
               wallId: item.id,
               material: material(item.material),
+              preserveExterior: true,
             });
       } else if (object) {
         const slot = action.surface === 'frame' ? 'frame' : 'body';
@@ -222,11 +251,29 @@ export function languageCommands(input: LanguageEditRequest, plan: LanguagePlan)
           slot,
           material: material(object.materials[slot]),
         });
-      } else if (wall)
+      } else if (wall) {
+        const exterior = target.side === 'exterior' || action.surface === 'exterior';
+        if (exterior && !exteriorWalls.some((item) => item.id === wall.id))
+          throw new Error('This wall has no exterior face.');
+        commands.push(
+          exterior
+            ? {
+                type: 'set-wall-exterior-material',
+                wallId: wall.id,
+                material: material(wall.exteriorMaterial ?? wall.material),
+              }
+            : {
+                type: 'set-wall-material',
+                wallId: wall.id,
+                material: material(wall.material),
+                preserveExterior: true,
+              },
+        );
+      } else if (building.roof.id === action.targetId)
         commands.push({
-          type: 'set-wall-material',
-          wallId: wall.id,
-          material: material(wall.material),
+          type: 'set-roof-material',
+          roofId: building.roof.id,
+          material: material(building.roof.material),
         });
       else if (room)
         commands.push({

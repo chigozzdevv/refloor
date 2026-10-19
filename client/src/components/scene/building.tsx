@@ -22,7 +22,8 @@ export function BuildingPart({ part }: { part: MeshPart }) {
   const cutaway = useProject((state) => state.cutaway);
   const geometry = useMemo(() => partGeometry(part), [part]);
   useEffect(() => () => geometry.dispose(), [geometry]);
-  const material = useSurface(part.material, part.role === 'window');
+  const material = useSurface(part.material, part.role === 'window'),
+    exteriorMaterial = useSurface(part.exterior?.material ?? part.material);
   const ceiling = useMemo(
     () => new MeshStandardMaterial({ color: '#f3f0e8', roughness: 0.92 }),
     [],
@@ -45,15 +46,22 @@ export function BuildingPart({ part }: { part: MeshPart }) {
     ref.current.visible = visible;
   });
   return (
-    <Select enabled={selection?.kind === 'wall' && selection.id === wall?.id}>
+    <Select
+      enabled={
+        (selection?.kind === 'wall' && selection.id === wall?.id) ||
+        (selection?.kind === 'roof' && selection.id === part.entityId && part.role === 'roof')
+      }
+    >
       <mesh
         ref={ref}
         raycast={visibleMeshRaycast}
         geometry={geometry}
         material={
-          ['slab', 'stair-tread', 'stair-landing'].includes(part.role)
-            ? [material, ceiling]
-            : material
+          part.exterior
+            ? [material, exteriorMaterial]
+            : ['slab', 'stair-tread', 'stair-landing'].includes(part.role)
+              ? [material, ceiling]
+              : material
         }
         position={[part.collider.position.x, part.collider.position.y, part.collider.position.z]}
         rotation={[0, part.collider.rotation, 0]}
@@ -66,6 +74,16 @@ export function BuildingPart({ part }: { part: MeshPart }) {
             select({
               kind: 'wall',
               id: wall.id,
+              ...(part.exterior && event.face?.materialIndex === 1
+                ? { side: 'exterior' as const }
+                : {}),
+              point: { x: event.point.x, y: event.point.y, z: event.point.z },
+            });
+          } else if (part.role === 'roof') {
+            event.stopPropagation();
+            select({
+              kind: 'roof',
+              id: part.entityId,
               point: { x: event.point.x, y: event.point.y, z: event.point.z },
             });
           } else if (part.role === 'slab' && floor) {

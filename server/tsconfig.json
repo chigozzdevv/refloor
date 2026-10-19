@@ -5,7 +5,8 @@
     "types": ["node"],
     "paths": {
       "@refloor/server/*": ["./src/*.ts"],
-      "@server-test/*": ["./test/*.ts"]
+      "@server-test/*": ["./test/*.ts"],
+      "@scene-test/*": ["../packages/scene/test/*.ts"]
     }
   },
   "include": ["src", "test", "scripts"]

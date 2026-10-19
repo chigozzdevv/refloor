@@ -85,6 +85,28 @@ describe('rendering contracts', () => {
       }
     geometry.dispose();
   });
+  it('maps exterior cladding to only the outward face with continuous metre UVs', () => {
+    const building = createHouse({ id: 'facade-home', name: 'Facade home', storeys: 1 }),
+      compiled = compileBuilding(building);
+    const parts = compiled.parts.filter((part) => part.role === 'wall' && part.exterior);
+    expect(parts.length).toBeGreaterThan(0);
+    for (const part of parts) {
+      const geometry = partGeometry(part);
+      expect(geometry.groups.length).toBeLessThanOrEqual(3);
+      expect(new Set(geometry.groups.map((group) => group.materialIndex))).toEqual(new Set([0, 1]));
+      for (const group of geometry.groups)
+        for (let offset = group.start; offset < group.start + group.count; offset += 3) {
+          const vertex = geometry.index!.getX(offset);
+          expect(geometry.attributes.normal!.getZ(vertex) * part.exterior!.side > 0.5).toBe(
+            group.materialIndex === 1,
+          );
+        }
+      geometry.dispose();
+    }
+    expect(compiled.colliders.filter((collider) => collider.role === 'wall')).toHaveLength(
+      compiled.parts.filter((part) => part.role === 'wall').length,
+    );
+  });
   it('invalidates cached light shadows without a wall-clock expiry', () => {
     const scene = new Group(),
       point = new PointLight(),
