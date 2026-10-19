@@ -14,8 +14,7 @@ import {
   turningInput,
   walkInput,
 } from '@/shared/navigation/input';
-import { advanceStairAssist, stairAssist } from '@/shared/navigation/stair-assist';
-import type { StairAssist } from '@/shared/navigation/stair-assist';
+import { StairWalker } from '@/shared/navigation/stair-assist';
 import { entranceArrival } from '@/shared/navigation/arrival';
 import { exteriorCamera } from '@/shared/scene/exterior';
 import { Walkthrough } from '@/shared/navigation/walkthrough';
@@ -42,7 +41,7 @@ export function NavigationControls() {
   const previous = useRef(mode),
     walkthrough = useRef(new Walkthrough()),
     framing = useRef<{ mode: typeof mode; buildingId: string; epoch: number } | null>(null),
-    stairs = useRef<StairAssist | null>(null),
+    stairs = useRef(new StairWalker()),
     transition = useRef<number | null>(null),
     entry = entryPose(compiled);
   const entryFacing = useMemo(() => entranceArrival(compiled), [compiled]);
@@ -73,7 +72,7 @@ export function NavigationControls() {
       resetWalkInput();
       transition.current = null;
       walkthrough.current.reset();
-      stairs.current = null;
+      stairs.current.reset();
       walkthrough.current.doors.clear();
       walkthrough.current.doors.recover(compiled, useProject.getState().memory);
       previous.current = mode;
@@ -133,7 +132,7 @@ export function NavigationControls() {
       walkInput.pitch = camera.rotation.x;
     }
     resetWalkInput();
-    stairs.current = null;
+    stairs.current.reset();
     previous.current = mode;
   }, [camera, mode, stage, compiled.building.id, epoch, size.width, size.height]);
   const previousOverview = useRef(overview);
@@ -300,7 +299,7 @@ export function NavigationControls() {
       isTyping(document.activeElement)
     ) {
       resetWalkInput();
-      stairs.current = null;
+      stairs.current.reset();
       walkthrough.current.reset();
       if (useNavigation.getState().request) useNavigation.getState().stop();
       return;
@@ -352,6 +351,7 @@ export function NavigationControls() {
       return;
     }
     if (request) {
+      stairs.current.reset();
       walkInput.yaw = step.yaw;
       walkInput.pitch = step.pitch;
       if (step.status === 'arrived' || step.status === 'blocked') {
@@ -362,13 +362,16 @@ export function NavigationControls() {
             .notify('This route is obstructed. Move the blocking item to continue.');
       }
     } else {
-      if (f <= 0.25 || Math.abs(r) > 0.35 || turn) stairs.current = null;
-      else stairs.current ??= stairAssist(compiled, world.player, walkInput.yaw);
-      const assist = stairs.current;
-      if (assist) {
-        const { yaw, status } = advanceStairAssist(world, assist, walkInput.yaw, dt);
+      const assisted = stairs.current.step(
+        world,
+        { forward: f, sideways: r, turn },
+        walkInput.yaw,
+        dt,
+      );
+      if (assisted) {
+        const { yaw, status, ascending } = assisted;
         walkInput.yaw = yaw;
-        walkInput.pitch = MathUtils.damp(walkInput.pitch, assist.ascending ? 0.08 : -0.3, 4, dt);
+        walkInput.pitch = MathUtils.damp(walkInput.pitch, ascending ? 0.08 : -0.3, 4, dt);
         if (status === 'blocked')
           useProject
             .getState()

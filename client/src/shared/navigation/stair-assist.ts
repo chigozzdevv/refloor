@@ -6,6 +6,46 @@ import type { CharacterWorld } from '@/shared/navigation/physics-world';
 
 export type StairAssist = { id: string; journey: Journey; ascending: boolean; complete: boolean };
 
+export class StairWalker {
+  private assist: StairAssist | null = null;
+  private compiled: CompiledBuilding | null = null;
+  private awaitRelease = false;
+
+  reset() {
+    this.assist = null;
+    this.compiled = null;
+    this.awaitRelease = false;
+  }
+
+  step(
+    world: CharacterWorld,
+    input: { forward: number; sideways: number; turn: number },
+    yaw: number,
+    delta: number,
+  ) {
+    if (this.compiled !== world.compiled) {
+      this.reset();
+      this.compiled = world.compiled;
+    }
+    if (input.forward <= 0.25 || Math.abs(input.sideways) > 0.35 || input.turn) {
+      if (this.assist) this.awaitRelease = true;
+      this.assist = null;
+      if (input.forward <= 0.25) this.awaitRelease = false;
+      return null;
+    }
+    if (this.awaitRelease) return null;
+    this.assist ??= stairAssist(world.compiled, world.player, yaw);
+    if (!this.assist) return null;
+    const ascending = this.assist.ascending,
+      result = advanceStairAssist(world, this.assist, yaw, delta);
+    if (result.status !== 'moving') {
+      this.assist = null;
+      this.awaitRelease = true;
+    }
+    return { ...result, ascending };
+  }
+}
+
 export function advanceStairAssist(
   world: CharacterWorld,
   assist: StairAssist,
@@ -72,7 +112,7 @@ export function stairAssist(
         dz = ahead.z - point.z,
         distance = Math.hypot(dx, dz);
       const facing = (-Math.sin(yaw) * dx - Math.cos(yaw) * dz) / Math.max(0.001, distance);
-      if (facing < (onFlight ? 0 : -0.15)) continue;
+      if (facing < (onFlight ? 0 : 0.6)) continue;
       const target = ascending ? stair.upper : stair.lower;
       const route = destinationRoute(compiled, player, target, 'current');
       if (!route) continue;
