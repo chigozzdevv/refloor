@@ -1275,10 +1275,10 @@ select option {
   margin: 0 0 28px;
 }
 .prompt-form {
-  border: 1px solid #ffffff35;
+  border: 1px solid var(--line);
   border-radius: 22px;
   padding: 18px 18px 12px 22px;
-  background: #1b242bca;
+  background: var(--panel);
   backdrop-filter: blur(24px);
   box-shadow: 0 20px 80px #0003;
 }
@@ -1293,14 +1293,14 @@ select option {
   border: 0;
   background: none;
   padding: 0;
-  color: #f3f0e8;
+  color: var(--ink);
   font: inherit;
   font-size: 16px;
   line-height: 1.65;
   outline: none;
 }
 .prompt-form textarea::placeholder {
-  color: #d5d9d288;
+  color: var(--muted);
 }
 .prompt-form textarea:focus-visible {
   outline: none;
@@ -1308,10 +1308,8 @@ select option {
 .prompt-bottom {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 16px;
-  color: #c9cec68c;
-  font-size: 11px;
 }
 .prompt-send {
   flex-shrink: 0;
@@ -1395,10 +1393,6 @@ select option {
   }
   .prompt-form {
     padding: 16px;
-  }
-  .prompt-bottom > span {
-    max-width: 180px;
-    line-height: 1.5;
   }
   .prompt-alternatives {
     gap: 10px;

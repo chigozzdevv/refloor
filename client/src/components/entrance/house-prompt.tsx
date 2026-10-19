@@ -121,7 +121,6 @@ export function HousePrompt({
           }}
         />
         <div className="prompt-bottom">
-          <span>One or two storeys. Make it yours.</span>
           <button
             className="prompt-send"
             type="submit"
