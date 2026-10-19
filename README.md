@@ -137,10 +137,9 @@ and the client checks that the scene has not changed before applying them. Item 
 can only affect the selected entity; house chat can change finishes or devices across
 the current building. Drag or swipe to look around, then select a floor ring to travel
 to a clear spot. Navigation uses named room views, doorways and stair landings, updated after edits. Floor rings are useful standing views;
-door handles show a small Click to open hint, and stair rings mark the real steps. Up to three
-separated floor/stair markers appear in the scene. Private rooms have one canonical Exit to … action,
-chosen toward the hall or shared circulation space. Hubs show stair actions; other rooms are entered
-through their handles or the map. Stair controls use fixed up/down icons.
+door handles show a small Click to open hint over a 44 px handle target, with subtle feedback on the metal lever, and stair rings mark the real steps. Up to three
+separated floor/stair markers appear in the scene. The central destination row keeps reachable adjoining rooms available even when their doors are offscreen, with one action per doorway.
+Private rooms name their main exit toward the hall or shared circulation space while retaining distinct connecting-room doors. Upstairs or downstairs appears only within a reachable 2 m approach to the actual landing; both directions remain available during a mid-flight stop. Stair controls use fixed up/down icons. Entering the house keeps the camera facing inward instead of turning toward a side door.
 The same walkthrough controller drives dots, door clicks and map trips. It turns before advancing,
 opens the selected door immediately when its swing is safe, crosses using Rapier, and settles the camera
 on a visible interaction ahead, excluding the door just crossed. Door clicks stop just inside the room, while room dots and map trips use room viewpoints.
