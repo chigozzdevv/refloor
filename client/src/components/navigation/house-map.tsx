@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Maximize2, X } from 'lucide-react';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 import { useProject } from '@/shared/scene/scene-store';
-import { destinations, destinationRoute } from '@/shared/navigation/destinations';
-import type { Destination } from '@/shared/navigation/destinations';
+import { mapDestination } from '@/shared/navigation/map-route';
 import { physicsSession } from '@/shared/navigation/physics-session';
 import { entryPose } from '@/shared/navigation/entry';
 import { MapPlan } from '@/components/navigation/map-plan';
@@ -12,8 +11,7 @@ export function HouseMap() {
   const { compiled, mode, projectEpoch } = useProject(),
     { player, heading, mapOpen, setMapOpen, go } = useNavigation();
   const [viewFloor, setViewFloor] = useState<string | null>(null);
-  const stops = useMemo(() => destinations(compiled), [compiled]),
-    entry = entryPose(compiled),
+  const entry = useMemo(() => entryPose(compiled), [compiled]),
     currentPlayer = mode === 'entry' ? { floorId: entry.floorId, position: entry.inside } : player,
     currentFloor = currentPlayer?.floorId ?? entry.floorId,
     floorId = viewFloor ?? currentFloor;
@@ -36,11 +34,12 @@ export function HouseMap() {
     window.addEventListener('keydown', escape);
     return () => window.removeEventListener('keydown', escape);
   }, [setMapOpen]);
-  const travel = (destination: Destination) => {
+  const travel = (roomId: string) => {
     const state = useProject.getState(),
       entry = entryPose(compiled),
       from = physicsSession.current?.player ?? { floorId: entry.floorId, position: entry.inside };
-    if (!destinationRoute(compiled, from, destination.target, 'openable')) {
+    const destination = mapDestination(compiled, from, roomId);
+    if (!destination) {
       state.notify('There is no clear route to this room.');
       return;
     }
@@ -53,23 +52,27 @@ export function HouseMap() {
   };
   if (!mapOpen)
     return mode !== 'entry' ? (
-      <button
-        className="map-mini"
-        aria-label="Open house map"
-        onClick={() => {
-          useNavigation.getState().stop();
-          useProject.getState().select(null);
-          setMapOpen(true);
-        }}
-      >
-        <Maximize2 className="map-expand" size={13} />
+      <section className="map-mini" aria-label="House minimap">
+        <button
+          className="map-expand"
+          aria-label="Expand house map"
+          onClick={() => {
+            useNavigation.getState().stop();
+            useProject.getState().select(null);
+            setMapOpen(true);
+          }}
+        >
+          <Maximize2 size={13} />
+        </button>
         <MapPlan
           compiled={compiled}
           floorId={currentFloor}
           player={currentPlayer}
           heading={heading}
+          compact
+          navigate={travel}
         />
-      </button>
+      </section>
     ) : null;
   return (
     <div className="map-backdrop" onPointerDown={() => setMapOpen(false)}>
@@ -101,12 +104,7 @@ export function HouseMap() {
           floorId={floorId}
           player={currentPlayer}
           heading={heading}
-          navigate={(roomId) => {
-            const destination = stops.find(
-              (stop) => stop.kind === 'room' && stop.roomId === roomId,
-            );
-            if (destination) travel(destination);
-          }}
+          navigate={travel}
         />
       </section>
     </div>

@@ -1048,12 +1048,20 @@ select option {
 }
 .map-expand {
   position: absolute;
-  right: 8px;
-  top: 8px;
+  right: 2px;
+  top: 2px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #17212ce0;
   color: #d0d7d9;
-  opacity: 0;
+  opacity: 0.7;
 }
-.map-mini:hover .map-expand {
+.map-expand:hover,
+.map-expand:focus-visible {
   opacity: 1;
 }
 @media (max-width: 380px) {

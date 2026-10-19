@@ -10,12 +10,14 @@ export function MapPlan({
   player,
   heading,
   navigate,
+  compact = false,
 }: {
   compiled: CompiledBuilding;
   floorId: string;
   player: NavigationPoint | null;
   heading: number;
   navigate?: (roomId: string) => void;
+  compact?: boolean;
 }) {
   const canvas = useRef<SVGSVGElement>(null),
     [unitsPerPixel, setUnitsPerPixel] = useState(0.05);
@@ -64,7 +66,7 @@ export function MapPlan({
   return (
     <svg
       ref={canvas}
-      className={`map-plan ${navigate ? 'plan-expanded' : 'plan-compact'}`}
+      className={`map-plan ${compact ? 'plan-compact' : 'plan-expanded'}`}
       viewBox={`${fp.x - 0.65} ${fp.z - 0.65} ${fp.width + 1.3} ${fp.depth + 1.3}`}
       aria-label={`${floor.name} plan`}
     >
@@ -102,7 +104,7 @@ export function MapPlan({
         </g>
       ))}
       <g className="plan-details">
-        {navigate &&
+        {!compact &&
           compiled.building.objects
             .filter((object) => object.floorId === floorId && object.kind !== 'light')
             .map((object) => <MapFurniture key={object.id} object={object} />)}
@@ -149,7 +151,7 @@ export function MapPlan({
         ))}
         {doors.map(({ door, arc, leafTip }) => (
           <g key={door.id} className="plan-door">
-            {navigate && door.open && <path className="plan-door-swing" d={arc} />}
+            {!compact && door.open && <path className="plan-door-swing" d={arc} />}
             <path d={`M ${door.hinge.x} ${door.hinge.z} L ${leafTip.x} ${leafTip.z}`} />
           </g>
         ))}
@@ -168,13 +170,13 @@ export function MapPlan({
               className="plan-room-name"
               x={rect.x + rect.width / 2}
               y={
-                navigate && room.kind !== 'corridor' && room.kind !== 'stairwell'
+                !compact && room.kind !== 'corridor' && room.kind !== 'stairwell'
                   ? rect.z + Math.min(1.1, rect.depth * 0.4)
                   : rect.z + rect.depth * (room.kind === 'corridor' ? 0.8 : 0.5)
               }
               textAnchor="middle"
               fontSize={Math.min(
-                (navigate ? 12 : 8) * unitsPerPixel,
+                (compact ? 8 : 12) * unitsPerPixel,
                 (rect.width - 0.5) / (Math.max(...lines.map((line) => line.length), 5) * 0.55),
               )}
             >

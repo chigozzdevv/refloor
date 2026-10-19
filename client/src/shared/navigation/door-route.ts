@@ -6,6 +6,7 @@ import { doorCrossings } from '@refloor/engine/navigation/doors';
 import { clearSegment } from '@refloor/engine/navigation/surfaces';
 import { distanceToBox, rotate } from '@refloor/engine/math';
 import { destinationRoute, navigationFor } from '@/shared/navigation/destinations';
+import { compoundDoorApproach } from '@/shared/navigation/compound-route';
 
 export type DoorRoute = {
   path: NavigationPath;
@@ -86,11 +87,12 @@ export function doorRoute(
       };
     const normal = rotate({ x: 0, z: side }, door.rotation);
     const graph = navigationFor(compiled, 'current');
+    const exteriorApproach = compoundDoorApproach(compiled, from, door);
     const stagingSpace = {
       ...compiled,
       options: { ...compiled.options, clearance: compiled.options.clearance + 0.06 },
     };
-    const candidates = (graph.byFloor.get(door.floorId) ?? [])
+    const candidates: NavigationPoint[] = (graph.byFloor.get(door.floorId) ?? [])
       .map((node) => graph.nodes[node]!)
       .filter((node) => {
         const dx = node.position.x - door.centre.x,
@@ -108,6 +110,7 @@ export function doorRoute(
           Math.hypot(a.position.x - from.position.x, a.position.z - from.position.z) -
           Math.hypot(b.position.x - from.position.x, b.position.z - from.position.z),
       );
+    if (exteriorApproach) candidates.unshift(exteriorApproach);
     for (const candidate of candidates) {
       const approach = destinationRoute(compiled, from, candidate, 'current');
       if (!approach) continue;
@@ -157,6 +160,21 @@ function clearDoorRoute(
     if (blocked) commands.push({ type: 'set-door', doorId: door.id, open: false });
   }
   if (!commands.length) return null;
+  const alternatives =
+    commands.length > 1 ? [...commands.map((command) => [command]), commands] : [commands];
+  for (const candidate of alternatives) {
+    const route = closedDoorRoute(compiled, from, target, candidate);
+    if (route) return route;
+  }
+  return null;
+}
+
+function closedDoorRoute(
+  compiled: CompiledBuilding,
+  from: NavigationPoint,
+  target: NavigationPoint,
+  commands: SceneCommand[],
+): DoorRoute | null {
   const changed = compileBuilding(
     applyCommands(compiled.building, {
       id: 'navigation-plan',

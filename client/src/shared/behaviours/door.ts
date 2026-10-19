@@ -4,6 +4,7 @@ import { destinations } from '@/shared/navigation/destinations';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 import { physicsSession } from '@/shared/navigation/physics-session';
 import { contains, rotate } from '@refloor/engine/math';
+import { compoundDoorExit } from '@/shared/navigation/compound-route';
 
 export function traverseDoor(id: string) {
   const state = useProject.getState();
@@ -36,9 +37,19 @@ export function traverseDoor(id: string) {
     useNavigation
       .getState()
       .go(destination.target, destination.lookAt, destination.label, destination.doorId);
-  } else if (id === entryPose(state.compiled).doorId)
-    activateDoor(id, !state.compiled.doors.find((door) => door.id === id)?.open);
-  else state.notify('Move to this doorway before entering.');
+  } else if (door && id === entryPose(state.compiled).doorId) {
+    const entry = entryPose(state.compiled),
+      outside = floor && !contains(floor.footprint, player.position),
+      target = outside
+        ? { floorId: entry.floorId, position: entry.inside }
+        : compoundDoorExit(state.compiled, door);
+    if (!target) {
+      state.notify('There is no clear route through this entrance.');
+      return;
+    }
+    state.select(null);
+    useNavigation.getState().go(target, undefined, outside ? 'Enter home' : 'Step outside', id);
+  } else state.notify('Move to this doorway before entering.');
 }
 
 export function activateDoor(id: string, open: boolean) {

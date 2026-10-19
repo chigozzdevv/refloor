@@ -1,9 +1,16 @@
 import { buildNavigation, findPath, isWalkable } from '@refloor/engine';
-import type { CompiledBuilding, Navigation, NavigationPoint, Point3 } from '@refloor/engine';
+import type {
+  CompiledBuilding,
+  Navigation,
+  NavigationPath,
+  NavigationPoint,
+  Point3,
+} from '@refloor/engine';
 import { contains, rotate } from '@refloor/engine/math';
 import { clearSegment } from '@refloor/engine/navigation/surfaces';
 import { roomViews } from '@/shared/navigation/viewpoints';
 import { stairMarker } from '@/shared/navigation/stair-marker';
+import { compoundRoute } from '@/shared/navigation/compound-route';
 
 export type Destination = {
   id: string;
@@ -245,8 +252,12 @@ export function destinationRoute(
   from: NavigationPoint,
   target: NavigationPoint,
   policy: 'openable' | 'current',
-) {
+): NavigationPath | null {
   const graph = navigationFor(compiled, policy);
+  const compound = compoundRoute(compiled, from, target, graph, (a, b) =>
+    destinationRoute(compiled, a, b, policy),
+  );
+  if (compound !== undefined) return compound;
   const floor = compiled.building.floors.find((value) => value.id === from.floorId);
   const start = { ...from, position: { ...from.position, y: floor?.elevation ?? from.position.y } };
   if (Math.abs(start.position.y - from.position.y) < 0.15 && isWalkable(compiled, start, policy))
