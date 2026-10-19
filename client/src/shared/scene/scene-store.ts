@@ -12,6 +12,7 @@ import { persistRemoteLink, restoreRemoteLink } from '@/shared/scene/remote';
 import type { RemoteLink } from '@/shared/scene/remote';
 import { navigationFor } from '@/shared/navigation/destinations';
 import { createEditMemory } from '@refloor/scene/edit-memory';
+import { restoreEditMemory } from '@/shared/editor/memory';
 import type { EditMemory } from '@refloor/scene/edit-memory';
 import { clearSceneView, restoreSceneView } from '@/shared/scene/view';
 
@@ -76,7 +77,7 @@ export const useProject = create<ProjectState>((set, get, store) => ({
     set({
       sceneReady: false,
       compiled,
-      memory: memory ?? createEditMemory(compiled.building),
+      memory: restoreEditMemory(compiled.building, memory),
       chatPending: null,
       remote: remote ?? null,
       projectEpoch: get().projectEpoch + 1,

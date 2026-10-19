@@ -7,7 +7,16 @@ import type { EditMemory } from '@refloor/scene/edit-memory';
 export function validateMemory(building: Building, memory?: EditMemory): EditMemory {
   if (memory && memory.sceneId !== building.id)
     throw new ApiError(422, 'CONTEXT_MISMATCH', 'Edit context belongs to another house.');
-  return memory ?? createEditMemory(building);
+  const context = memory ?? createEditMemory(building);
+  if (context.originals.some((item) => item.kind === 'roof' && item.id === building.roof.id))
+    return context;
+  return {
+    ...context,
+    originals: [
+      ...context.originals,
+      { kind: 'roof', id: building.roof.id, value: structuredClone(building.roof) },
+    ],
+  };
 }
 
 export function validateTuning(building: Building, commands: SceneCommand[]) {

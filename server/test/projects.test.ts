@@ -12,6 +12,8 @@ import { createApp } from '@refloor/server/app';
 import type { ServerConfig } from '@refloor/server/shared/config/env';
 import { GenerationRepository } from '@refloor/server/features/generation/generation.repo';
 import type { GenerationRecord } from '@refloor/server/features/generation/generation.model';
+import type { HouseRecord } from '@refloor/server/features/houses/house.model';
+import { restoreElement } from '@refloor/server/shared/planning/restore-element';
 
 describe('MongoDB project API', () => {
   let replica: MongoMemoryReplSet;
@@ -154,6 +156,64 @@ describe('MongoDB project API', () => {
     });
     expect(wrong.statusCode).toBe(422);
     expect(wrong.json().error.code).toBe('CONTEXT_MISMATCH');
+  });
+
+  it('captures a legacy project roof baseline before its first API edit and retains it through undo', async () => {
+    const cookies = await session(),
+      created = await create(cookies),
+      legacy = structuredClone(created.project.memory!);
+    legacy.originals = legacy.originals.filter((item) => item.kind !== 'roof');
+    await database
+      .db(config.database)
+      .collection<HouseRecord>('projects')
+      .updateOne({ _id: created.project.id }, { $set: { memory: legacy } });
+    const roof = building.roof,
+      changedMaterial = { ...roof.material, color: '#334455' },
+      response = await edit(cookies, created, [
+        { type: 'set-roof-material', roofId: roof.id, material: changedMaterial },
+      ]);
+    expect(response.statusCode).toBe(200);
+    const changed = projectWriteSchema.parse(response.json());
+    expect(changed.project.memory!.originals.find((item) => item.kind === 'roof')).toEqual({
+      kind: 'roof',
+      id: roof.id,
+      value: roof,
+    });
+    expect(
+      restoreElement(
+        {
+          requestId: randomUUID(),
+          building: changed.project.building,
+          context: changed.project.memory!,
+          target: { kind: 'roof', id: roof.id },
+          message: 'Restore the original roof finish',
+          view: { x: 0, z: 1 },
+          player: null,
+        },
+        roof.id,
+        'original.appearance',
+        'roof',
+      ),
+    ).toEqual([{ type: 'set-roof-material', roofId: roof.id, material: roof.material }]);
+    const undoneResponse = await app.inject({
+      method: 'POST',
+      url: `/api/projects/${created.project.id}/undo`,
+      cookies,
+      payload: {
+        id: randomUUID(),
+        at: new Date().toISOString(),
+        expectedRevision: changed.project.revision,
+        player: null,
+      },
+    });
+    expect(undoneResponse.statusCode).toBe(200);
+    const undone = projectWriteSchema.parse(undoneResponse.json());
+    expect(undone.project.building.roof).toEqual(roof);
+    expect(undone.project.memory!.originals.find((item) => item.kind === 'roof')).toEqual({
+      kind: 'roof',
+      id: roof.id,
+      value: roof,
+    });
   });
 
   it('rejects excessive brightness through the typed edit API without changing the project', async () => {

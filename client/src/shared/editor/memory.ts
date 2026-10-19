@@ -56,5 +56,11 @@ export function restoreEditMemory(building: Building, input?: unknown, past: His
   if (input === undefined) return recoverEditMemory(building, past);
   const memory = editMemorySchema.parse(input);
   if (memory.sceneId !== building.id) throw new Error('Edit context belongs to another house.');
+  if (!memory.originals.some((item) => item.kind === 'roof' && item.id === building.roof.id))
+    memory.originals.push({
+      kind: 'roof',
+      id: building.roof.id,
+      value: structuredClone(building.roof),
+    });
   return memory;
 }
