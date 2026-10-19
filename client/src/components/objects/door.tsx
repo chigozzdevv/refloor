@@ -1,9 +1,9 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import type { ThreeEvent } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
 import { Select } from '@react-three/postprocessing';
-import { MathUtils } from 'three';
+import { MathUtils, MeshPhysicalMaterial } from 'three';
 import type { Group } from 'three';
 import type { MeshPart, DoorPortal } from '@refloor/engine';
 import { rotate } from '@refloor/engine/math';
@@ -22,7 +22,20 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
     motion = useRef(new DoorMotion(portal.open)),
     levers = useRef<(Group | null)[]>([]),
     preview = useRef<number | null>(null),
+    handleHovered = useRef(false),
     drag = useRef<{ x: number; y: number; fraction: number } | null>(null);
+  const handleMaterial = useMemo(
+    () =>
+      new MeshPhysicalMaterial({
+        color: '#baa579',
+        roughness: 0.25,
+        metalness: 0.9,
+        emissive: '#d1b886',
+        emissiveIntensity: 0,
+      }),
+    [],
+  );
+  useEffect(() => () => handleMaterial.dispose(), [handleMaterial]);
   const camera = useThree((state) => state.camera),
     mode = useProject((state) => state.mode),
     floorId = useProject((state) => state.floorId),
@@ -45,6 +58,12 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
   useFrame((_state, delta) => {
     const before = motion.current.fraction,
       handle = motion.current.handle;
+    handleMaterial.emissiveIntensity = MathUtils.damp(
+      handleMaterial.emissiveIntensity,
+      handleHovered.current || drag.current ? 0.22 : 0,
+      12,
+      delta,
+    );
     motion.current.step(
       portal.open,
       delta,
@@ -159,6 +178,10 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
           x={sign * (source.size.x - 0.17)}
           depth={source.size.z}
           pivot={pivot}
+          onHover={(active) => {
+            handleHovered.current = active;
+          }}
+          onPress={() => motion.current.press()}
           onOpen={() => {
             motion.current.press();
             traverseDoor(portal.id);
@@ -175,29 +198,40 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
             onPointerCancel={() => {
               drag.current = null;
               preview.current = null;
+              handleHovered.current = false;
               useProject.getState().setInteracting(false);
             }}
             onClick={(event) => event.stopPropagation()}
             onPointerOver={(event) => {
               event.stopPropagation();
+              handleHovered.current = true;
               document.body.style.cursor = 'grab';
             }}
             onPointerOut={() => {
+              handleHovered.current = false;
               if (!drag.current) document.body.style.cursor = '';
             }}
           >
-            <RoundedBox args={[0.035, 0.16, 0.015]} radius={0.007} smoothness={3} castShadow>
-              <meshPhysicalMaterial color="#baa579" roughness={0.25} metalness={0.9} />
-            </RoundedBox>
+            <RoundedBox
+              args={[0.035, 0.16, 0.015]}
+              radius={0.007}
+              smoothness={3}
+              material={handleMaterial}
+              castShadow
+            />
             <group
               ref={(value) => {
                 levers.current[side === -1 ? 0 : 1] = value;
               }}
               position={[0, 0.028, side * 0.025]}
             >
-              <mesh position={[-sign * 0.05, 0, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
+              <mesh
+                position={[-sign * 0.05, 0, 0]}
+                rotation={[0, 0, Math.PI / 2]}
+                material={handleMaterial}
+                castShadow
+              >
                 <cylinderGeometry args={[0.013, 0.013, 0.14, 16]} />
-                <meshPhysicalMaterial color="#baa579" roughness={0.25} metalness={0.9} />
               </mesh>
             </group>
             <mesh visible={false}>

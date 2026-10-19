@@ -17,6 +17,8 @@ export function DoorHint({
   x,
   depth,
   pivot,
+  onHover,
+  onPress,
   onOpen,
 }: {
   doorId: string;
@@ -25,6 +27,8 @@ export function DoorHint({
   x: number;
   depth: number;
   pivot: RefObject<Group | null>;
+  onHover: (active: boolean) => void;
+  onPress: () => void;
   onOpen: () => void;
 }) {
   const anchor = useRef<Group>(null),
@@ -78,6 +82,7 @@ export function DoorHint({
               isVisible(hit.object),
           );
     }
+    if (!visible && !button.current.hidden) onHover(false);
     button.current.hidden = !visible;
   });
   return (
@@ -89,7 +94,14 @@ export function DoorHint({
           className="door-handle-hint"
           data-door-handle={doorId}
           aria-label={open ? 'Enter through door handle' : 'Open door using handle'}
-          onPointerDown={(event) => event.stopPropagation()}
+          onPointerEnter={() => onHover(true)}
+          onPointerLeave={() => onHover(false)}
+          onFocus={() => onHover(true)}
+          onBlur={() => onHover(false)}
+          onPointerDown={(event) => {
+            event.stopPropagation();
+            onPress();
+          }}
           onPointerMove={(event) => event.stopPropagation()}
           onPointerUp={(event) => event.stopPropagation()}
           onClick={(event) => {
@@ -97,7 +109,7 @@ export function DoorHint({
             onOpen();
           }}
         >
-          {open ? 'Click to enter' : 'Click to open'}
+          <span className="door-handle-label">{open ? 'Click to enter' : 'Click to open'}</span>
         </button>
       </Html>
     </group>
