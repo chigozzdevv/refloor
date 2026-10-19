@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { RoundedBox, useGLTF } from '@react-three/drei';
 import { Box3, BufferGeometry, Float32BufferAttribute, Mesh, Quaternion, Vector3 } from 'three';
-import type { Point3 } from '@refloor/engine';
+import type { CompiledBuilding, Point3 } from '@refloor/engine';
 import { useProject } from '@/shared/scene/scene-store';
 import { exteriorLayout } from '@/shared/scene/exterior';
 import { Compound } from '@/components/scene/compound';
@@ -118,6 +118,16 @@ function Planter({ position, rotation }: { position: Point3; rotation: number })
 export function Exterior() {
   const compiled = useProject((state) => state.compiled),
     evening = useProject((state) => state.lighting === 'evening');
+  return <ExteriorModel compiled={compiled} evening={evening} />;
+}
+
+export function ExteriorModel({
+  compiled,
+  evening = false,
+}: {
+  compiled: CompiledBuilding;
+  evening?: boolean;
+}) {
   const site = useMemo(() => exteriorLayout(compiled), [compiled]);
   const top = site.top.footprint,
     roof = compiled.building.roof;

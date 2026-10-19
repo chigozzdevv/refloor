@@ -2,6 +2,7 @@ import type { CompiledBuilding, Point3 } from '@refloor/engine';
 import { compoundFootprint } from '@refloor/engine';
 import type { Floor, Wall } from '@refloor/scene';
 import { entryPose } from '@/shared/navigation/entry';
+import { Vector3 } from 'three';
 
 export function exteriorNormal(wall: Wall, floor: Floor) {
   const { x, z, width, depth } = floor.footprint;
@@ -94,4 +95,36 @@ export function exteriorCamera(compiled: CompiledBuilding, aspect = 1.6) {
     span,
     distance,
   };
+}
+
+export function housePreviewCamera(compiled: CompiledBuilding, aspect: number) {
+  const site = exteriorLayout(compiled),
+    view = exteriorCamera(compiled, aspect),
+    target = new Vector3(view.target.x, (site.ground.elevation + site.height) / 2, view.target.z),
+    direction = new Vector3(view.position.x, view.position.y, view.position.z)
+      .sub(new Vector3(view.target.x, view.target.y, view.target.z))
+      .normalize(),
+    right = new Vector3(0, 1, 0).cross(direction).normalize(),
+    up = direction.clone().cross(right),
+    tangent = Math.tan(Math.PI / 8);
+  let distance = 0;
+  for (const x of [-1, 1])
+    for (const y of [site.ground.elevation - 0.2, site.height])
+      for (const z of [-1, 1]) {
+        const corner = new Vector3(
+          site.centre.x + x * (site.width / 2 + 0.8),
+          y,
+          site.centre.z + z * (site.depth / 2 + 0.8),
+        ).sub(target);
+        distance = Math.max(
+          distance,
+          corner.dot(direction) +
+            Math.max(
+              Math.abs(corner.dot(right)) / (tangent * aspect),
+              Math.abs(corner.dot(up)) / tangent,
+            ),
+        );
+      }
+  const position = direction.multiplyScalar(distance * 1.12).add(target);
+  return { target, position };
 }

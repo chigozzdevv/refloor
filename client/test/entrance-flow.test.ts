@@ -8,9 +8,43 @@ import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-w
 import { physicsSession } from '@/shared/navigation/physics-session';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 import { useProject } from '@/shared/scene/scene-store';
+import { exteriorLayout, housePreviewCamera } from '@/shared/scene/exterior';
+import { PerspectiveCamera, Vector3 } from 'three';
 
 beforeAll(initializePhysics);
 describe('entrance and doorway flow', () => {
+  it('fits the actual house and entrance paving into wide and narrow preview cards', () => {
+    for (const storeys of [1, 2] as const)
+      for (const dimensions of [
+        { width: 11.5, depth: 14 },
+        { width: 16, depth: 9.5 },
+      ]) {
+        const compiled = compileBuilding(
+            createHouse({ id: 'preview', name: 'Preview', storeys, ...dimensions }),
+          ),
+          site = exteriorLayout(compiled);
+        for (const aspect of [1, 1.7, 2.7]) {
+          const view = housePreviewCamera(compiled, aspect),
+            camera = new PerspectiveCamera(45, aspect, 0.1, 200);
+          camera.position.copy(view.position);
+          camera.lookAt(view.target);
+          camera.updateMatrixWorld();
+          for (const x of [-1, 1])
+            for (const y of [-0.2, site.height])
+              for (const z of [-1, 1]) {
+                const point = new Vector3(
+                  site.centre.x + x * (site.width / 2 + 0.8),
+                  y,
+                  site.centre.z + z * (site.depth / 2 + 0.8),
+                ).project(camera);
+                expect(Math.abs(point.x)).toBeLessThan(0.95);
+                expect(Math.abs(point.y)).toBeLessThan(0.95);
+                expect(point.z).toBeGreaterThan(-1);
+                expect(point.z).toBeLessThan(1);
+              }
+        }
+      }
+  });
   it('centers the entrance camera on the actual doorway', () => {
     const compiled = compileBuilding(
       createHouse({ id: 'entrance-view', name: 'Entrance view', storeys: 2 }),
