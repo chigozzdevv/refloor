@@ -3,7 +3,7 @@ import { entryPose } from '@/shared/navigation/entry';
 import { destinations } from '@/shared/navigation/destinations';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 import { physicsSession } from '@/shared/navigation/physics-session';
-import { contains } from '@refloor/engine/math';
+import { contains, rotate } from '@refloor/engine/math';
 
 export function traverseDoor(id: string) {
   const state = useProject.getState();
@@ -18,9 +18,19 @@ export function traverseDoor(id: string) {
   }
   const floor = state.compiled.building.floors.find((value) => value.id === player.floorId);
   const room = floor?.rooms.find((value) => contains(value.footprint, player.position));
-  const destination = destinations(state.compiled).find(
-    (value) => value.kind === 'door' && value.doorId === id && value.roomId === room?.id,
+  const door = state.compiled.doors.find((value) => value.id === id);
+  const candidates = destinations(state.compiled).filter(
+    (value) => value.kind === 'door' && value.doorId === id,
   );
+  const destination =
+    candidates.find((value) => value.roomId === room?.id) ??
+    candidates.find((value) => {
+      if (!door || !value.approach) return false;
+      const normal = rotate({ x: 0, z: 1 }, door.rotation);
+      const side = (point: { x: number; z: number }) =>
+        (point.x - door.centre.x) * normal.x + (point.z - door.centre.z) * normal.z;
+      return side(value.approach.position) * side(player.position) >= 0;
+    });
   if (destination) {
     state.select(null);
     useNavigation.getState().go(destination.target, destination.lookAt, destination.label);

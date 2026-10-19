@@ -85,7 +85,8 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
     drag.current = null;
     preview.current = null;
     useProject.getState().setInteracting(false);
-    activateDoor(portal.id, open);
+    if (mode !== 'orbit' && (distance < 5 || open)) traverseDoor(portal.id);
+    else activateDoor(portal.id, open);
   };
   const sign = local.x >= 0 ? 1 : -1;
   return (
