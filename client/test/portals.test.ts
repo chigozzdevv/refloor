@@ -46,7 +46,7 @@ describe('tour portal access', () => {
       start = stops.find((stop) => stop.kind === 'room' && stop.roomId === room.id)!.target,
       portals = tourPortals(compiled, start, stops),
       downstairs = portals.find((stop) => stop.direction === 'down');
-    expect(portals.some((stop) => stop.label === 'Leave room')).toBe(true);
+    expect(portals.some((stop) => stop.kind === 'door' && stop.roomId === room.id)).toBe(true);
     expect(downstairs).toBeUndefined();
   });
   it.each([createHouse({ id: 'landing', name: 'Landing', storeys: 2 }), generated])(

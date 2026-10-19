@@ -3,11 +3,6 @@ import type { ComponentRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { MathUtils, PerspectiveCamera, Vector3 } from 'three';
-import type { CompiledBuilding, Point3 } from '@refloor/engine';
-import type { SceneCommand } from '@refloor/scene';
-import { smoothRoute } from '@/shared/navigation/destinations';
-import { createJourney, stepJourney } from '@/shared/navigation/journey';
-import type { Journey } from '@/shared/navigation/journey';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 import { useProject } from '@/shared/scene/scene-store';
 import { entryPose } from '@/shared/navigation/entry';
@@ -21,10 +16,9 @@ import {
 } from '@/shared/navigation/input';
 import { advanceStairAssist, stairAssist } from '@/shared/navigation/stair-assist';
 import type { StairAssist } from '@/shared/navigation/stair-assist';
-import { doorRoute } from '@/shared/navigation/door-route';
-import { arrivalView, entranceArrival } from '@/shared/navigation/arrival';
+import { entranceArrival } from '@/shared/navigation/arrival';
 import { exteriorCamera } from '@/shared/scene/exterior';
-import { TourDoors } from '@/shared/navigation/tour-doors';
+import { Walkthrough } from '@/shared/navigation/walkthrough';
 import { useExperience } from '@/shared/scene/experience-store';
 import {
   applySceneView,
@@ -46,18 +40,11 @@ export function NavigationControls() {
   const outside = exteriorCamera(compiled, size.width / size.height);
   const exteriorPosition = outside.position;
   const previous = useRef(mode),
-    tourDoors = useRef(new TourDoors()),
+    walkthrough = useRef(new Walkthrough()),
     framing = useRef<{ mode: typeof mode; buildingId: string; epoch: number } | null>(null),
     stairs = useRef<StairAssist | null>(null),
     transition = useRef<number | null>(null),
-    entry = entryPose(compiled),
-    route = useRef<{
-      id: string;
-      compiled: CompiledBuilding;
-      journey: Journey;
-      doors: SceneCommand[];
-      lookAt: Point3 | undefined;
-    } | null>(null);
+    entry = entryPose(compiled);
   const entryFacing = useMemo(() => entranceArrival(compiled), [compiled]);
   const forward = useRef(new Vector3()),
     right = useRef(new Vector3()),
@@ -85,9 +72,10 @@ export function NavigationControls() {
       walkInput.pitch = camera.rotation.x;
       resetWalkInput();
       transition.current = null;
-      route.current = null;
+      walkthrough.current.reset();
       stairs.current = null;
-      tourDoors.current.clear();
+      walkthrough.current.doors.clear();
+      walkthrough.current.doors.recover(compiled, useProject.getState().memory);
       previous.current = mode;
       framing.current = { mode, buildingId: compiled.building.id, epoch };
       return;
@@ -102,9 +90,9 @@ export function NavigationControls() {
     framing.current = { mode, buildingId: compiled.building.id, epoch };
     camera.rotation.order = 'YXZ';
     if (mode !== 'walk') useNavigation.getState().stop();
-    route.current = null;
+    walkthrough.current.reset();
     if (mode === 'entry') {
-      tourDoors.current.clear();
+      walkthrough.current.doors.clear();
       const portrait = size.width / size.height < 0.8;
       if (camera instanceof PerspectiveCamera) {
         camera.fov = portrait ? 55 : 45;
@@ -121,13 +109,13 @@ export function NavigationControls() {
       camera.position.set(exteriorPosition.x, exteriorPosition.y, exteriorPosition.z);
       controls.current?.target.set(outside.target.x, outside.target.y, outside.target.z);
       controls.current?.update();
-      route.current = null;
+      walkthrough.current.reset();
     }
     if (mode === 'walk') {
       if (previous.current === 'entry') {
-        tourDoors.current.recover(compiled, useProject.getState().memory);
+        walkthrough.current.doors.recover(compiled, useProject.getState().memory);
         const door = compiled.doors.find((value) => value.id === entry.doorId);
-        if (door?.open) tourDoors.current.entrance(door, entry.outside);
+        if (door?.open) walkthrough.current.doors.entrance(door, entry.outside);
       }
       if (camera instanceof PerspectiveCamera) {
         camera.fov = 65;
@@ -313,7 +301,7 @@ export function NavigationControls() {
     ) {
       resetWalkInput();
       stairs.current = null;
-      route.current = null;
+      walkthrough.current.reset();
       if (useNavigation.getState().request) useNavigation.getState().stop();
       return;
     }
@@ -321,17 +309,6 @@ export function NavigationControls() {
     if (!world || world.compiled !== compiled) return;
     const dt = Math.min(delta, 0.05),
       feet = world.feet;
-    if (transition.current === null) {
-      const closures = tourDoors.current.closures(
-        world,
-        Boolean(useNavigation.getState().request),
-        useProject.getState().memory,
-      );
-      if (closures.length) {
-        useProject.getState().edit(closures, { source: 'navigation' });
-        return;
-      }
-    }
     if (transition.current !== null) {
       transition.current += dt;
       const t = MathUtils.smootherstep(transition.current, 0.5, 1.9);
@@ -362,87 +339,27 @@ export function NavigationControls() {
     const turn = turningInput();
     walkInput.yaw -= turn * dt * 1.7;
     const request = useNavigation.getState().request;
-    if (request && (route.current?.id !== request.id || route.current.compiled !== compiled)) {
-      const state = useProject.getState(),
-        plan = doorRoute(compiled, world.player, request.target);
-      if (!plan) {
-        state.notify('That spot is blocked. Choose another marker.');
+    const step = walkthrough.current.step(
+      world,
+      request,
+      walkInput,
+      dt,
+      useProject.getState().memory,
+    );
+    if (step.commands.length) {
+      if (!useProject.getState().edit(step.commands, { source: 'navigation' }))
         useNavigation.getState().stop();
-        return;
-      }
-      if (plan.commands.length && !plan.staging) {
-        const from = world.player;
-        if (state.edit(plan.commands, { source: 'navigation' }))
-          tourDoors.current.record(compiled, from, plan.commands);
-        else useNavigation.getState().stop();
-        return;
-      }
-      route.current = {
-        id: request.id,
-        compiled,
-        journey: createJourney(smoothRoute(compiled, plan.path.points)),
-        doors: plan.staging ? plan.commands : [],
-        lookAt:
-          plan.staging || request.preserveView
-            ? undefined
-            : (arrivalView(compiled, request.target, request.lookAt)?.point ?? request.lookAt),
-      };
+      return;
     }
-    const active = request ? route.current?.journey : null;
-    if (active && request) {
-      const status = stepJourney(world, active, dt);
-      if (status === 'arrived' && route.current?.doors.length) {
-        const from = world.player;
-        if (useProject.getState().edit(route.current.doors, { source: 'navigation' }))
-          tourDoors.current.record(compiled, from, route.current.doors);
-        else useNavigation.getState().stop();
-        route.current = null;
-        return;
-      }
-      let heading = request.preserveView ? null : active.heading;
-      const lookAt = route.current?.lookAt;
-      const remaining = Math.hypot(
-        world.feet.x - request.target.position.x,
-        world.feet.y - request.target.position.y,
-        world.feet.z - request.target.position.z,
-      );
-      if (
-        !route.current?.doors.length &&
-        lookAt &&
-        remaining < 1.4 &&
-        Math.hypot(lookAt.x - world.feet.x, lookAt.z - world.feet.z) > 0.5
-      ) {
-        const facing = Math.atan2(world.feet.x - lookAt.x, world.feet.z - lookAt.z);
-        heading =
-          heading === null
-            ? facing
-            : heading +
-              Math.atan2(Math.sin(facing - heading), Math.cos(facing - heading)) *
-                (1 - remaining / 1.4);
-      }
-      let angle = 0;
-      if (heading !== null) {
-        angle = Math.atan2(Math.sin(heading - walkInput.yaw), Math.cos(heading - walkInput.yaw));
-        walkInput.yaw += MathUtils.clamp(angle, -dt * 2.4, dt * 2.4);
-      }
-      const pitch =
-        lookAt && remaining < 1.4
-          ? Math.atan2(
-              lookAt.y - world.feet.y - 1.62,
-              Math.hypot(lookAt.x - world.feet.x, lookAt.z - world.feet.z),
-            )
-          : -0.1;
-      if (!request.preserveView)
-        walkInput.pitch = MathUtils.damp(
-          walkInput.pitch,
-          MathUtils.clamp(pitch, -0.65, 0.35),
-          4,
-          dt,
-        );
-      if (status === 'blocked' || (status === 'arrived' && Math.abs(angle) < 0.04)) {
+    if (request) {
+      walkInput.yaw = step.yaw;
+      walkInput.pitch = step.pitch;
+      if (step.status === 'arrived' || step.status === 'blocked') {
         useNavigation.getState().stop();
-        if (status === 'blocked')
-          useProject.getState().notify('The path changed. Choose another marker.');
+        if (step.status === 'blocked')
+          useProject
+            .getState()
+            .notify('This route is obstructed. Move the blocking item to continue.');
       }
     } else {
       if (f <= 0.25 || Math.abs(r) > 0.35 || turn) stairs.current = null;

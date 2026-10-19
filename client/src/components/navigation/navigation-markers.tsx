@@ -1,11 +1,14 @@
 import { useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Billboard, Html } from '@react-three/drei';
+import { Html } from '@react-three/drei';
 import { Raycaster, Shape, Vector3 } from 'three';
-import type { Mesh } from 'three';
 import { contains } from '@refloor/engine/math';
 import type { Destination } from '@/shared/navigation/destinations';
-import { destinations, nearbyRoute, stairContinuation } from '@/shared/navigation/destinations';
+import {
+  destinations,
+  destinationRoute,
+  stairContinuation,
+} from '@/shared/navigation/destinations';
 import { organizeMarkers } from '@/shared/navigation/marker-layout';
 import { portalPosition, tourPortals } from '@/shared/navigation/portals';
 import { useNavigation } from '@/shared/navigation/navigation-store';
@@ -13,7 +16,7 @@ import type { PortalPin } from '@/shared/navigation/navigation-store';
 import { physicsSession } from '@/shared/navigation/physics-session';
 import { useProject } from '@/shared/scene/scene-store';
 import { belongsToDoor, isVisible } from '@/shared/editor/picking';
-import { doorwayBearing } from '@/shared/navigation/marker-facing';
+import { DoorClosed, DoorOpen } from 'lucide-react';
 import { useExperience } from '@/shared/scene/experience-store';
 
 const chevron = new Shape();
@@ -29,23 +32,19 @@ function Marker({ destination, primary }: { destination: Destination; primary: b
   const [hovered, setHovered] = useState(false);
   const portal = destination.kind === 'door' || destination.kind === 'stairs';
   const doorway = destination.kind === 'door';
-  const arrow = useRef<Mesh>(null);
-  useFrame(({ camera, size }) => {
-    if (doorway && arrow.current)
-      arrow.current.rotation.z = doorwayBearing(destination, camera, size.width, size.height);
-  });
+  const open = useProject(
+    (state) => state.compiled.doors.find((door) => door.id === destination.doorId)?.open,
+  );
+  const DoorIcon = open ? DoorOpen : DoorClosed;
   const travel = () => {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     useProject.getState().select(null);
-    useNavigation.getState().go(destination.target, destination.lookAt, destination.label, !portal);
+    useNavigation.getState().go(destination.target, destination.lookAt, destination.label);
   };
   return (
     <group position={[destination.anchor.x, destination.anchor.y, destination.anchor.z]}>
-      <Billboard follow={doorway}>
-        <group
-          rotation={doorway ? [0, 0, 0] : [-Math.PI / 2, 0, 0]}
-          scale={doorway ? 0.45 : destination.kind === 'stairs' ? 0.6 : 1}
-        >
+      {!doorway && (
+        <group rotation={[-Math.PI / 2, 0, 0]} scale={destination.kind === 'stairs' ? 0.7 : 1}>
           <mesh
             position={[0, 0, 0.003]}
             userData={{ navigationMarker: true }}
@@ -79,9 +78,8 @@ function Marker({ destination, primary }: { destination: Destination; primary: b
           </mesh>
           {portal ? (
             <mesh
-              ref={arrow}
               position={[0, 0, 0.002]}
-              rotation={[0, 0, doorway ? 0 : (destination.bearing ?? 0)]}
+              rotation={[0, 0, destination.bearing ?? 0]}
               raycast={() => undefined}
             >
               <shapeGeometry args={[chevron]} />
@@ -97,10 +95,11 @@ function Marker({ destination, primary }: { destination: Destination; primary: b
             </mesh>
           )}
         </group>
-      </Billboard>
+      )}
       <Html center zIndexRange={[15, 10]}>
         <button
-          className={`navigation-marker marker-floor ${portal ? 'marker-portal' : ''} ${primary ? 'marker-primary' : ''}`}
+          className={`navigation-marker marker-floor ${portal ? 'marker-portal' : ''} ${primary ? 'marker-primary' : ''} ${doorway ? 'marker-door' : ''}`}
+          data-navigation-target={destination.id}
           aria-label={destination.label}
           onPointerEnter={() => setHovered(true)}
           onPointerLeave={() => setHovered(false)}
@@ -112,6 +111,7 @@ function Marker({ destination, primary }: { destination: Destination; primary: b
             travel();
           }}
         >
+          {doorway && <DoorIcon size={19} strokeWidth={1.6} />}
           <span className="marker-caption">{destination.caption ?? destination.label}</span>
         </button>
       </Html>
@@ -151,7 +151,7 @@ export function NavigationMarkers() {
       .filter((destination) => {
         if (
           destination.floorId !== player.floorId ||
-          (destination.kind === 'stairs' &&
+          ((destination.kind === 'stairs' || destination.kind === 'door') &&
             !continuing.length &&
             !links.some((link) => link.id === destination.id)) ||
           (!continuing.length &&
@@ -164,12 +164,8 @@ export function NavigationMarkers() {
           destination.anchor.x - player.position.x,
           destination.anchor.z - player.position.z,
         );
-        const limit = destination.kind === 'stairs' ? 4 : destination.kind === 'door' ? 6 : 5;
-        if (
-          distance > limit ||
-          ((destination.kind === 'room' || destination.kind === 'waypoint') && distance < 0.85)
-        )
-          return false;
+        const limit = destination.kind === 'room' ? 7 : 15;
+        if (distance > limit || (destination.kind === 'room' && distance < 0.85)) return false;
         anchor.set(destination.anchor.x, destination.anchor.y, destination.anchor.z);
         const length = anchor.distanceTo(camera.position);
         raycaster.set(camera.position, anchor.clone().sub(camera.position).normalize());
@@ -189,7 +185,7 @@ export function NavigationMarkers() {
         if (!continuing.length && floor) {
           const approach = destination.approach ?? destination.target;
           if (
-            !nearbyRoute(
+            !destinationRoute(
               compiled,
               { floorId: floor.id, position: { ...player.position, y: floor.elevation } },
               approach,
@@ -226,13 +222,17 @@ export function NavigationMarkers() {
       size.width,
       size.height,
     ).map((value) => links.find((link) => link.id === value.destination.id) ?? value.destination);
-    const edgePortals: PortalPin[] = [];
-    for (const destination of links) {
-      if (layout.some((value) => value.id === destination.id)) continue;
-      const position = portalPosition(player, destination, heading, size.width, size.height);
-      if (edgePortals.some((pin) => pin.x === position.x && Math.abs(pin.y - position.y) < 54))
-        position.y += 54;
-      edgePortals.push({ destination, ...position });
+    const edgePortals: PortalPin[] = links
+      .filter((destination) => !layout.some((value) => value.id === destination.id))
+      .map((destination) => ({
+        destination,
+        ...portalPosition(player, destination, heading, size.width, size.height),
+      }));
+    for (const side of [22, size.width - 22]) {
+      const pins = edgePortals.filter((pin) => pin.x === side);
+      pins.forEach((pin, index) => {
+        pin.y = Math.max(120, size.height * 0.46 - ((pins.length - 1) * 64) / 2) + index * 64;
+      });
     }
     useNavigation.getState().setContext({ player, heading, location, edgePortals });
     setVisible((previous) =>

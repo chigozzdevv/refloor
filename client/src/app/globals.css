@@ -336,6 +336,18 @@ textarea:focus-visible,
   color: #fff;
   touch-action: manipulation;
 }
+.marker-door {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #ffffff75;
+  background: #17212c8c;
+  box-shadow: 0 3px 16px #0003;
+  backdrop-filter: blur(6px);
+}
+.marker-door:hover {
+  background: #32404cc9;
+  border-color: #e6c58c;
+}
 .marker-caption {
   position: absolute;
   left: 50%;
@@ -916,12 +928,13 @@ select option {
   color: #f4eee0;
 }
 .marker-edge.edge-left {
-  border-radius: 0 50% 50% 0;
+  border-radius: 50%;
 }
 .marker-edge.edge-right {
-  border-radius: 50% 0 0 50%;
+  border-radius: 50%;
 }
 .marker-edge .marker-caption {
+  opacity: 1;
   max-width: 120px;
   bottom: auto;
   top: 50%;

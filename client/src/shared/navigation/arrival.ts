@@ -7,7 +7,7 @@ import { entryPose } from '@/shared/navigation/entry';
 export type ArrivalView = {
   point: Point3;
   entityId: string;
-  kind: 'door' | 'stairs' | 'object' | 'waypoint';
+  kind: 'door' | 'stairs' | 'object';
 };
 
 export function arrivalView(
@@ -69,15 +69,9 @@ export function arrivalView(
         2,
         stop.stairId,
       );
-    if (
-      stop.kind === 'waypoint' &&
-      stop.roomId === room.id &&
-      nearbyRoute(compiled, target, stop.target, 'current')
-    )
-      add({ point: stop.anchor, entityId: stop.id, kind: 'waypoint' }, 5);
   }
   for (const object of compiled.building.objects.filter(
-    (value) => value.roomId === room.id && !value.placement,
+    (value) => value.roomId === room.id && !['light', 'rug'].includes(value.kind),
   ))
     add(
       {
@@ -89,7 +83,7 @@ export function arrivalView(
         entityId: object.id,
         kind: 'object',
       },
-      transit ? 3 : 0,
+      transit ? 4 : ['television', 'bed', 'sofa', 'table', 'desk'].includes(object.kind) ? 0 : 4,
       object.id,
     );
   const best = candidates.sort((a, b) => a.score - b.score)[0];

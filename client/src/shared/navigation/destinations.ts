@@ -3,13 +3,12 @@ import type { CompiledBuilding, Navigation, NavigationPoint, Point3 } from '@ref
 import { contains, rotate } from '@refloor/engine/math';
 import { clearSegment } from '@refloor/engine/navigation/surfaces';
 import { roomViews } from '@/shared/navigation/viewpoints';
-import { entryPose } from '@/shared/navigation/entry';
 import { stairMarker } from '@/shared/navigation/stair-marker';
 
 export type Destination = {
   id: string;
   label: string;
-  kind: 'room' | 'waypoint' | 'door' | 'stairs';
+  kind: 'room' | 'door' | 'stairs';
   caption?: string;
   anchor: Point3;
   target: NavigationPoint;
@@ -22,6 +21,7 @@ export type Destination = {
   stairId?: string;
   bearing?: number;
 };
+const stops = new WeakMap<CompiledBuilding, Destination[]>();
 const graphs = new WeakMap<CompiledBuilding, Map<string, Navigation>>();
 
 export function navigationFor(compiled: CompiledBuilding, policy: 'openable' | 'current') {
@@ -33,6 +33,8 @@ export function navigationFor(compiled: CompiledBuilding, policy: 'openable' | '
 }
 
 export function destinations(compiled: CompiledBuilding): Destination[] {
+  const cached = stops.get(compiled);
+  if (cached) return cached;
   const graph = navigationFor(compiled, 'openable'),
     result: Destination[] = [];
   for (const floor of compiled.building.floors) {
@@ -46,7 +48,7 @@ export function destinations(compiled: CompiledBuilding): Destination[] {
       ).entries()) {
         result.push({
           id: index === 0 ? `room:${room.id}` : `room:${room.id}:${index}`,
-          label: `Look around ${room.name}`,
+          label: `Explore ${room.name}`,
           caption: room.name,
           kind: 'room',
           floorId: floor.id,
@@ -96,9 +98,22 @@ export function destinations(compiled: CompiledBuilding): Destination[] {
         const opposite = sides[1 - index];
         if (!side?.node || !opposite?.node || side.room.id === opposite.room.id) continue;
         const normal = rotate({ x: 0, z: index === 0 ? -1 : 1 }, door.rotation);
+        const view = result
+          .filter((value) => value.kind === 'room' && value.roomId === opposite.room.id)
+          .sort(
+            (a, b) =>
+              Math.hypot(
+                a.target.position.x - opposite.node!.position.x,
+                a.target.position.z - opposite.node!.position.z,
+              ) -
+              Math.hypot(
+                b.target.position.x - opposite.node!.position.x,
+                b.target.position.z - opposite.node!.position.z,
+              ),
+          )[0];
         result.push({
           id: `door:${door.id}:${index}`,
-          label: `Enter ${opposite.room.name}`,
+          label: `${door.open ? 'Enter' : 'Open door to'} ${opposite.room.name}`,
           caption: opposite.room.name,
           kind: 'door',
           doorId: door.id,
@@ -110,13 +125,9 @@ export function destinations(compiled: CompiledBuilding): Destination[] {
             z: door.centre.z + normal.z * 0.25,
           },
           bearing: Math.atan2(normal.x, normal.z),
-          target: { floorId: floor.id, position: opposite.node.position },
+          target: view?.target ?? { floorId: floor.id, position: opposite.node.position },
           approach: { floorId: floor.id, position: side.node.position },
-          lookAt: {
-            x: opposite.room.footprint.x + opposite.room.footprint.width / 2,
-            y: floor.elevation + 1,
-            z: opposite.room.footprint.z + opposite.room.footprint.depth / 2,
-          },
+          ...(view?.lookAt ? { lookAt: view.lookAt } : {}),
         });
       }
     }
@@ -163,77 +174,7 @@ export function destinations(compiled: CompiledBuilding): Destination[] {
         ...(facing ? { lookAt: facing.point } : {}),
       });
     }
-  const entry = entryPose(compiled);
-  for (const floor of compiled.building.floors)
-    for (const room of floor.rooms) {
-      const roots = result
-        .filter((value) => value.kind === 'room' && value.roomId === room.id)
-        .map((value) => value.target);
-      if (!roots.length) continue;
-      if (floor.id === entry.floorId && contains(room.footprint, entry.inside))
-        roots.unshift({ floorId: floor.id, position: entry.inside });
-      const exits = result
-        .filter(
-          (value) =>
-            value.approach?.floorId === floor.id &&
-            contains(room.footprint, value.approach.position),
-        )
-        .sort((a, b) => Number(b.kind === 'stairs') - Number(a.kind === 'stairs'));
-      for (const from of roots)
-        for (const exit of exits) {
-          const path = findPath(graph, from, exit.approach!);
-          if (!path || path.stairIds.length) continue;
-          const route = smoothRoute(compiled, path.points);
-          for (let i = 1; i < route.length; i++) {
-            const a = route[i - 1]!,
-              b = route[i]!,
-              distance = Math.hypot(b.x - a.x, b.z - a.z),
-              steps = Math.max(1, Math.ceil(distance / 2.8));
-            for (let step = 1; step <= steps; step++) {
-              const point = {
-                x: a.x + ((b.x - a.x) * step) / steps,
-                y: floor.elevation,
-                z: a.z + ((b.z - a.z) * step) / steps,
-              };
-              if (
-                !contains(room.footprint, point, 0.1) ||
-                !isWalkable(compiled, { floorId: floor.id, position: point }, 'current') ||
-                result.some(
-                  (value) =>
-                    value.floorId === floor.id &&
-                    (value.kind === 'room' || value.kind === 'waypoint') &&
-                    Math.hypot(
-                      value.target.position.x - point.x,
-                      value.target.position.z - point.z,
-                    ) < 1.35,
-                )
-              )
-                continue;
-              result.push({
-                id: `path:${room.id}:${point.x.toFixed(2)}:${point.z.toFixed(2)}`,
-                kind: 'waypoint',
-                floorId: floor.id,
-                roomId: room.id,
-                label: `Continue through ${room.name}`,
-                caption: 'Continue',
-                anchor: { ...point, y: point.y + 0.06 },
-                target: { floorId: floor.id, position: point },
-                lookAt: {
-                  ...(Math.hypot(
-                    point.x - exit.approach!.position.x,
-                    point.z - exit.approach!.position.z,
-                  ) < 2.2
-                    ? exit.anchor
-                    : step < steps
-                      ? b
-                      : (route[i + 1] ?? exit.anchor)),
-                  y: floor.elevation + 1.2,
-                },
-              });
-            }
-          }
-        }
-    }
+  stops.set(compiled, result);
   return result;
 }
 

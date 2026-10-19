@@ -1,38 +1,25 @@
 import type { CompiledBuilding, NavigationPoint } from '@refloor/engine';
 import { contains } from '@refloor/engine/math';
 import type { Destination } from '@/shared/navigation/destinations';
-import { nearbyRoute } from '@/shared/navigation/destinations';
-import { roomExit } from '@/shared/navigation/room-exit';
+import { destinationRoute } from '@/shared/navigation/destinations';
 
 export function tourPortals(
   compiled: CompiledBuilding,
   player: NavigationPoint,
   stops: Destination[],
 ) {
-  const exit = roomExit(compiled, player, stops);
   const floor = compiled.building.floors.find((value) => value.id === player.floorId);
   const room = floor?.rooms.find((value) => contains(value.footprint, player.position));
-  const stair = stops
-    .filter((stop) => stop.kind === 'stairs' && stop.floorId === player.floorId)
-    .flatMap((stop) => {
-      const approach = stop.approach;
-      if (
-        !approach ||
-        !room ||
-        !contains(room.footprint, approach.position) ||
-        Math.abs(approach.position.y - player.position.y) > 0.22
-      )
-        return [];
-      const distance = Math.hypot(
-        approach.position.x - player.position.x,
-        approach.position.z - player.position.z,
-      );
-      return distance < 3.5 && nearbyRoute(compiled, player, approach, 'current')
-        ? [{ stop, distance }]
-        : [];
-    })
-    .sort((a, b) => a.distance - b.distance)[0]?.stop;
-  return [...(exit ? [{ ...exit, label: 'Leave room' }] : []), ...(stair ? [stair] : [])];
+  const links = stops.filter((stop) => {
+    if (stop.floorId !== player.floorId || !stop.approach) return false;
+    if (Math.abs(stop.approach.position.y - player.position.y) > 0.22) return false;
+    if (room && stop.kind === 'door' && stop.roomId !== room.id) return false;
+    if (room && stop.kind === 'stairs' && !contains(room.footprint, stop.approach.position))
+      return false;
+    const path = destinationRoute(compiled, player, stop.approach, 'current');
+    return path !== null && path.stairIds.length === 0;
+  });
+  return links.sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export function portalPosition(

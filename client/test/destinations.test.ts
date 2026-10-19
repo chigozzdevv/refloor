@@ -4,7 +4,8 @@ import type { Building } from '@refloor/scene';
 import { createHouse } from '@refloor/catalogue/houses';
 import { applyCommands } from '@refloor/scene';
 import { compileBuilding, isWalkable } from '@refloor/engine';
-import { destinations, nearbyRoute } from '@/shared/navigation/destinations';
+import { destinations, nearbyRoute, destinationRoute } from '@/shared/navigation/destinations';
+import { tourPortals } from '@/shared/navigation/portals';
 import { entryPose } from '@/shared/navigation/entry';
 import { clearSegment } from '@refloor/engine/navigation/surfaces';
 
@@ -22,66 +23,21 @@ describe('house navigation destinations', () => {
       for (const side of sides) expect(isWalkable(compiled, side.target, 'openable')).toBe(true);
     }
   });
-  it('provides a clear next step from the entrance of a long two-storey house', () => {
+  it('offers doors and stairs throughout a long entrance hall without intermediate dot hunting', () => {
     const compiled = compileBuilding(
       createHouse({ id: 'long-hall', name: 'Long hall', storeys: 2, width: 14, depth: 12 }),
     );
-    const entry = entryPose(compiled);
-    expect(
-      destinations(compiled).some((marker) => {
-        if (!['room', 'waypoint'].includes(marker.kind) || marker.floorId !== entry.floorId)
-          return false;
-        const dx = marker.target.position.x - entry.inside.x,
-          dz = marker.target.position.z - entry.inside.z,
-          distance = Math.hypot(dx, dz);
-        return (
-          distance > 1 &&
-          distance < 5 &&
-          (dx * entry.normal.x + dz * entry.normal.z) / distance > 0.7 &&
-          clearSegment(compiled, entry.floorId, entry.inside, marker.target.position, 'current')
-        );
-      }),
-    ).toBe(true);
-  });
-  it('connects the entrance, corridor turns and staircase through nearby stops', () => {
-    const compiled = compileBuilding(
-      createHouse({ id: 'tour-links', name: 'Tour links', storeys: 2, width: 14, depth: 12 }),
-    );
     const entry = entryPose(compiled),
-      markers = destinations(compiled),
-      points = markers
-        .filter(
-          (value) => value.floorId === entry.floorId && ['room', 'waypoint'].includes(value.kind),
-        )
-        .map((value) => value.target.position);
-    const reached = [entry.inside];
-    for (let index = 0; index < reached.length; index++)
-      for (const point of points)
-        if (
-          !reached.includes(point) &&
-          Math.hypot(point.x - reached[index]!.x, point.z - reached[index]!.z) <= 5 &&
-          clearSegment(compiled, entry.floorId, reached[index]!, point, 'current')
-        )
-          reached.push(point);
-    expect(
-      reached.some(
-        (point) =>
-          Math.hypot(
-            point.x - compiled.stairs[0]!.lower.position.x,
-            point.z - compiled.stairs[0]!.lower.position.z,
-          ) < 4 &&
-          clearSegment(
-            compiled,
-            entry.floorId,
-            point,
-            compiled.stairs[0]!.lower.position,
-            'current',
-          ),
-      ),
-    ).toBe(true);
+      stops = destinations(compiled);
+    const player = { floorId: entry.floorId, position: entry.inside };
+    const links = tourPortals(compiled, player, stops);
+    expect(links.some((link) => link.kind === 'stairs' && link.direction === 'up')).toBe(true);
+    expect(links.some((link) => link.kind === 'door')).toBe(true);
+    for (const link of links)
+      expect(destinationRoute(compiled, player, link.target, 'openable')).not.toBeNull();
     for (const room of compiled.building.floors.flatMap((floor) => floor.rooms))
       expect(
-        markers.filter((value) => value.kind === 'room' && value.roomId === room.id).length,
+        stops.filter((stop) => stop.kind === 'room' && stop.roomId === room.id).length,
       ).toBeLessThanOrEqual(2);
   });
   it('allows a short safe route around a stair corner without requiring a straight walk', () => {

@@ -64,7 +64,17 @@ export function roomViews(compiled: CompiledBuilding, floor: Floor, room: Room, 
   const desired = feature
     ? { x: focal.x + front.x, y: floor.elevation, z: focal.z + front.z }
     : centre;
-  const candidates = points.filter((point) => contains(rect, point, 0.15));
+  const candidates = points.filter(
+    (point) =>
+      contains(rect, point, 0.15) &&
+      compiled.doors
+        .filter((door) => door.floorId === floor.id)
+        .every(
+          (door) =>
+            Math.hypot(point.x - door.hinge.x, point.z - door.hinge.z) >
+            door.width + compiled.options.radius + 0.12,
+        ),
+  );
   const views: { position: Point3; lookAt?: Point3 }[] = [];
   const pick = (preferred: Point3) => {
     const ranked = candidates

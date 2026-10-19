@@ -10,14 +10,14 @@ type TourContext = {
   edgePortals: PortalPin[];
 };
 
+export type TravelRequest = {
+  id: string;
+  target: NavigationPoint;
+  lookAt?: Point3;
+  label: string;
+};
 type NavigationState = {
-  request: {
-    id: string;
-    target: NavigationPoint;
-    lookAt?: Point3;
-    label: string;
-    preserveView: boolean;
-  } | null;
+  request: TravelRequest | null;
   location: string;
   player: NavigationPoint | null;
   heading: number;
@@ -27,7 +27,7 @@ type NavigationState = {
   setContext: (context: TourContext) => void;
   overview: number;
   resetOverview: () => void;
-  go: (target: NavigationPoint, lookAt?: Point3, label?: string, preserveView?: boolean) => void;
+  go: (target: NavigationPoint, lookAt?: Point3, label?: string) => void;
   stop: () => void;
 };
 
@@ -60,13 +60,12 @@ export const useNavigation = create<NavigationState>((set) => ({
     ),
   overview: 0,
   resetOverview: () => set((state) => ({ overview: state.overview + 1, request: null })),
-  go: (target, lookAt, label = 'Moving', preserveView = false) =>
+  go: (target, lookAt, label = 'Moving') =>
     set({
       request: {
         id: crypto.randomUUID(),
         target,
         label,
-        preserveView,
         ...(lookAt ? { lookAt } : {}),
       },
     }),

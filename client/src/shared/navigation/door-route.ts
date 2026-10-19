@@ -2,10 +2,16 @@ import { applyCommands } from '@refloor/scene';
 import type { SceneCommand } from '@refloor/scene';
 import { compileBuilding } from '@refloor/engine';
 import type { CompiledBuilding, NavigationPoint, NavigationPath } from '@refloor/engine';
-import { distanceToBox } from '@refloor/engine/math';
+import { doorCrossings } from '@refloor/engine/navigation/doors';
+import { distanceToBox, rotate } from '@refloor/engine/math';
 import { destinationRoute, navigationFor } from '@/shared/navigation/destinations';
 
-export type DoorRoute = { path: NavigationPath; commands: SceneCommand[]; staging: boolean };
+export type DoorRoute = {
+  path: NavigationPath;
+  commands: SceneCommand[];
+  staging: boolean;
+  facing?: { x: number; y: number; z: number };
+};
 
 export function doorRoute(
   compiled: CompiledBuilding,
@@ -14,13 +20,57 @@ export function doorRoute(
 ): DoorRoute | null {
   const current = destinationRoute(compiled, from, target, 'current');
   if (current) return { path: current, commands: [], staging: false };
-  const openable = destinationRoute(compiled, from, target, 'openable');
-  if (!openable) return null;
-  const commands: SceneCommand[] = openable.doorIds.map((doorId) => ({
-    type: 'set-door',
-    doorId,
-    open: true,
-  }));
+  const path = destinationRoute(compiled, from, target, 'openable');
+  if (!path) return null;
+  const crossing = doorCrossings(compiled, path.points).find(({ door }) => !door.open);
+  if (crossing) {
+    const { door, side } = crossing;
+    const normal = rotate({ x: 0, z: side }, door.rotation);
+    const graph = navigationFor(compiled, 'current');
+    const candidates = (graph.byFloor.get(door.floorId) ?? [])
+      .map((node) => graph.nodes[node]!)
+      .filter((node) => {
+        const dx = node.position.x - door.centre.x,
+          dz = node.position.z - door.centre.z;
+        return (
+          dx * normal.x + dz * normal.z > 0.4 &&
+          Math.hypot(dx, dz) < 2.8 &&
+          Math.hypot(node.position.x - door.hinge.x, node.position.z - door.hinge.z) >
+            door.width + compiled.options.radius + 0.12
+        );
+      })
+      .sort(
+        (a, b) =>
+          Math.hypot(a.position.x - door.centre.x, a.position.z - door.centre.z) -
+          Math.hypot(b.position.x - door.centre.x, b.position.z - door.centre.z),
+      );
+    for (const candidate of candidates) {
+      const approach = destinationRoute(compiled, from, candidate, 'current');
+      if (!approach) continue;
+      return {
+        path: approach,
+        commands: [{ type: 'set-door', doorId: door.id, open: true }],
+        staging:
+          Math.hypot(
+            from.position.x - candidate.position.x,
+            from.position.y - candidate.position.y,
+            from.position.z - candidate.position.z,
+          ) > 0.12,
+        facing: { ...door.centre, y: door.centre.y + 1.2 },
+      };
+    }
+    return null;
+  }
+  return clearDoorRoute(compiled, from, target, path);
+}
+
+function clearDoorRoute(
+  compiled: CompiledBuilding,
+  from: NavigationPoint,
+  target: NavigationPoint,
+  openable: NavigationPath,
+): DoorRoute | null {
+  const commands: SceneCommand[] = [];
   for (const door of compiled.doors.filter((value) => value.open)) {
     const leaf = compiled.colliders.find((value) => value.id === `${door.id}:leaf`);
     if (!leaf || leaf.shape !== 'box') continue;

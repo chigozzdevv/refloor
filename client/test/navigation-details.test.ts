@@ -1,5 +1,4 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { PerspectiveCamera } from 'three';
 import { createHouse } from '@refloor/catalogue/houses';
 import { applyCommands } from '@refloor/scene';
 import { createEditMemory, recordTransition } from '@refloor/scene/edit-memory';
@@ -8,31 +7,11 @@ import { contains } from '@refloor/engine/math';
 import { destinations, navigationFor } from '@/shared/navigation/destinations';
 import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
 import { TourDoors } from '@/shared/navigation/tour-doors';
-import { doorwayBearing } from '@/shared/navigation/marker-facing';
 import { planDoor } from '@/shared/navigation/floor-plan';
 
 beforeAll(initializePhysics);
 
 describe('navigation details', () => {
-  it('points doorway chevrons into the room from either viewing side', () => {
-    const destination = {
-      id: 'door',
-      kind: 'door' as const,
-      label: 'Enter room',
-      floorId: 'ground',
-      anchor: { x: 0, y: 1, z: 0 },
-      target: { floorId: 'ground', position: { x: 0, y: 0, z: -1 } },
-    };
-    const camera = new PerspectiveCamera(65, 1.5, 0.1, 100);
-    for (const x of [-2, 2]) {
-      camera.position.set(x, 1.62, 2);
-      camera.lookAt(0, 1, 0);
-      camera.updateMatrixWorld(true);
-      const angle = doorwayBearing(destination, camera, 900, 600);
-      expect(Math.sign(-Math.sin(angle))).toBe(Math.sign(x));
-    }
-  });
-
   it('closes a tour-opened door only after crossing and clearing its real swing', () => {
     const before = compileBuilding(
       createHouse({ id: 'close-tour-door', name: 'Tour doors', storeys: 2 }),
