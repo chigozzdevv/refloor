@@ -99,7 +99,7 @@ export function ExteriorModel({ compiled }: { compiled: CompiledBuilding }) {
       </mesh>
       {site.paving.map((paver, index) => (
         <group
-          key={index}
+          key={paver.id}
           position={[paver.position.x, paver.position.y, paver.position.z]}
           rotation={[0, paver.rotation, 0]}
         >
@@ -123,37 +123,17 @@ export function ExteriorModel({ compiled }: { compiled: CompiledBuilding }) {
           ))}
         </group>
       ))}
-      {compiled.building.floors.map((floor) => (
-        <group key={floor.id}>
-          {[-1, 1].map((side) => (
-            <group key={side}>
-              <mesh
-                position={[
-                  floor.footprint.x + floor.footprint.width / 2,
-                  floor.elevation - 0.065,
-                  floor.footprint.z + (side === 1 ? floor.footprint.depth : 0),
-                ]}
-                castShadow
-                receiveShadow
-              >
-                <boxGeometry args={[floor.footprint.width + 0.14, 0.13, 0.16]} />
-                <meshStandardMaterial color="#b7b7aa" roughness={0.9} />
-              </mesh>
-              <mesh
-                position={[
-                  floor.footprint.x + (side === 1 ? floor.footprint.width : 0),
-                  floor.elevation - 0.065,
-                  floor.footprint.z + floor.footprint.depth / 2,
-                ]}
-                castShadow
-                receiveShadow
-              >
-                <boxGeometry args={[0.16, 0.13, floor.footprint.depth + 0.14]} />
-                <meshStandardMaterial color="#b7b7aa" roughness={0.9} />
-              </mesh>
-            </group>
-          ))}
-        </group>
+      {site.plinth.map((segment) => (
+        <mesh
+          key={segment.id}
+          position={[segment.position.x, segment.position.y, segment.position.z]}
+          rotation={[0, segment.rotation, 0]}
+          castShadow
+          receiveShadow
+        >
+          <boxGeometry args={[segment.width, segment.height, segment.depth]} />
+          <meshStandardMaterial color="#b7b7aa" roughness={0.9} />
+        </mesh>
       ))}
       {roof.kind === 'flat' ? (
         [-1, 1].map((side) => (

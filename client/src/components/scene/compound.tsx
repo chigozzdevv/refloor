@@ -2,29 +2,12 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 import { Color, Object3D } from 'three';
 import type { InstancedMesh } from 'three';
 import type { CompiledBuilding } from '@refloor/engine';
-import { exteriorLayout } from '@/shared/scene/exterior';
+import { compoundTiles, exteriorLayout } from '@/shared/scene/exterior';
 
 export function Compound({ compiled }: { compiled: CompiledBuilding }) {
   const site = useMemo(() => exteriorLayout(compiled), [compiled]);
   const paving = useRef<InstancedMesh>(null);
-  const tiles = useMemo(() => {
-    const points: { x: number; z: number; shade: number }[] = [];
-    for (let row = 0; row < Math.floor(site.compound.depth / 0.22); row++)
-      for (let column = 0; column < Math.floor(site.compound.width / 0.44) - 1; column++) {
-        const x = site.compound.x + 0.44 + column * 0.44 + (row % 2) * 0.22;
-        const z = site.compound.z + 0.22 + row * 0.22;
-        const fp = site.ground.footprint;
-        if (
-          x > fp.x - 0.4 &&
-          x < fp.x + fp.width + 0.4 &&
-          z > fp.z - 0.4 &&
-          z < fp.z + fp.depth + 0.4
-        )
-          continue;
-        points.push({ x, z, shade: Math.sin(row * 19.7 + column * 37.3) * 0.025 });
-      }
-    return points;
-  }, [site]);
+  const tiles = useMemo(() => compoundTiles(site), [site]);
   useLayoutEffect(() => {
     if (!paving.current) return;
     const dummy = new Object3D(),

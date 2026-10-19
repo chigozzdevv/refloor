@@ -16,6 +16,45 @@ export function exteriorNormal(wall: Wall, floor: Floor) {
   return null;
 }
 
+export function exteriorPlinth(floor: Floor) {
+  return floor.walls.flatMap((wall) => {
+    if (!exteriorNormal(wall, floor)) return [];
+    const length = Math.hypot(wall.end.x - wall.start.x, wall.end.z - wall.start.z),
+      dx = (wall.end.x - wall.start.x) / length,
+      dz = (wall.end.z - wall.start.z) / length,
+      doors = wall.openings.filter((opening) => opening.kind === 'door'),
+      cuts = [0, length, ...doors.flatMap((door) => [door.offset, door.offset + door.width])].sort(
+        (a, b) => a - b,
+      );
+    return cuts.slice(1).flatMap((end, index) => {
+      const start = cuts[index]!,
+        centre = (start + end) / 2;
+      if (
+        end - start < 0.001 ||
+        doors.some((door) => centre > door.offset && centre < door.offset + door.width)
+      )
+        return [];
+      return [
+        {
+          id: `${wall.id}:plinth:${index}`,
+          wallId: wall.id,
+          start,
+          end,
+          position: {
+            x: wall.start.x + dx * centre,
+            y: floor.elevation - 0.071,
+            z: wall.start.z + dz * centre,
+          },
+          width: end - start,
+          height: 0.13,
+          depth: Math.max(0.16, wall.thickness + 0.025),
+          rotation: Math.atan2(-dz, dx),
+        },
+      ];
+    });
+  });
+}
+
 export function exteriorLayout(compiled: CompiledBuilding) {
   const floors = compiled.building.floors;
   const ground = floors.reduce((a, b) => (a.elevation < b.elevation ? a : b));
@@ -42,6 +81,32 @@ export function exteriorLayout(compiled: CompiledBuilding) {
           (top.footprint.width + compiled.building.roof.overhang * 2)) /
         2
       : top.slabThickness + 0.28);
+  const thresholds = ground.walls.flatMap((wall) => {
+    const normal = exteriorNormal(wall, ground);
+    if (!normal) return [];
+    const length = Math.hypot(wall.end.x - wall.start.x, wall.end.z - wall.start.z),
+      dx = (wall.end.x - wall.start.x) / length,
+      dz = (wall.end.z - wall.start.z) / length,
+      depth = wall.thickness / 2 + 0.12;
+    return wall.openings.flatMap((opening) => {
+      if (opening.kind !== 'door') return [];
+      const centre = opening.offset + opening.width / 2;
+      return [
+        {
+          id: `${opening.id}:threshold`,
+          position: {
+            x: wall.start.x + dx * centre + normal.x * (depth / 2 + 0.002),
+            y: ground.elevation - 0.0515,
+            z: wall.start.z + dz * centre + normal.z * (depth / 2 + 0.002),
+          },
+          width: Math.max(0.1, opening.width - 0.06),
+          depth,
+          height: 0.087,
+          rotation: Math.atan2(-dz, dx),
+        },
+      ];
+    });
+  });
   return {
     ground,
     top,
@@ -54,18 +119,38 @@ export function exteriorLayout(compiled: CompiledBuilding) {
     tangent,
     door,
     entrancePoint,
+    plinth: floors.flatMap(exteriorPlinth),
     rotation: Math.atan2(outward.x, outward.z),
     compound: compoundFootprint(compiled.building),
     paving: [
       {
-        position: { ...centre, y: ground.elevation - 0.18 },
+        id: 'foundation-paving',
+        position: { ...centre, y: ground.elevation - 0.145 },
         width: maxX - minX + 1.6,
         depth: maxZ - minZ + 1.6,
-        height: 0.07,
+        height: 0.1,
         rotation: 0,
       },
+      ...thresholds,
     ],
   };
+}
+
+export function compoundTiles(site: ReturnType<typeof exteriorLayout>) {
+  const pad = site.paving[0]!,
+    points: { x: number; z: number; shade: number }[] = [];
+  for (let row = 0; row < Math.floor(site.compound.depth / 0.22); row++)
+    for (let column = 0; column < Math.floor(site.compound.width / 0.44) - 1; column++) {
+      const x = site.compound.x + 0.44 + column * 0.44 + (row % 2) * 0.22,
+        z = site.compound.z + 0.22 + row * 0.22;
+      if (
+        Math.abs(x - pad.position.x) < pad.width / 2 + 0.22 &&
+        Math.abs(z - pad.position.z) < pad.depth / 2 + 0.11
+      )
+        continue;
+      points.push({ x, z, shade: Math.sin(row * 19.7 + column * 37.3) * 0.025 });
+    }
+  return points;
 }
 
 export function exteriorCamera(compiled: CompiledBuilding, aspect = 1.6) {
