@@ -130,22 +130,23 @@ changes with their item and room, undo, redo and restoration before an earlier e
 in a bounded browser worker, preserves the house layout, validates access and can be undone
 as one change. It upgrades legacy fittings and adds room essentials where clear space permits.
 The scene has no persistent inspector, left toolbar, floor buttons
-or statistics overlays. Clicking an interior door walks through it, opening it when necessary;
+or statistics overlays. Clicking a door or its handle starts a complete trip through it: approach, open, cross and settle inside.
 Shift+click, right-click, or selecting it in overview opens door editing. Clicking other items, walls or floors opens a small chat anchored
 beside it with a speech-bubble tail and a selection outline. Suggestions are collapsed behind a help icon; selecting one fills the composer for review before sending. GPT-6 Luna interprets supported changes; the server validates commands and placement,
 and the client checks that the scene has not changed before applying them. Item chat
 can only affect the selected entity; house chat can change finishes or devices across
 the current building. Drag or swipe to look around, then select a floor ring to travel
-to a clear spot. Stops follow clear room viewpoints and routes between entrances,
-doorways and stair landings, and update after edits. At most three separated markers
-appear at once: floor rings mark clear standing spots, small doorway rings enter rooms,
-and stair rings sit on real treads with a chevron pointing along the flight. Door chevrons point into their destination in the current camera view. Floor dots preserve the viewing direction; doorway and map arrivals face a visible door, stair entrance or editable item.
-Room exits use the same doorway dots and name the room they lead to. When the exit is out
-of view, a small cue at the screen edge points towards it and still starts the walking route.
-Stair actions appear once, on the actual tread when visible or at the viewport edge when out of view. The compact map shows rooms, walls, doors, stairs and the current position; the expanded plan adds furniture. Door leaves follow their actual open or closed state. The small floor plan opens the larger view without a duplicate toolbar icon.
+to a clear spot. Navigation uses named room views, doorways and stair landings, updated after edits. Floor rings are useful standing views;
+door icons open and enter the adjoining room, and stair rings mark the real steps. Up to three
+separated markers appear in the scene. Every reachable adjoining doorway and the current floor's
+stair route remains available at the screen edge when it is outside the view or hidden by furniture.
+These cues carry their destination names, including the room to return to.
+The same walkthrough controller drives dots, door clicks and map trips. It turns before advancing,
+opens one required door at a time from a safe approach, crosses using Rapier, and settles the camera
+on a visible interaction. Stops stay outside door swings, and the controller replans when the building changes.
+The compact map shows rooms, walls, doors, stairs and the current position; the expanded plan adds furniture. Door leaves follow their actual open or closed state. The small floor plan opens the larger view without a duplicate toolbar icon.
 Choose a room on either floor to follow a validated walking route there.
-Doorway trips open required doors and close obstructing open leaves, moving clear of the swing first, before following a route through
-the actual colliders. Tour-opened doors return to their original state after the player clears their swing. Explicit manual door changes are preserved; saved navigation-owned openings are recovered from edit history. Stair arrows handle the full climb or descent with one click;
+Obstructing open leaves are closed only after moving clear of their swing. Tour-opened doors return to their original state after the player clears their swing. Explicit manual door changes are preserved; saved navigation-owned openings are recovered from edit history. Stair arrows handle the full climb or descent with one click;
 the camera follows the turn and smooths changes in height. A centered, translucent stop icon appears during
 travel; dragging, selecting an item or Escape also stops it. Losing focus releases manual input without silently cancelling a chosen tour. A stair
 arrow can resume from the current step. House overview in the globe menu resets the
