@@ -7,7 +7,15 @@ export function PortalDots() {
   const { portals, request, mapOpen, go } = useNavigation();
   const { mode, selection, interacting } = useProject();
   const stage = useExperience((state) => state.stage);
-  if (stage !== 'ready' || mode !== 'walk' || request || mapOpen || selection || interacting)
+  if (
+    stage !== 'ready' ||
+    mode !== 'walk' ||
+    request ||
+    mapOpen ||
+    selection ||
+    interacting ||
+    !portals.length
+  )
     return null;
   return (
     <nav className="tour-portals" aria-label="Room navigation">

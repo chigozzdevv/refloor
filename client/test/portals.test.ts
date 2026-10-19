@@ -135,7 +135,7 @@ describe('tour portal access', () => {
       stair.lower,
     );
   });
-  it('places stairs before room doors in the persistent hall cues on both floors', () => {
+  it('shows only stairs in shared circulation rooms instead of listing doorway alternatives', () => {
     const compiled = compileBuilding(
       createHouse({ id: 'hall-cue-order', name: 'Hall cue order', storeys: 2 }),
     );
@@ -148,12 +148,51 @@ describe('tour portal access', () => {
       const links = tourPortals(compiled, player, stops),
         cues = navigationCues(compiled, player, links);
       expect(links.some((link) => link.kind === 'door')).toBe(true);
+      expect(cues).toHaveLength(1);
       expect(cues[0]!.destination.kind).toBe('stairs');
       expect(cues[0]!.destination.direction).toBe(direction);
-      expect(cues.map((cue) => cue.destination).slice(1)).toEqual(
-        links.filter((link) => link.kind !== 'stairs'),
-      );
     }
+  });
+  it('keeps actual entrance and landing hubs clear of misleading exits to private rooms', () => {
+    const compiled = compileBuilding(
+      createHouse({ id: 'hub-exits', name: 'Hub exits', storeys: 2 }),
+    );
+    const stops = destinations(compiled);
+    for (const room of compiled.building.floors.flatMap((floor) => floor.rooms)) {
+      const player = stops.find((stop) => stop.kind === 'room' && stop.roomId === room.id)!.target,
+        links = tourPortals(compiled, player, stops),
+        cues = navigationCues(compiled, player, links);
+      if (room.kind === 'living') {
+        expect(links.some((link) => link.kind === 'door')).toBe(true);
+        expect(cues.every((cue) => cue.destination.kind === 'stairs')).toBe(true);
+      } else {
+        expect(cues).toHaveLength(1);
+        expect(cues[0]!.label).toBe(
+          `Exit to ${room.id.startsWith('ground/') ? 'Living & dining' : 'Gallery & lounge'}`,
+        );
+      }
+    }
+  });
+  it('chooses one stable exit toward the entrance hall when a room has another connecting door', () => {
+    const building = structuredClone(generated),
+      floor = building.floors[0]!,
+      divider = floor.walls.find((wall) => wall.id === 'ground/divider-2')!,
+      door = floor.walls
+        .flatMap((wall) => wall.openings)
+        .find((opening) => opening.kind === 'door')!;
+    divider.openings.push({ ...structuredClone(door), id: 'workspace-bathroom', offset: 0.35 });
+    const compiled = compileBuilding(building),
+      stops = destinations(compiled),
+      player = stops.find(
+        (stop) => stop.kind === 'room' && stop.roomId === 'ground/room-3',
+      )!.target,
+      links = tourPortals(compiled, player, stops);
+    expect(links.filter((link) => link.kind === 'door')).toHaveLength(2);
+    const cues = navigationCues(compiled, player, links);
+    expect(cues).toHaveLength(1);
+    expect(cues[0]!.label).toBe('Exit to Entrance hall');
+    expect(cues[0]!.destination.doorId).toBe('ground/room-3/door');
+    expect(navigationCues(compiled, player, [...links.toReversed(), ...links])).toEqual(cues);
   });
   it('passes the clicked doorway through the shared journey request', () => {
     const compiled = compileBuilding(

@@ -14,18 +14,13 @@ import { navigationCues, tourPortals } from '@/shared/navigation/portals';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 import { physicsSession } from '@/shared/navigation/physics-session';
 import { useProject } from '@/shared/scene/scene-store';
-import { belongsToDoor, isVisible } from '@/shared/editor/picking';
-import { ArrowDown, ArrowUp, DoorClosed, DoorOpen } from 'lucide-react';
+import { isVisible } from '@/shared/editor/picking';
+import { ArrowDown, ArrowUp } from 'lucide-react';
 import { useExperience } from '@/shared/scene/experience-store';
 
 function Marker({ destination, primary }: { destination: Destination; primary: boolean }) {
   const [hovered, setHovered] = useState(false);
-  const portal = destination.kind === 'door' || destination.kind === 'stairs';
-  const doorway = destination.kind === 'door';
-  const open = useProject(
-    (state) => state.compiled.doors.find((door) => door.id === destination.doorId)?.open,
-  );
-  const DoorIcon = open ? DoorOpen : DoorClosed;
+  const stairs = destination.kind === 'stairs';
   const StairIcon = destination.direction === 'down' ? ArrowDown : ArrowUp;
   const travel = () => {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
@@ -36,50 +31,48 @@ function Marker({ destination, primary }: { destination: Destination; primary: b
   };
   return (
     <group position={[destination.anchor.x, destination.anchor.y, destination.anchor.z]}>
-      {!doorway && (
-        <group rotation={[-Math.PI / 2, 0, 0]} scale={destination.kind === 'stairs' ? 0.7 : 1}>
-          <mesh
-            position={[0, 0, 0.003]}
-            userData={{ navigationMarker: true }}
-            onClick={(event) => {
-              event.stopPropagation();
-              if (event.delta < 5) travel();
-            }}
-          >
-            <circleGeometry args={[0.21, 48]} />
-            <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+      <group rotation={[-Math.PI / 2, 0, 0]} scale={stairs ? 0.7 : 1}>
+        <mesh
+          position={[0, 0, 0.003]}
+          userData={{ navigationMarker: true }}
+          onClick={(event) => {
+            event.stopPropagation();
+            if (event.delta < 5) travel();
+          }}
+        >
+          <circleGeometry args={[0.21, 48]} />
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+        </mesh>
+        <mesh raycast={() => undefined}>
+          <ringGeometry args={[0.16, 0.195, 48]} />
+          <meshBasicMaterial
+            color={primary || hovered ? '#e6c58c' : '#ffffff'}
+            transparent
+            opacity={0.9}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
+        <mesh position={[0, 0, -0.001]} raycast={() => undefined}>
+          <circleGeometry args={[0.155, 40]} />
+          <meshBasicMaterial
+            color="#101720"
+            transparent
+            opacity={0.4}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
+        {!stairs && (
+          <mesh position={[0, 0, 0.002]} raycast={() => undefined}>
+            <circleGeometry args={[0.026, 20]} />
+            <meshBasicMaterial color={primary ? '#e6c58c' : '#ffffff'} toneMapped={false} />
           </mesh>
-          <mesh raycast={() => undefined}>
-            <ringGeometry args={[0.16, 0.195, 48]} />
-            <meshBasicMaterial
-              color={primary || hovered ? '#e6c58c' : '#ffffff'}
-              transparent
-              opacity={0.9}
-              depthWrite={false}
-              toneMapped={false}
-            />
-          </mesh>
-          <mesh position={[0, 0, -0.001]} raycast={() => undefined}>
-            <circleGeometry args={[0.155, 40]} />
-            <meshBasicMaterial
-              color="#101720"
-              transparent
-              opacity={0.4}
-              depthWrite={false}
-              toneMapped={false}
-            />
-          </mesh>
-          {!portal && (
-            <mesh position={[0, 0, 0.002]} raycast={() => undefined}>
-              <circleGeometry args={[0.026, 20]} />
-              <meshBasicMaterial color={primary ? '#e6c58c' : '#ffffff'} toneMapped={false} />
-            </mesh>
-          )}
-        </group>
-      )}
+        )}
+      </group>
       <Html center zIndexRange={[15, 10]}>
         <button
-          className={`navigation-marker marker-floor ${portal ? 'marker-portal' : ''} ${primary ? 'marker-primary' : ''} ${doorway ? 'marker-door' : ''} ${destination.kind === 'stairs' ? 'marker-stairs' : ''}`}
+          className={`navigation-marker marker-floor ${primary ? 'marker-primary' : ''} ${stairs ? 'marker-portal marker-stairs' : ''}`}
           data-navigation-target={destination.id}
           data-direction={destination.direction}
           aria-label={destination.label}
@@ -93,8 +86,7 @@ function Marker({ destination, primary }: { destination: Destination; primary: b
             travel();
           }}
         >
-          {doorway && <DoorIcon size={19} strokeWidth={1.6} />}
-          {destination.kind === 'stairs' && <StairIcon size={20} strokeWidth={1.8} />}
+          {stairs && <StairIcon size={20} strokeWidth={1.8} />}
           <span className="marker-caption">{destination.caption ?? destination.label}</span>
         </button>
       </Html>
@@ -121,7 +113,6 @@ export function NavigationMarkers() {
     const floor = compiled.building.floors.find((value) => value.id === player.floorId),
       room = floor?.rooms.find((value) => contains(value.footprint, player.position)),
       continuing = stairContinuation(compiled, player);
-    const links = continuing.length ? continuing : tourPortals(compiled, player, all);
     camera.getWorldDirection(projected);
     const heading = Math.atan2(projected.x, -projected.z),
       location = continuing.length ? 'Stairs' : (room?.name ?? floor?.name ?? '');
@@ -129,12 +120,14 @@ export function NavigationMarkers() {
       useNavigation.getState().setContext({ player, heading, location, portals: [] });
       return;
     }
+    const links = continuing.length ? continuing : tourPortals(compiled, player, all);
     camera.updateMatrixWorld();
     const candidates = (continuing.length ? continuing : all)
       .filter((destination) => {
         if (
+          destination.kind === 'door' ||
           destination.floorId !== player.floorId ||
-          ((destination.kind === 'stairs' || destination.kind === 'door') &&
+          (destination.kind === 'stairs' &&
             !continuing.length &&
             !links.some((link) => link.id === destination.id)) ||
           (!continuing.length &&
@@ -157,12 +150,7 @@ export function NavigationMarkers() {
         if (
           raycaster
             .intersectObjects(scene.children, true)
-            .some(
-              (hit) =>
-                !hit.object.userData.navigationMarker &&
-                !belongsToDoor(hit.object, destination.doorId) &&
-                isVisible(hit.object),
-            )
+            .some((hit) => !hit.object.userData.navigationMarker && isVisible(hit.object))
         )
           return false;
         if (!continuing.length && floor) {
@@ -172,7 +160,7 @@ export function NavigationMarkers() {
               compiled,
               { floorId: floor.id, position: { ...player.position, y: floor.elevation } },
               approach,
-              destination.kind === 'door' ? 'openable' : 'current',
+              'current',
             )
           )
             return false;

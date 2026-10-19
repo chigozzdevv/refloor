@@ -1,7 +1,31 @@
 import type { CompiledBuilding, NavigationPoint } from '@refloor/engine';
 import { contains } from '@refloor/engine/math';
 import type { Destination } from '@/shared/navigation/destinations';
-import { destinationRoute } from '@/shared/navigation/destinations';
+import { destinations, destinationRoute } from '@/shared/navigation/destinations';
+import { entryPose } from '@/shared/navigation/entry';
+
+const hubs = new WeakMap<CompiledBuilding, Set<string>>();
+
+function circulationRooms(compiled: CompiledBuilding) {
+  let rooms = hubs.get(compiled);
+  if (rooms) return rooms;
+  rooms = new Set<string>();
+  const entry = entryPose(compiled),
+    landings = compiled.stairs.flatMap((stair) => [stair.lower, stair.upper]);
+  for (const floor of compiled.building.floors)
+    for (const room of floor.rooms)
+      if (
+        room.kind === 'corridor' ||
+        room.kind === 'stairwell' ||
+        (entry.floorId === floor.id && contains(room.footprint, entry.inside)) ||
+        landings.some(
+          (landing) => landing.floorId === floor.id && contains(room.footprint, landing.position),
+        )
+      )
+        rooms.add(room.id);
+  hubs.set(compiled, rooms);
+  return rooms;
+}
 
 export function tourPortals(
   compiled: CompiledBuilding,
@@ -29,21 +53,56 @@ export function navigationCues(
   player: NavigationPoint,
   links: Destination[],
 ): PortalCue[] {
-  const room = compiled.building.floors
-    .find((floor) => floor.id === player.floorId)
-    ?.rooms.find((value) => contains(value.footprint, player.position));
-  const exit =
-    room &&
-    room.kind !== 'corridor' &&
-    room.kind !== 'stairwell' &&
-    links.filter((link) => link.kind === 'door').length === 1;
-  return links
-    .toSorted((a, b) => Number(b.kind === 'stairs') - Number(a.kind === 'stairs'))
-    .map((destination) => ({
-      destination,
-      label:
-        exit && destination.kind === 'door'
-          ? `Exit to ${destination.caption ?? destination.label}`
-          : (destination.caption ?? destination.label),
-    }));
+  const floor = compiled.building.floors.find((value) => value.id === player.floorId),
+    room = floor?.rooms.find((value) => contains(value.footprint, player.position)),
+    stairs = links
+      .filter(
+        (link, index) =>
+          link.kind === 'stairs' &&
+          !links
+            .slice(0, index)
+            .some(
+              (previous) =>
+                previous.kind === 'stairs' &&
+                previous.stairId === link.stairId &&
+                previous.direction === link.direction,
+            ),
+      )
+      .map((destination) => ({
+        destination,
+        label: destination.caption ?? destination.label,
+      }));
+  const circulation = circulationRooms(compiled);
+  if (!room || circulation.has(room.id)) return stairs;
+  const doors = destinations(compiled).filter((destination) => destination.kind === 'door'),
+    exits = links
+      .filter((link) => link.kind === 'door' && link.roomId === room.id)
+      .map((destination) => {
+        const target = floor?.rooms.find((value) =>
+          contains(value.footprint, destination.target.position),
+        );
+        return {
+          destination,
+          hub: target ? circulation.has(target.id) : false,
+          connections: new Set(
+            doors.filter((door) => door.roomId === target?.id).map((door) => door.doorId),
+          ).size,
+        };
+      })
+      .sort(
+        (a, b) =>
+          Number(b.hub) - Number(a.hub) ||
+          b.connections - a.connections ||
+          a.destination.id.localeCompare(b.destination.id),
+      );
+  const exit = exits[0]?.destination;
+  return exit
+    ? [
+        ...stairs,
+        {
+          destination: exit,
+          label: `Exit to ${exit.caption ?? exit.label}`,
+        },
+      ]
+    : stairs;
 }
