@@ -1,3 +1,5 @@
+import { rotate } from '@refloor/engine/math';
+import { doorCrossings } from '@refloor/engine/navigation/doors';
 import { describe, expect, it } from 'vitest';
 import { applyCommands } from '@refloor/scene';
 import {
@@ -21,6 +23,30 @@ describe('clearance and navigation', () => {
     expect(path?.doorIds).toContain('bedroom-door');
     expect(path?.length).toBeGreaterThan(5);
     expect(checkReachability(navigation)).toEqual([]);
+  });
+
+  it('detects a crossing when path vertices lie on a rotated door plane', () => {
+    const compiled = compileBuilding(createBuilding());
+    const door = compiled.doors.find((value) => value.id === 'bedroom-door')!;
+    const points = [
+      [0, -1],
+      [0.2, -1e-15],
+      [-0.2, 1e-15],
+      [0, 1],
+    ].map(([x, z]) => {
+      const offset = rotate({ x: x!, z: z! }, door.rotation);
+      return { x: door.centre.x + offset.x, y: door.centre.y, z: door.centre.z + offset.z };
+    });
+    for (const route of [points, points.toReversed()]) {
+      const crossings = doorCrossings(compiled, route);
+      expect(crossings.map((value) => value.door.id)).toEqual([door.id]);
+    }
+    expect(
+      doorCrossings(
+        compiled,
+        points.map((point) => ({ ...point, y: point.y + 3 })),
+      ),
+    ).toEqual([]);
   });
 
   it('respects closed door leaves when current-state navigation is requested', () => {

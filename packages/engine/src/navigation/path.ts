@@ -1,4 +1,5 @@
-import { distance, rotate } from '@refloor/engine/math';
+import { distance } from '@refloor/engine/math';
+import { doorCrossings } from '@refloor/engine/navigation/doors';
 import { nearestNode } from '@refloor/engine/navigation/connectivity';
 import { MinHeap } from '@refloor/engine/navigation/heap';
 import type { Navigation, NavigationPath, NavigationPoint, Point3 } from '@refloor/engine/types';
@@ -51,30 +52,11 @@ export function findPath(
     } else points.push(node.position);
   }
   points.push(to.position);
-  const doorIds = new Set<string>();
-  for (const door of navigation.compiled.doors) {
-    if (door.open) continue;
-    for (let i = 1; i < points.length; i++) {
-      const a = points[i - 1],
-        b = points[i];
-      if (!a || !b) continue;
-      const p = rotate({ x: a.x - door.centre.x, z: a.z - door.centre.z }, -door.rotation),
-        q = rotate({ x: b.x - door.centre.x, z: b.z - door.centre.z }, -door.rotation);
-      if (p.z * q.z > 0 || Math.abs(p.z - q.z) < 1e-6) continue;
-      const t = p.z / (p.z - q.z),
-        x = p.x + (q.x - p.x) * t,
-        y = a.y + (b.y - a.y) * t;
-      if (
-        Math.abs(x) < door.width / 2 &&
-        y >= door.centre.y - 0.01 &&
-        y < door.centre.y + door.height
-      )
-        doorIds.add(door.id);
-    }
-  }
   return {
     points,
-    doorIds: [...doorIds],
+    doorIds: doorCrossings(navigation.compiled, points)
+      .filter(({ door }) => !door.open)
+      .map(({ door }) => door.id),
     stairIds: [...stairIds],
     length: points.slice(1).reduce((sum, point, i) => sum + distance(points[i] ?? point, point), 0),
   };
