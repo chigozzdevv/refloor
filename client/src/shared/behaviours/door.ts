@@ -33,7 +33,9 @@ export function traverseDoor(id: string) {
     });
   if (destination) {
     state.select(null);
-    useNavigation.getState().go(destination.target, destination.lookAt, destination.label);
+    useNavigation
+      .getState()
+      .go(destination.target, destination.lookAt, destination.label, destination.doorId);
   } else if (id === entryPose(state.compiled).doorId)
     activateDoor(id, !state.compiled.doors.find((door) => door.id === id)?.open);
   else state.notify('Move to this doorway before entering.');

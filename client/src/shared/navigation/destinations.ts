@@ -83,7 +83,9 @@ export function destinations(compiled: CompiledBuilding): Destination[] {
             return (
               contains(room.footprint, value.position, 0.05) &&
               dx * normal.x + dz * normal.z > offset &&
-              Math.hypot(dx, dz) < 2.2
+              Math.hypot(dx, dz) < 2.2 &&
+              Math.hypot(value.position.x - door.hinge.x, value.position.z - door.hinge.z) >
+                door.width + compiled.options.radius + 0.1
             );
           })
           .sort(
@@ -125,7 +127,7 @@ export function destinations(compiled: CompiledBuilding): Destination[] {
             z: door.centre.z + normal.z * 0.25,
           },
           bearing: Math.atan2(normal.x, normal.z),
-          target: view?.target ?? { floorId: floor.id, position: opposite.node.position },
+          target: { floorId: floor.id, position: opposite.node.position },
           approach: { floorId: floor.id, position: side.node.position },
           ...(view?.lookAt ? { lookAt: view.lookAt } : {}),
         });

@@ -17,14 +17,37 @@ export function doorRoute(
   compiled: CompiledBuilding,
   from: NavigationPoint,
   target: NavigationPoint,
+  options: { doorId?: string; canSwing?: (id: string, open: boolean) => boolean } = {},
 ): DoorRoute | null {
-  const current = destinationRoute(compiled, from, target, 'current');
+  const selected = compiled.doors.find((door) => door.id === options.doorId && !door.open);
+  const current = selected ? null : destinationRoute(compiled, from, target, 'current');
   if (current) return { path: current, commands: [], staging: false };
   const path = destinationRoute(compiled, from, target, 'openable');
   if (!path) return null;
-  const crossing = doorCrossings(compiled, path.points).find(({ door }) => !door.open);
+  const crossing = selected
+    ? {
+        door: selected,
+        side:
+          Math.sign(
+            rotate(
+              { x: from.position.x - selected.centre.x, z: from.position.z - selected.centre.z },
+              -selected.rotation,
+            ).z,
+          ) || 1,
+      }
+    : doorCrossings(compiled, path.points).find(({ door }) => !door.open);
   if (crossing) {
     const { door, side } = crossing;
+    if (
+      door.floorId === from.floorId &&
+      Math.hypot(from.position.x - door.centre.x, from.position.z - door.centre.z) < 2.5 &&
+      options.canSwing?.(door.id, true)
+    )
+      return {
+        path,
+        commands: [{ type: 'set-door', doorId: door.id, open: true }],
+        staging: false,
+      };
     const normal = rotate({ x: 0, z: side }, door.rotation);
     const graph = navigationFor(compiled, 'current');
     const candidates = (graph.byFloor.get(door.floorId) ?? [])
@@ -41,8 +64,8 @@ export function doorRoute(
       })
       .sort(
         (a, b) =>
-          Math.hypot(a.position.x - door.centre.x, a.position.z - door.centre.z) -
-          Math.hypot(b.position.x - door.centre.x, b.position.z - door.centre.z),
+          Math.hypot(a.position.x - from.position.x, a.position.z - from.position.z) -
+          Math.hypot(b.position.x - from.position.x, b.position.z - from.position.z),
       );
     for (const candidate of candidates) {
       const approach = destinationRoute(compiled, from, candidate, 'current');

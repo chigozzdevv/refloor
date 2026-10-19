@@ -10,6 +10,7 @@ import { rotate } from '@refloor/engine/math';
 import { useProject } from '@/shared/scene/scene-store';
 import { useSurface } from '@/shared/scene/asset-loader';
 import { physicsSession } from '@/shared/navigation/physics-session';
+import { DoorMotion } from '@/shared/behaviours/door-motion';
 import { activateDoor, traverseDoor } from '@/shared/behaviours/door';
 import { hiddenExterior } from '@/shared/scene/visibility';
 import { isScenePointer, visibleGroupRaycast, visibleMeshRaycast } from '@/shared/editor/picking';
@@ -17,7 +18,8 @@ import { invalidateShadows } from '@/shared/scene/shadow-updates';
 
 export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
   const pivot = useRef<Group>(null),
-    fraction = useRef(portal.open ? 1 : 0),
+    motion = useRef(new DoorMotion(portal.open)),
+    levers = useRef<(Group | null)[]>([]),
     preview = useRef<number | null>(null),
     drag = useRef<{ x: number; y: number; fraction: number } | null>(null);
   const camera = useThree((state) => state.camera),
@@ -40,14 +42,24 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
     [source, portal.hinge],
   );
   useFrame((_state, delta) => {
-    const target = preview.current ?? (portal.open ? 1 : 0),
-      next = MathUtils.damp(fraction.current, target, 9, delta);
-    if (mode !== 'walk' || !physicsSession.current?.doorBlocked(portal.id, next)) {
-      if (Math.abs(next - fraction.current) > 0.0001) invalidateShadows();
-      fraction.current = next;
-    }
+    const before = motion.current.fraction,
+      handle = motion.current.handle;
+    motion.current.step(
+      portal.open,
+      delta,
+      (next) => mode === 'walk' && Boolean(physicsSession.current?.doorBlocked(portal.id, next)),
+      preview.current,
+      drag.current !== null,
+    );
+    if (
+      Math.abs(before - motion.current.fraction) > 0.0001 ||
+      Math.abs(handle - motion.current.handle) > 0.0001
+    )
+      invalidateShadows();
+    for (const lever of levers.current)
+      if (lever) lever.rotation.z = (local.x >= 0 ? 1 : -1) * 0.5 * motion.current.handle;
     if (pivot.current) {
-      pivot.current.rotation.y = portal.rotation + portal.openingAngle * fraction.current;
+      pivot.current.rotation.y = portal.rotation + portal.openingAngle * motion.current.fraction;
       pivot.current.visible =
         mode !== 'orbit' ||
         !cutaway ||
@@ -56,14 +68,15 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
         (floor.elevation <= active.elevation &&
           !(floor.id === floorId && wall && hiddenExterior(wall, floor, camera.position)));
     }
-    physicsSession.current?.setDoorFraction(portal.id, fraction.current);
+    physicsSession.current?.setDoorFraction(portal.id, motion.current.fraction);
   }, -2);
   if (source.shape !== 'box') return null;
   const down = (event: ThreeEvent<PointerEvent>) => {
     if (!isScenePointer(event)) return;
     event.stopPropagation();
     (event.target as Element).setPointerCapture(event.pointerId);
-    drag.current = { x: event.clientX, y: event.clientY, fraction: fraction.current };
+    motion.current.press();
+    drag.current = { x: event.clientX, y: event.clientY, fraction: motion.current.fraction };
     useProject.getState().setInteracting(true);
   };
   const move = (event: ThreeEvent<PointerEvent>) => {
@@ -80,7 +93,7 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
     if (!drag.current) return;
     event.stopPropagation();
     const distance = Math.hypot(event.clientX - drag.current.x, event.clientY - drag.current.y),
-      open = distance < 5 ? !portal.open : (preview.current ?? fraction.current) > 0.45;
+      open = distance < 5 ? !portal.open : (preview.current ?? motion.current.fraction) > 0.45;
     (event.target as Element).releasePointerCapture(event.pointerId);
     drag.current = null;
     preview.current = null;
@@ -95,7 +108,7 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
         userData={{ doorId: portal.id }}
         ref={pivot}
         position={[portal.hinge.x, portal.hinge.y, portal.hinge.z]}
-        rotation={[0, portal.rotation + portal.openingAngle * fraction.current, 0]}
+        rotation={[0, portal.rotation + portal.openingAngle * motion.current.fraction, 0]}
       >
         <RoundedBox
           raycast={visibleMeshRaycast}
@@ -123,7 +136,10 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
                 id: portal.id,
                 point: { x: event.point.x, y: event.point.y, z: event.point.z },
               });
-            else traverseDoor(portal.id);
+            else {
+              motion.current.press();
+              traverseDoor(portal.id);
+            }
           }}
           onContextMenu={(event) => {
             event.nativeEvent.preventDefault();
@@ -160,14 +176,17 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
             <RoundedBox args={[0.035, 0.16, 0.015]} radius={0.007} smoothness={3} castShadow>
               <meshPhysicalMaterial color="#baa579" roughness={0.25} metalness={0.9} />
             </RoundedBox>
-            <mesh
-              position={[-sign * 0.05, 0.028, side * 0.025]}
-              rotation={[0, 0, Math.PI / 2]}
-              castShadow
+            <group
+              ref={(value) => {
+                levers.current[side === -1 ? 0 : 1] = value;
+              }}
+              position={[0, 0.028, side * 0.025]}
             >
-              <cylinderGeometry args={[0.013, 0.013, 0.14, 16]} />
-              <meshPhysicalMaterial color="#baa579" roughness={0.25} metalness={0.9} />
-            </mesh>
+              <mesh position={[-sign * 0.05, 0, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
+                <cylinderGeometry args={[0.013, 0.013, 0.14, 16]} />
+                <meshPhysicalMaterial color="#baa579" roughness={0.25} metalness={0.9} />
+              </mesh>
+            </group>
             <mesh visible={false}>
               <sphereGeometry args={[0.14, 12, 8]} />
               <meshBasicMaterial />

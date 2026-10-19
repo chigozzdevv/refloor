@@ -43,14 +43,17 @@ export class Walkthrough {
     const dt = Math.min(delta, 0.05),
       compiled = world.compiled;
     const result: WalkStep = { ...view, status: request ? 'moving' : 'idle', commands: [] };
-    const closures = this.doors.closures(world, Boolean(request), memory);
+    const closures = request ? [] : this.doors.closures(world, false, memory);
     if (closures.length) return { ...result, commands: closures };
     if (!request) {
       this.reset();
       return result;
     }
     if (this.leg?.requestId !== request.id || this.leg.compiled !== compiled) {
-      const plan = doorRoute(compiled, world.player, request.target);
+      const plan = doorRoute(compiled, world.player, request.target, {
+        ...(request.doorId ? { doorId: request.doorId } : {}),
+        canSwing: (id, open) => world.canSwingDoor(id, open),
+      });
       if (!plan) return { ...result, status: 'blocked', reason: 'no-route' };
       if (plan.commands.length && !plan.staging) {
         this.doors.record(compiled, world.player, plan.commands);
@@ -80,7 +83,7 @@ export class Walkthrough {
       yaw += angleBetween(arrival, yaw) * (1 - remaining);
     }
     const turn = angleBetween(yaw, view.yaw);
-    result.yaw += MathUtils.clamp(turn, -dt * 2.2, dt * 2.2);
+    result.yaw += MathUtils.clamp(turn, -dt * 3.6, dt * 3.6);
     const pitch = MathUtils.clamp(
       facing && remaining < 1
         ? Math.atan2(facing.y - feet.y - 1.62, Math.hypot(facing.x - feet.x, facing.z - feet.z))
@@ -89,7 +92,7 @@ export class Walkthrough {
       0.3,
     );
     result.pitch = MathUtils.damp(view.pitch, pitch, 5, dt);
-    if (next && Math.abs(turn) > 0.8 && remaining > 1) {
+    if (next && Math.abs(turn) > 1.4 && remaining > 1) {
       world.step({ x: 0, z: 0 }, dt);
       return result;
     }
@@ -105,7 +108,7 @@ export class Walkthrough {
         status,
         reason: 'obstruction',
       };
-    if (status === 'arrived' && Math.abs(turn) < 0.025 && Math.abs(result.pitch - pitch) < 0.025)
+    if (status === 'arrived' && Math.abs(turn) < 0.07 && Math.abs(result.pitch - pitch) < 0.04)
       return { ...result, status };
     return result;
   }
