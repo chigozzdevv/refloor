@@ -64,6 +64,93 @@ describe('MongoDB project API', () => {
     return projectWriteSchema.parse(response.json());
   }
 
+  it('renews an existing browser session without changing project ownership', async () => {
+    const cookies = await session(),
+      current = await create(cookies),
+      response = await app.inject({ method: 'POST', url: '/api/sessions', cookies });
+    expect(response.statusCode).toBe(200);
+    expect(response.cookies[0]?.value).toBe(cookies.refloor_session);
+    expect(
+      (await app.inject({ method: 'GET', url: `/api/projects/${current.project.id}`, cookies }))
+        .statusCode,
+    ).toBe(200);
+  });
+
+  it('recovers the same private collection after the original session expires', async () => {
+    const cookies = await session(),
+      current = await create(cookies),
+      response = await app.inject({ method: 'POST', url: '/api/sessions/recovery', cookies });
+    expect(response.statusCode).toBe(200);
+    const key = response.json().key as string;
+    expect(key).toMatch(/^rf_[a-f0-9]{64}$/);
+    const recovery = await database.db(config.database).collection('session_recovery').findOne({});
+    expect(JSON.stringify(recovery)).not.toContain(key);
+    await database
+      .db(config.database)
+      .collection('sessions')
+      .updateMany({}, { $set: { expiresAt: new Date(0) } });
+    expect(
+      (await app.inject({ method: 'GET', url: `/api/projects/${current.project.id}`, cookies }))
+        .statusCode,
+    ).toBe(401);
+    const restored = await app.inject({
+      method: 'POST',
+      url: '/api/sessions/recover',
+      payload: { key },
+    });
+    expect(restored.statusCode).toBe(200);
+    expect(restored.cookies[0]?.httpOnly).toBe(true);
+    const recoveredCookies = { refloor_session: restored.cookies[0]!.value };
+    expect(recoveredCookies.refloor_session).not.toBe(cookies.refloor_session);
+    const project = await app.inject({
+      method: 'GET',
+      url: `/api/projects/${current.project.id}`,
+      cookies: recoveredCookies,
+    });
+    expect(project.statusCode).toBe(200);
+    expect(projectSchema.parse(project.json()).building).toEqual(current.project.building);
+    const unrelated = await session();
+    expect(
+      (
+        await app.inject({
+          method: 'GET',
+          url: `/api/projects/${current.project.id}`,
+          cookies: unrelated,
+        })
+      ).statusCode,
+    ).toBe(404);
+  });
+
+  it('rotates recovery keys and rejects unauthenticated creation and invalid recovery', async () => {
+    expect((await app.inject({ method: 'POST', url: '/api/sessions/recovery' })).statusCode).toBe(
+      401,
+    );
+    const cookies = await session(),
+      previous = await app.inject({ method: 'POST', url: '/api/sessions/recovery', cookies }),
+      next = await app.inject({ method: 'POST', url: '/api/sessions/recovery', cookies });
+    expect(previous.statusCode).toBe(200);
+    expect(next.statusCode).toBe(200);
+    expect(previous.json().key).not.toBe(next.json().key);
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url: '/api/sessions/recover',
+          payload: { key: previous.json().key },
+        })
+      ).statusCode,
+    ).toBe(401);
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url: '/api/sessions/recover',
+          payload: { key: next.json().key },
+        })
+      ).statusCode,
+    ).toBe(200);
+  });
+
   async function edit(
     cookies: Awaited<ReturnType<typeof session>>,
     current: ProjectWrite,
@@ -357,7 +444,7 @@ describe('MongoDB project API', () => {
   it('stores token hashes and reuses an unexpired browser session', async () => {
     const cookies = await session();
     const response = await app.inject({ method: 'POST', url: '/api/sessions', cookies });
-    expect(response.cookies).toHaveLength(0);
+    expect(response.cookies[0]?.value).toBe(cookies.refloor_session);
     const records = await database.db(config.database).collection('sessions').find().toArray();
     expect(records.some((record) => String(record._id) === cookies.refloor_session)).toBe(false);
     expect(records.length).toBeGreaterThan(0);

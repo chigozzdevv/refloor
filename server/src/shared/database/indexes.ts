@@ -9,6 +9,7 @@ export async function createIndexes(database: Db) {
     .collection('project_revisions')
     .createIndex({ projectId: 1, requestId: 1 }, { unique: true });
   await database.collection('sessions').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+  await database.collection('session_recovery').createIndex({ keyHash: 1 }, { unique: true });
   await database
     .collection('generations')
     .createIndex({ ownerId: 1, requestId: 1 }, { unique: true });

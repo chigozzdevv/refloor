@@ -10,6 +10,7 @@ import {
 import { editingError } from '@/shared/editor/errors';
 import { SavedSpaces } from '@/components/editor/saved-spaces';
 import { useSavedProjects } from '@/shared/scene/scene-sync';
+import { ProjectRecovery } from '@/components/editor/project-recovery';
 
 export function ProjectActions() {
   const [open, setOpen] = useState(false),
@@ -89,6 +90,7 @@ export function ProjectActions() {
             {saved ? 'Draft saved in this browser' : 'Browser-local draft'}
           </span>
           <SavedSpaces />
+          <ProjectRecovery />
           <p>Export a project to keep a copy or open it on another device.</p>
           <button
             className="file-action"

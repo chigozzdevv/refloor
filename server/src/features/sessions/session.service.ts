@@ -10,7 +10,8 @@ export class SessionService {
 
   async find(token: string | undefined): Promise<string | null> {
     if (!token || !/^[a-f0-9]{64}$/.test(token)) return null;
-    return (await this.sessions.findActive(hashToken(token)))?._id ?? null;
+    const session = await this.sessions.findActive(hashToken(token));
+    return session?.ownerId ?? session?._id ?? null;
   }
 
   async require(token: string | undefined): Promise<string> {
@@ -24,12 +25,41 @@ export class SessionService {
     return owner;
   }
 
-  async create(existing: string | undefined): Promise<string | null> {
-    if (await this.find(existing)) return null;
+  async create(existing: string | undefined): Promise<string> {
+    if (existing && (await this.find(existing))) {
+      await this.sessions.renew(hashToken(existing), new Date(Date.now() + sessionLifetime * 1000));
+      return existing;
+    }
     const token = randomBytes(32).toString('hex'),
       now = new Date();
     await this.sessions.insert({
       _id: hashToken(token),
+      createdAt: now,
+      expiresAt: new Date(now.getTime() + sessionLifetime * 1000),
+    });
+    return token;
+  }
+
+  async recoveryKey(token: string | undefined) {
+    const ownerId = await this.require(token),
+      key = `rf_${randomBytes(32).toString('hex')}`;
+    await this.sessions.saveRecovery(ownerId, hashToken(key));
+    return key;
+  }
+
+  async recover(key: string) {
+    const recovery = await this.sessions.findRecovery(hashToken(key));
+    if (!recovery)
+      throw new ApiError(
+        401,
+        'INVALID_RECOVERY_KEY',
+        'This recovery key could not open a collection.',
+      );
+    const token = randomBytes(32).toString('hex'),
+      now = new Date();
+    await this.sessions.insert({
+      _id: hashToken(token),
+      ownerId: recovery._id,
       createdAt: now,
       expiresAt: new Date(now.getTime() + sessionLifetime * 1000),
     });

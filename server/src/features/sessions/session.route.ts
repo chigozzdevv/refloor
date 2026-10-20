@@ -7,4 +7,14 @@ export function registerSessionRoutes(app: FastifyInstance, controller: SessionC
     { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } },
     controller.create,
   );
+  app.post(
+    '/api/sessions/recovery',
+    { config: { rateLimit: { max: 5, timeWindow: '1 minute' } } },
+    controller.recovery,
+  );
+  app.post(
+    '/api/sessions/recover',
+    { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } },
+    controller.recover,
+  );
 }

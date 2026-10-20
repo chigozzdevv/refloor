@@ -47,7 +47,7 @@ export function SavedSpaces() {
               ? dirty
                 ? 'You have unsaved changes'
                 : 'All changes saved'
-              : 'Keep this space in your saved collection'}
+              : 'Save a copy to your cloud collection'}
           </small>
         </span>
       </button>
@@ -90,7 +90,7 @@ export function SavedSpaces() {
       >
         <Cloud size={16} />
         <span>
-          Saved spaces<small>Private to this browser session</small>
+          Saved spaces<small>Your private cloud collection</small>
         </span>
       </button>
       {expanded && (

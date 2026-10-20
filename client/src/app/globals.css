@@ -753,6 +753,39 @@ select option {
 .saved-list {
   padding: 8px 0;
 }
+.recovery-panel {
+  display: grid;
+  gap: 10px;
+  padding: 10px 0;
+}
+.recovery-panel small,
+.recovery-panel label {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.recovery-panel form {
+  display: grid;
+  gap: 8px;
+}
+.recovery-panel input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--field);
+  color: var(--ink);
+}
+.recovery-key {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.recovery-key code {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+}
 .saved-list-heading {
   display: flex;
   justify-content: space-between;
