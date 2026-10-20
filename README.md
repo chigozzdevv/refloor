@@ -1,7 +1,7 @@
 # Refloor
 
-Refloor is a browser studio for generating, furnishing and exploring editable 3D houses.
-Describe a house, generate it with GPT-6 Luna, then enter and edit the saved space.
+Describe a home, walk into it, redesign it naturally and teach it how to behave.
+Refloor generates editable 3D houses with GPT-6 Luna, validated geometry and working interactions in the browser.
 
 `@refloor/scene` validates building documents and applies atomic, reversible commands.
 `@refloor/engine` compiles those documents into meshes, colliders and walking routes,
@@ -51,10 +51,15 @@ a 6,000-token output limit, a 90-second provider timeout and no automatic provid
 
 Generation currently supports rectangular houses with one or two storeys, 14–20 m width,
 9–24 m depth in 0.1 m increments, two to eight rooms per floor and twelve rooms total. Unspecified dimensions
-are solved from the programme. Rooms occupy two wings around a circulation hall; two-storey
+are solved from the programme. Choose a central hall with rooms on both sides, or a daylit
+side gallery with rooms spanning the other side. Galleries can run left or right; stairs can
+sit towards the front or rear. The entrance follows the circulation layout. Two-storey
 homes reserve a shared stairwell, upper-floor opening and landing access. Living and dining
 can share an open room; other uses currently need separate rooms. Unsupported requests
 and layouts that fail validation return an error rather than a substitute starting home.
+Design specifications coordinate wall and upholstery colours, oak or walnut joinery, brass
+or black hardware, plaster/brick/marble exterior finishes and asphalt/metal roofing. They apply
+to actual materials and fittings. Wide living/dining rooms arrange their zones side by side.
 Furniture uses the shipped catalogue: kitchens include a sink, hob, oven and refrigerator;
 bathrooms include a basin, toilet and shower; workspaces include a desk; bedrooms include
 a bed and wardrobe. These fittings are editable models; device actions currently cover
@@ -117,9 +122,10 @@ resolve through its package exports after compilation; source aliases are config
 for TypeScript and tests. The browser uses `@/` for app-local imports; the Node server
 uses `@refloor/server/*` so compiled imports resolve without a runtime alias loader.
 
-Tests execute the real implementation without mocked services or replacement modules.
-Their input documents describe buildings, room programmes and edits; automated tests
-run the real Z3 solver and MongoDB without spending API credits. Live GPT-6 Luna checks are
+Geometry and persistence tests execute the real implementation. Their input documents
+describe buildings, room programmes and edits; automated tests run the real Z3 solver,
+Rapier and MongoDB without spending API credits. Transport race tests separately control
+response timing to exercise stale responses and session replacement. Live GPT-6 Luna checks are
 separate from `pnpm check`. Engine tests instantiate Rapier and walk a capsule through
 the generated colliders, including entrance-to-upstairs routes, both stair types and
 rotated flights. This verifies the geometry in a headless physics world. The browser
@@ -132,17 +138,22 @@ as one change. It upgrades legacy fittings and adds room essentials where clear 
 The scene has no persistent inspector, left toolbar, floor buttons
 or statistics overlays. Clicking a door or its handle starts a complete trip through it: approach, open, cross and settle inside.
 Shift+click, right-click, or selecting it in overview opens door editing. Clicking other items, walls or floors opens a small chat anchored
-beside it with a speech-bubble tail and a selection outline. Exterior wall chat shows brick and marble finish suggestions; other suggestions are collapsed behind a help icon. Selecting one fills the composer for review before sending. GPT-6 Luna interprets supported changes; the server validates commands and placement,
+beside it with a speech-bubble tail and a selection outline. Recent conversation expands inside
+the bubble. Exterior wall chat shows brick and marble finish suggestions; other suggestions are collapsed behind a help icon. Selecting one fills the composer for review before sending. GPT-6 Luna interprets supported changes; the server validates commands and placement,
 and the client checks that the scene has not changed before applying them. Item chat
 can only affect the selected entity; house chat can change finishes or devices across
 the current building. Drag or swipe to look around, then select a floor ring to travel
 to a clear spot. Navigation uses named room views, doorways and stair landings, updated after edits. Floor rings are useful standing views;
 door handles show a small Click to open hint over a 44 px handle target, with subtle feedback on the metal lever, and stair rings mark the real steps. Up to three
 separated floor/stair markers appear in the scene. The central destination row keeps reachable adjoining rooms available even when their doors are offscreen, with one action per doorway.
-Private rooms name their main exit toward the hall or shared circulation space while retaining distinct connecting-room doors. Upstairs or downstairs appears only within a reachable 2 m approach to the actual landing; both directions remain available during a mid-flight stop. Stair controls use fixed up/down icons. Entering the house keeps the camera facing inward instead of turning toward a side door.
+Private rooms name their main exit toward the hall or shared circulation space while retaining distinct connecting-room doors.
+Walk to stairs leads to a safe same-floor approach when the flight is farther away; it changes to
+upstairs or downstairs within a reachable 2 m approach. Both directions remain available during a mid-flight stop.
+Walk to entrance leads from the entrance hall to its handle without opening the door; the handle performs the crossing.
+Stair controls use fixed up/down icons. Entering the house keeps the camera facing inward instead of turning toward a side door.
 The same walkthrough controller drives dots, door clicks and map trips. It turns before advancing,
 opens the selected door immediately when its swing is safe, crosses using Rapier, and settles the camera
-on a visible interaction ahead, excluding the door just crossed. Door clicks stop just inside the room, while room dots and map trips use room viewpoints.
+on a visible interaction ahead, excluding the door or staircase just crossed. Door clicks stop just inside the room, while room dots and map trips use room viewpoints.
 The entrance is closed when its entrance view opens, including old saved open states. Its opening hint sits on the handle, with no floor-level opening button. The handle depresses before the leaf swings; the unobstructed animation completes in 0.4 seconds. Automatic closure runs after arrival.
 Nearby clear door crossings use a direct, collision-checked route. Walking retains the edit validator's collision clearance; tight saved positions first move clear before opening a door. Engine navigation caches reuse openable topology only when compiled physical geometry and walker options match; changed door leaves still rebuild current-state routes. Stops stay outside door swings, and the controller replans when the building changes.
 The compact map shows rooms, walls, doors, stairs and the current position; the expanded plan adds furniture. Door leaves follow their actual open or closed state. Click a room on either map to walk there; the small expand button opens the larger plan and its floor tabs. Compound routes connect the outside position to the entrance and continue through the house.
@@ -156,14 +167,23 @@ on that floor. On the translucent bottom-right pad, the four arrows and centre j
 climbs the steps; floor state follows its elevation. Doors validate their full swing before edits and undo/redo, and walking waits briefly outside a nearby moving door. The entry arrival point stays clear of the entrance swing, and an already-open entrance offers Enter house.
 The exterior overview shows every storey, exterior wall and the complete roof; the interior cutaway is used when focusing furniture. Window frames, floor bands, roof edges, entrance canopy, paving, planting and porch lighting derive from the actual building and entrance. The compound uses instanced block paving with a matching flat physical surface, curbs and planting. Door thresholds sit below the interior finish and interrupt the facade plinth, with matching walking colliders.
 New houses include two editable floodlights, initially off, two powered warm up/down wall lanterns and two selectable planted stone boxes. Existing houses receive missing exterior fixtures as one undoable change; removed or undone fixtures stay removed after reload. Exterior objects use the same placement, device, material, history and saved-action system as indoor objects. Outdoor access is checked against the building and compound rather than requiring an indoor navigation node.
-Click an exterior wall face to edit its finish independently from the inside; brick, marble, plaster and colour changes use real physical material maps. Roof selection supports bitumen and profiled metal finishes and colour changes. Original and previous finishes remain available to chat and undo. New flat roofs use bitumen; generated pitched roofs use metal sheet. Older placeholder roofs upgrade with the exterior fixtures while custom roof finishes are preserved. The overview fits the whole house at phone and desktop aspect ratios. Tour routes and the map cover the interior. The furniture library adds items into validated clear spaces.
-Chat moves, rotates, resizes, recolours, replaces or removes compatible items and controls
+Click an exterior wall face to edit its finish independently from the inside; brick, marble, plaster and colour changes use real physical material maps. Roof selection supports bitumen and profiled metal finishes and colour changes. Original and previous finishes remain available to chat and undo. Generated roofs use the specified asphalt or metal finish; older programmes default to bitumen for flat roofs and metal for pitched roofs. Older placeholder roofs upgrade with the exterior fixtures while custom roof finishes are preserved. The overview fits the whole house at phone and desktop aspect ratios. Tour routes and the map cover the interior. The furniture library adds items into validated clear spaces.
+Chat moves, rotates, resizes, recolours, replaces, removes and adds compatible catalogue items.
+Spatial instructions can mount a TV above a sideboard, face a sofa towards it and add chairs
+near a table in one atomic, undoable edit. The shared placement system respects floor, wall,
+ceiling and tabletop supports, object dimensions, windows, doorways, stairs and the player.
+The library uses the same placement and initially selects the occupied room. Chat also controls
 televisions, lights and doors. Accepted edits
 update collision geometry and support undo/redo (also Cmd/Ctrl+Z and Shift+Cmd/Ctrl+Z).
 TV controls play the included clip or a compatible direct video URL on the 3D screen;
 power, mute and volume update the actual media player. Light controls update fixture
 emission, intensity, colour and cached local shadows in high quality mode. Geometry changes schedule shadow refreshes on rendered frames; paused tabs cannot expire the refresh window, and animated doors refresh shadows through their movement.
-Local lighting stays within the GPU's texture budget, prioritizing the occupied area and selected or newly powered fixtures. Paired wall-light beams share that allocation.
+Powered fixtures retain their illumination as the view changes. Only local shadow maps are budgeted,
+prioritizing the occupied area and selected or newly powered fixtures. Paired wall-light beams share
+that allocation. Unshadowed lights do not provide physical wall occlusion.
+Colour-only scanned furniture edits preserve source texture, normal, roughness and metalness maps;
+explicit finish replacements change the material. Bathroom mirrors reflect the rendered room in walk mode,
+with bounded texture resolution and update rate. Roof exteriors retain their chosen finish above a neutral interior ceiling.
 Chat can restore a light's original power, brightness and illumination colour. Chat and typed edits enforce
 brightness bounds of 0–200% of the catalogue default; legacy brighter values remain loadable
 with capped rendering. Item chats show the selected item name and accept changes through text.
@@ -172,8 +192,9 @@ Saved actions are part of the building document. House chat can connect door ope
 light or television power changes, room entry and object clicks to supported scene commands,
 including multiple devices, furniture transforms and surface finishes. Door and power conditions
 can restrict a rule. The house menu lists rules, their actual triggers/actions, enable/disable switches
-and removal; configuration changes use normal undo/redo and persist in browser drafts, exports
-and MongoDB snapshots. Rules run locally without another model call. State triggers fire only on
+and removal. Edit a rule through language or test its actions, then undo the trial. Configuration changes use normal undo/redo and persist in browser drafts, exports
+and MongoDB snapshots. Relative movement, rotation, brightness and volume resolve against current
+state on each trigger; device limits clamp at execution. Rules run locally without another model call. State triggers fire only on
 actual changes, each rule fires at most once per transaction, and at most 100 commands execute
 in one interaction. Chained effects are validated atomically against geometry, the player and light
 tuning; invalid effects reject the interaction with a visible error. Undo/redo replays the recorded
@@ -188,6 +209,24 @@ resolve against this context and the current scene. Restoring an original or pre
 uses recorded values and passes normal placement checks; it preserves unrelated properties.
 The context survives chat closure, browser refresh, saved project reopening and project export/import.
 Older browser drafts recover available starting properties from their undo records.
+
+History also stores up to six named designs. View a design from the current camera, then return to
+the working arrangement with its undo, redo and conversation restored. Edited previews are saved
+as recovery versions before switching away. Full collections, oversized payloads, occupied player
+positions and blocked escape routes reject the switch without replacing the current design.
+Snapshots contain buildings, not nested memory, and travel with browser drafts, project exports
+and MongoDB saves. Save current view downloads a PNG of the rendered scene without interface overlays.
+
+Existing doors and windows can move along their wall or change dimensions through chat. Compatible
+axis-aligned internal partitions shared by two rectangular rooms can slide, updating both room bounds.
+Geometry, mounted furniture, door swing, stairs, reachability and player clearance remain validated;
+unsupported exterior, circulation and complex partition moves reject safely. Commands preserve
+identities, materials and door state, support compound edits and record exact inverses for undo.
+
+Exterior paving, kerbs, plinth, window/door trim, canopy, parapet and roof trim are independently
+selectable surfaces with contextual chat and selection highlights. Colour, textured finishes and
+original/previous restoration use stable surface identities. Optional overrides preserve older
+documents and keep interior wall finishes separate from exterior cladding.
 
 Project files export/import the complete editable building. Import validates geometry,
 access and supported assets before replacing the open scene. Accepted changes save
@@ -293,12 +332,20 @@ and never fetches remote video; the browser plays them directly.
 
 ## Project API
 
-`POST /api/sessions` creates an HTTP-only browser-session cookie. Projects belong to
-that session; there are no accounts or cross-device project discovery yet. Session
-tokens are stored as hashes and expire after 30 days. Export a project file for a
-portable copy. Use HTTPS in production and configure exact `CLIENT_ORIGINS`.
+`POST /api/sessions` creates or renews an HTTP-only browser-session cookie. Session
+tokens are stored as hashes and expire after 30 days. Collection recovery keys retain
+access to saved spaces across expired sessions, browsers and devices. Create and download
+a key from Project files → Collection recovery; creating another key invalidates the
+previous key. Keys grant access to the collection and are stored only as hashes on the server.
+Once a space is saved to the collection, later changes sync after a short idle delay.
+Connection errors and conflicting versions stop automatic writes until you retry or resolve them.
+Export project files for portable copies. Use HTTPS in production and configure exact
+`CLIENT_ORIGINS`. Project imports save the current draft before replacing it; a failed
+preservation leaves the draft open.
 
 - `POST /api/projects`: create a validated building with a unique `requestId`.
+- `POST /api/sessions/recovery`: create or rotate the current collection's recovery key.
+- `POST /api/sessions/recover`: restore collection access using `{ key }`, without replacing the current draft.
 - `GET /api/projects?limit=20&cursor=…`: list the session's projects with cursor pagination.
 - `GET /api/projects/:id`: load a complete editable building.
 - `PUT /api/projects/:id`: save a snapshot with `requestId`, `expectedVersion` and `building`.
@@ -325,9 +372,3 @@ version; reusing its ID for different content fails. Receipts also return the cu
 project, which may be newer than the accepted request. Undo/redo retains up to 50 active
 steps and persists across API restarts. A snapshot replaces that active command history.
 Invalid geometry, unsupported assets and changes that block a supplied player are rejected.
-
-## Next implementation
-
-Build prompt generation with a configurable OpenAI model and Z3 layout solving. Redis/BullMQ is optional for background
-jobs, and Meshy is optional for custom furniture. Catalogue assets must remain usable
-when custom generation fails. Hosting selection is deferred.
