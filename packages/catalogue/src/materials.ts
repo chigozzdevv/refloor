@@ -17,6 +17,8 @@ export const finishes = {
   ink: finish('#41433e', 'plaster', 0.85),
   oak: finish('#f2dfbf', 'wood-floor', 0.68),
   walnut: finish('#a88763', 'wood-floor', 0.65),
+  oakVeneer: finish('#f2dfbf', 'wood-veneer', 0.58),
+  walnutVeneer: finish('#9c7854', 'wood-veneer', 0.56),
   linen: finish('#eee5d4', 'fabric', 0.94),
   olive: finish('#858b69', 'fabric', 0.94),
   tobacco: finish('#a17e58', 'fabric', 0.92),
@@ -25,6 +27,7 @@ export const finishes = {
   glass: { ...finish('#e4eee9', null, 0.08), opacity: 0.16 },
   brick: finish('#ffffff', 'brick', 0.9),
   marble: finish('#ffffff', 'marble', 0.32),
+  marbleSlab: finish('#ffffff', 'marble-slab', 0.35),
   asphalt: finish('#ffffff', 'roof-asphalt', 0.95),
   metalRoof: finish('#a9afb3', 'metal-roof', 0.42, 1),
 };

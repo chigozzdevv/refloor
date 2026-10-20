@@ -33,6 +33,7 @@ export type CatalogueEntry = ObjectAsset & {
   modelRotation?: number;
   tintMaterials?: string[];
   tintNodes?: string[];
+  optionalMaterials?: string[];
 };
 
 export const catalogue: CatalogueEntry[] = [
@@ -108,7 +109,7 @@ export const catalogue: CatalogueEntry[] = [
     label: 'Linen platform bed',
     kind: 'bed',
     dimensions: { width: 1.95, height: 1.05, depth: 2.2 },
-    materials: { body: finishes.linen, frame: finishes.walnut },
+    materials: { body: finishes.linen, frame: finishes.walnutVeneer },
     behaviours: [],
     renderer: 'bed',
     description: 'A quiet frame for slow mornings.',
@@ -144,7 +145,7 @@ export const catalogue: CatalogueEntry[] = [
     label: 'Linear sideboard',
     kind: 'storage',
     dimensions: { width: 1.6, height: 0.7, depth: 0.42 },
-    materials: { body: finishes.oak, frame: finishes.black },
+    materials: { body: finishes.oakVeneer, frame: finishes.black },
     behaviours: [],
     renderer: 'cabinet',
     description: 'Warm timber, fine shadow gaps.',

@@ -4,7 +4,7 @@
   "licenseUrl": "https://polyhaven.com/license",
   "apiGuide": "https://polyhaven.com/llms.txt",
   "apiDimensionsUnit": "millimetres",
-  "retrievedAt": "2026-10-19T12:58:50.791365+00:00",
+  "retrievedAt": "2026-10-20T00:56:59.976988+00:00",
   "assets": [
     {
       "id": "wood-floor",
@@ -439,7 +439,7 @@
       "framesPerSecond": 30,
       "videoCodec": "H.264 High profile, yuv420p",
       "audioCodec": "AAC-LC stereo, 48000 Hz",
-      "modifications": "Resized from 1920\u00d71080 to 960\u00d7540; converted VP9/Opus WebM to H.264/AAC MP4 with FFmpeg 7.1; source duration and sound preserved; source metadata removed; fast-start enabled.",
+      "modifications": "Resized from 1920×1080 to 960×540; converted VP9/Opus WebM to H.264/AAC MP4 with FFmpeg 7.1; source duration and sound preserved; source metadata removed; fast-start enabled.",
       "sourceBytes": 3145371,
       "sourceSha256": "c6a21a3a7619ca7fbcbc1b4d012d7098d18f599f0200f735d31cae15a4772dd1",
       "files": [
@@ -744,6 +744,102 @@
           "bytes": 667506,
           "md5": "3e88a79c15ebe51e24ee966bc5e1a1f3",
           "sha256": "f5bd4d7d11f3042d50dfb38bfea7af01ec00142a527a452f37090dd1c7f93bf8"
+        }
+      ]
+    },
+    {
+      "id": "wood-veneer",
+      "providerId": "oak_veneer_01",
+      "name": "Oak Veneer 01",
+      "kind": "material",
+      "sourcePage": "https://polyhaven.com/a/oak_veneer_01",
+      "authors": {
+        "Jenelle van Heerden": "All"
+      },
+      "provider": "Poly Haven",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://polyhaven.com/license",
+      "resolution": "1k",
+      "sourceDimensionsMillimetres": [1830.0000429153442, 1830.0000429153442],
+      "tileMetres": [1.8300000429153442, 1.8300000429153442],
+      "channels": {
+        "basecolor": "sRGB",
+        "normal": "linear, OpenGL +Y",
+        "arm": "linear: R ambient occlusion, G roughness, B metalness"
+      },
+      "files": [
+        {
+          "role": "basecolor",
+          "path": "/textures/wood-veneer/basecolor.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/oak_veneer_01/oak_veneer_01_diff_1k.jpg",
+          "bytes": 641756,
+          "md5": "39a99df4e328d62d74f3122722a64a95",
+          "sha256": "c14681f72f59f17bff568cae7a837641443b607b899f0c279cd64a5638f877a7"
+        },
+        {
+          "role": "normal",
+          "path": "/textures/wood-veneer/normal.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/oak_veneer_01/oak_veneer_01_nor_gl_1k.jpg",
+          "bytes": 484844,
+          "md5": "d05406f5fdaf51f0d7b115b35d9af1b7",
+          "sha256": "1297acf7b4476d5ccd83cc8b27be96aa6110f7a9c3a40be0bd767bf81b17db01"
+        },
+        {
+          "role": "arm",
+          "path": "/textures/wood-veneer/arm.jpg",
+          "sourceUrl": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/oak_veneer_01/oak_veneer_01_arm_1k.jpg",
+          "bytes": 982665,
+          "md5": "dfba0f063663289248f4e887f836bdcc",
+          "sha256": "8bf4f36a9ba1d5377a2fa5273a2a0763775afe511b50293d71b159d15576cf1e"
+        }
+      ]
+    },
+    {
+      "id": "marble-slab",
+      "providerId": "Marble012",
+      "name": "Marble 012",
+      "kind": "material",
+      "provider": "ambientCG",
+      "sourcePage": "https://ambientcg.com/view?id=Marble012",
+      "authors": {
+        "Lennart Demes": "Procedural material"
+      },
+      "license": "CC0-1.0",
+      "licenseUrl": "https://docs.ambientcg.com/license/",
+      "resolution": "1k",
+      "tileMetres": [1.5, 1.5],
+      "scaleNote": "Application-defined slab repeat scale in metres.",
+      "sourceArchiveSha256": "b04384c6d49ce73baeb70db7ea4abfe9948fc9b74b9fd92c3766970662bf2c43",
+      "modifications": "Colour and OpenGL normal maps preserved. Roughness packed into G with R=255 (unoccluded) and B=0 (nonmetal), JPEG quality 95.",
+      "channels": {
+        "basecolor": "sRGB",
+        "normal": "linear, OpenGL +Y",
+        "arm": "linear: R ambient occlusion, G roughness, B metalness"
+      },
+      "files": [
+        {
+          "role": "basecolor",
+          "path": "/textures/marble-slab/basecolor.jpg",
+          "sourceUrl": "https://ambientcg.com/get?file=Marble012_1K-JPG.zip",
+          "archiveMember": "Marble012_1K-JPG_Color.jpg",
+          "bytes": 1220876,
+          "sha256": "a34b55c889c6b3819d2c351b6409bfd0baf0a0a55b073441850627dfebcdcd1e"
+        },
+        {
+          "role": "normal",
+          "path": "/textures/marble-slab/normal.jpg",
+          "sourceUrl": "https://ambientcg.com/get?file=Marble012_1K-JPG.zip",
+          "archiveMember": "Marble012_1K-JPG_NormalGL.jpg",
+          "bytes": 342955,
+          "sha256": "2e9a56525ffbb7e80854b19985a5c921f91192698ea337f4834192479ba0063b"
+        },
+        {
+          "role": "arm",
+          "path": "/textures/marble-slab/arm.jpg",
+          "sourceUrl": "https://ambientcg.com/get?file=Marble012_1K-JPG.zip",
+          "archiveMember": "Marble012_1K-JPG_Roughness.jpg",
+          "bytes": 360773,
+          "sha256": "558161184c33276977beda4a4257ac78ca22544044fbc77234296e76a8d3c132"
         }
       ]
     }

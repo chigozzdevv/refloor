@@ -10,7 +10,7 @@ export function furnishLayout(
   layout: HouseLayout,
 ): void {
   const design = requirements.design,
-    joinery = finishes[design?.joinery ?? 'oak'],
+    joinery = finishes[design?.joinery === 'walnut' ? 'walnutVeneer' : 'oakVeneer'],
     hardware = finishes[design?.hardware ?? 'black'];
   const styleObject = (object: SceneObject, asset: string) => {
     if (['sofa', 'chair', 'bed', 'dining-chair'].includes(asset))

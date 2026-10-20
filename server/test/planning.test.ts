@@ -268,8 +268,9 @@ describe('Z3 house generation', () => {
     }
     const sideboard = building.objects.find((value) => value.assetId === 'catalogue/cabinet')!,
       kitchen = building.objects.find((value) => value.assetId === 'catalogue/kitchen-counter')!;
-    expect(sideboard.materials.body).toMatchObject({ textureId: 'wood-floor', color: '#a88763' });
+    expect(sideboard.materials.body).toMatchObject({ textureId: 'wood-veneer', color: '#9c7854' });
     expect(kitchen.materials.body).toEqual(sideboard.materials.body);
+    expect(kitchen.materials.top).toMatchObject({ textureId: 'marble-slab' });
     expect(kitchen.materials.frame).toMatchObject({ color: '#c4a36a', metalness: 0.85 });
     expect(
       building.objects

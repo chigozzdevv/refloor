@@ -3,10 +3,12 @@ import { getCatalogueEntry } from '@refloor/catalogue/furniture';
 
 const textures = new Set([
   'wood-floor',
+  'wood-veneer',
   'fabric',
   'plaster',
   'brick',
   'marble',
+  'marble-slab',
   'roof-asphalt',
   'metal-roof',
 ]);
@@ -33,7 +35,9 @@ export function validateBuildingAssets(building: Building) {
     const entry = getCatalogueEntry(object.assetId);
     if (
       object.kind !== entry.kind ||
-      Object.keys(entry.materials).some((slot) => !object.materials[slot]) ||
+      Object.keys(entry.materials).some(
+        (slot) => !object.materials[slot] && !entry.optionalMaterials?.includes(slot),
+      ) ||
       object.behaviours
         .map((value) => value.kind)
         .sort()

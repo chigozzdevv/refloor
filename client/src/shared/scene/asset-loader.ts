@@ -15,10 +15,12 @@ import type { Material } from '@refloor/scene';
 
 const scales: Record<string, [number, number]> = {
   'wood-floor': [1.2, 1.2],
+  'wood-veneer': [1.83, 1.83],
   plaster: [1.998063, 1.998064],
   fabric: [0.263603, 0.2638],
   brick: [1.12, 1.12],
   marble: [1.5, 1.5],
+  'marble-slab': [1.5, 1.5],
   'roof-asphalt': [20, 20],
   'metal-roof': [2, 2],
 };
@@ -57,15 +59,32 @@ export function useSurface(finish: Material, glass = false): MeshPhysicalMateria
       sheen: id === 'fabric' ? 0.7 : 0,
       sheenRoughness: 0.85,
       sheenColor: new Color('#e8dcc6'),
-      clearcoat: id === 'wood-floor' ? 0.12 : id === 'marble' ? 0.18 : 0,
+      clearcoat:
+        id === 'wood-floor' || id === 'wood-veneer'
+          ? 0.12
+          : id === 'marble' || id === 'marble-slab'
+            ? 0.18
+            : 0,
       clearcoatRoughness: 0.45,
-      transmission: glass ? 0.94 : 0,
-      thickness: glass ? 0.015 : 0,
+      transmission: 0,
+      thickness: 0,
       ior: glass ? 1.5 : 1.45,
-      transparent: !glass && opacity < 1,
-      opacity: glass ? 1 : opacity,
+      transparent: glass || opacity < 1,
+      opacity,
       envMapIntensity: glass ? 1 : 0.65,
     });
+    if (glass) {
+      material.forceSinglePass = true;
+      material.onBeforeCompile = (shader) => {
+        shader.fragmentShader = shader.fragmentShader.replace(
+          '#include <opaque_fragment>',
+          `float paneFresnel = pow(1.0 - abs(dot(normal, normalize(vViewPosition))), 5.0);
+          diffuseColor.a = mix(diffuseColor.a, max(diffuseColor.a, 0.55), paneFresnel);
+          #include <opaque_fragment>`,
+        );
+      };
+      material.customProgramCacheKey = () => 'refloor-thin-glazing-v1';
+    }
     if (id === 'metal-roof') {
       material.onBeforeCompile = (shader) => {
         shader.fragmentShader = shader.fragmentShader.replace(
