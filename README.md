@@ -46,24 +46,32 @@ Reloading an active generation resumes its saved job rather than submitting anot
 New house opens the prompt without moving the player; Back to your house restores the prior view.
 Before generation or a starting house replaces the current draft, its latest contents are saved
 to MongoDB. A failed save keeps the current house open and prevents replacement.
-The API key stays on the server. Responses use Structured Outputs with storage disabled,
-a 6,000-token output limit, a 90-second provider timeout and no automatic provider retries.
+The API key stays on the server. Responses use Structured Outputs with storage disabled and
+no automatic provider retries. Generation allows 6,000 output tokens and 90 seconds;
+editing allows 4,800 output tokens and 25 seconds.
 
 Generation currently supports rectangular houses with one or two storeys, 14–20 m width,
-9–24 m depth in 0.1 m increments, two to eight rooms per floor and twelve rooms total. Unspecified dimensions
-are solved from the programme. Choose a central hall with rooms on both sides, or a daylit
-side gallery with rooms spanning the other side. Galleries can run left or right; stairs can
-sit towards the front or rear. The entrance follows the circulation layout. Two-storey
-homes reserve a shared stairwell, upper-floor opening and landing access. Living and dining
-can share an open room; other uses currently need separate rooms. Unsupported requests
-and layouts that fail validation return an error rather than a substitute starting home.
+9–24 m depth in 0.1 m increments, two to eight rooms per floor and twelve rooms total.
+Unspecified width follows the programme and circulation; Z3 solves depth and room allocation.
+Choose a central hall with balanced wings or a wider public wing, or a daylit side gallery
+with rooms spanning the other side. Galleries can run left or right; stairs can sit towards
+the front or rear. The entrance follows the circulation layout. Two-storey homes reserve a
+shared stairwell, upper-floor opening and landing access. Living, dining and kitchen can
+share one open room in any combination; bedrooms, bathrooms and workspaces stay enclosed.
+Room uses persist for zoned furnishing and completion of missing essentials. Public zones sit side by side when wide
+enough and follow one another in narrower rooms, without internal partitions. Windows
+follow room use; standard or generous glazing changes actual window sizes and counts in
+public rooms while retaining high bathroom privacy windows.
+Unsupported requests and layouts that fail validation return an error rather than a
+substitute starting home.
+Generation checks each opening fixture's physical clearance before returning the house;
+regression journeys also verify room access while each fixture is open.
 Design specifications coordinate wall and upholstery colours, oak or walnut joinery, brass
 or black hardware, plaster/brick/marble exterior finishes and asphalt/metal roofing. They apply
-to actual materials and fittings. Wide living/dining rooms arrange their zones side by side.
-Furniture uses the shipped catalogue: kitchens include a sink, hob, oven and refrigerator;
+to actual materials and fittings. Furniture uses the shipped catalogue: kitchens include a sink, hob, oven and refrigerator;
 bathrooms include a basin, toilet and shower; workspaces include a desk; bedrooms include
-a bed and wardrobe. These fittings are editable models; device actions currently cover
-televisions, lights and doors. Custom generated meshes remain to be added.
+a bed and wardrobe. Fittings support the household capabilities described below; custom
+generated meshes remain to be added.
 This is an editable spatial prototype, not construction plans.
 
 The client proxies `/api` to `http://127.0.0.1:3001` during development and preview.
@@ -137,7 +145,9 @@ in a bounded browser worker, preserves the house layout, validates access and ca
 as one change. It upgrades legacy fittings and adds room essentials where clear space permits.
 The scene has no persistent inspector, left toolbar, floor buttons
 or statistics overlays. Clicking a door or its handle starts a complete trip through it: approach, open, cross and settle inside.
-Shift+click, right-click, or selecting it in overview opens door editing. Clicking other items, walls or floors opens a small chat anchored
+Shift+click, right-click, or selecting it in overview opens door editing. Nearby appliance handles,
+burner controls and tap/shower handles operate their device in walk mode; the remaining
+item surfaces open editing. Clicking items, walls or floors opens a small chat anchored
 beside it with a speech-bubble tail and a selection outline. Recent conversation expands inside
 the bubble. Exterior wall chat shows brick and marble finish suggestions; other suggestions are collapsed behind a help icon. Selecting one fills the composer for review before sending. GPT-6 Luna interprets supported changes; the server validates commands and placement,
 and the client checks that the scene has not changed before applying them. Item chat
@@ -153,7 +163,12 @@ Walk to entrance leads from the entrance hall to its handle without opening the 
 Stair controls use fixed up/down icons. Entering the house keeps the camera facing inward instead of turning toward a side door.
 The same walkthrough controller drives dots, door clicks and map trips. It turns before advancing,
 opens the selected door immediately when its swing is safe, crosses using Rapier, and settles the camera
-on a visible interaction ahead, excluding the door or staircase just crossed. Door clicks stop just inside the room, while room dots and map trips use room viewpoints.
+on a visible interaction ahead, excluding the door or staircase just crossed. Room views favour
+cooker/tap counters, bathroom vanity or shower, beds, living-room TV/seating and workspace
+desks over incidental tables. Combined living/kitchen rooms offer distinct views of both zones.
+Object arrivals limit downward gaze while retaining clearance and line-of-sight checks;
+old preferred table views cannot override a useful primary fixture. Door clicks stop just
+inside the room, while room dots and map trips use room viewpoints.
 The entrance is closed when its entrance view opens, including old saved open states. Its opening hint sits on the handle, with no floor-level opening button. The handle depresses before the leaf swings; the unobstructed animation completes in 0.4 seconds. Automatic closure runs after arrival.
 Nearby clear door crossings use a direct, collision-checked route. Walking retains the edit validator's collision clearance; tight saved positions first move clear before opening a door. Engine navigation caches reuse openable topology only when compiled physical geometry and walker options match; changed door leaves still rebuild current-state routes. Stops stay outside door swings, and the controller replans when the building changes.
 The compact map shows rooms, walls, doors, stairs and the current position; the expanded plan adds furniture. Door leaves follow their actual open or closed state. Click a room on either map to walk there; the small expand button opens the larger plan and its floor tabs. Compound routes connect the outside position to the entrance and continue through the house.
@@ -173,11 +188,25 @@ Spatial instructions can mount a TV above a sideboard, face a sofa towards it an
 near a table in one atomic, undoable edit. The shared placement system respects floor, wall,
 ceiling and tabletop supports, object dimensions, windows, doorways, stairs and the player.
 The library uses the same placement and initially selects the occupied room. Chat also controls
-televisions, lights and doors. Accepted edits
+televisions, lights, doors and supported household fixtures. Accepted edits
 update collision geometry and support undo/redo (also Cmd/Ctrl+Z and Shift+Cmd/Ctrl+Z).
 TV controls play the included clip or a compatible direct video URL on the 3D screen;
 power, mute and volume update the actual media player. Light controls update fixture
-emission, intensity, colour and cached local shadows in high quality mode. Geometry changes schedule shadow refreshes on rendered frames; paused tabs cannot expire the refresh window, and animated doors refresh shadows through their movement.
+emission, intensity, colour and cached local shadows in high quality mode.
+Cookers have four named burners with individual on/off, shared 0–100% heat and visible flames.
+Lighting a named burner while the cooker is powered off selects only that burner. Starting
+the whole cooker reuses its configured selection, or front-left when the selection is empty. Sink taps and showers have 0–100% flow, 10–60 °C temperature
+state and visible streams. Whole-device starts preserve usable settings; zero heat/flow
+returns to its normal starting level. Starting water preserves its temperature. Turning a
+device off preserves settings. Kitchen units keep cooker, sink and oven states separate. Openable fittings animate their actual mechanism: oven door, refrigerator
+doors, wardrobe/cabinet fronts, island storage or vanity/bedside drawers. Other kitchen
+cupboard fronts do not inherit the oven action. Panels and clearance follow the item’s
+current dimensions and rotation. Opening clearance checks the player, obstacles and access
+routes; temporary movement reservations retain clearance until a closing panel finishes
+its animation. These virtual interactions do not simulate food cooking,
+thermodynamics or fluid accumulation, and do not control real appliances.
+Geometry changes schedule shadow refreshes on rendered frames; paused tabs cannot expire
+the refresh window, and animated doors and fittings refresh shadows through their movement.
 Powered fixtures retain their illumination as the view changes. Only local shadow maps are budgeted,
 prioritizing the occupied area and selected or newly powered fixtures. Paired wall-light beams share
 that allocation. Unshadowed lights do not provide physical wall occlusion.
@@ -196,13 +225,17 @@ Chat can restore a light's original power, brightness and illumination colour. C
 brightness bounds of 0–200% of the catalogue default; legacy brighter values remain loadable
 with capped rendering. Item chats show the selected item name and accept changes through text.
 
-Saved actions are part of the building document. House chat can connect door opens/closes,
-light or television power changes, room entry and object clicks to supported scene commands,
-including multiple devices, furniture transforms and surface finishes. Door and power conditions
-can restrict a rule. The house menu lists rules, their actual triggers/actions, enable/disable switches
+Saved actions are part of the building document. House chat can connect door or appliance
+opens/closes, supported device power changes, room entry and object clicks to scene commands,
+including multiple devices, furniture transforms and surface finishes. Door, openable and
+power conditions can restrict a rule. Power events identify their capability, so starting a
+kitchen sink cannot trigger a cooker rule on the same object; older single-device rules
+remain compatible. The house menu lists rules, their actual triggers/actions, enable/disable switches
 and removal. Edit a rule through language or test its actions, then undo the trial. Configuration changes use normal undo/redo and persist in browser drafts, exports
-and MongoDB snapshots. Relative movement, rotation, brightness and volume resolve against current
-state on each trigger; device limits clamp at execution. Rules run locally without another model call. State triggers fire only on
+and MongoDB snapshots. Relative movement, rotation, brightness, volume, heat, flow and water
+temperature resolve against current state on each trigger; device limits clamp at execution.
+Named burner operations and ignition/start actions also resolve live settings rather than
+capturing a device-state snapshot. Rules run locally without another model call. State triggers fire only on
 actual changes, each rule fires at most once per transaction, and at most 100 commands execute
 in one interaction. Chained effects are validated atomically against geometry, the player and light
 tuning; invalid effects reject the interaction with a visible error. Undo/redo replays the recorded
@@ -217,6 +250,11 @@ resolve against this context and the current scene. Restoring an original or pre
 uses recorded values and passes normal placement checks; it preserves unrelated properties.
 The context survives chat closure, browser refresh, saved project reopening and project export/import.
 Older browser drafts recover available starting properties from their undo records.
+Missing optional household capabilities attach through an undoable upgrade that preserves
+existing IDs, materials, geometry and device states. If an original snapshot predates a new
+capability, original restoration uses its declared catalogue baseline while leaving the
+recorded snapshot unchanged. Full restoration retains those capabilities. Previous-property
+restoration still requires an actual recorded value; upgrade undo removes the added state exactly.
 
 History also stores up to six named designs. View a design from the current camera, then return to
 the working arrangement with its undo, redo and conversation restored. Edited previews are saved
@@ -233,7 +271,8 @@ Paving switches between individual blocks and a filtered joint pattern according
 with hysteresis to avoid flicker. Both representations share the same editable finish.
 
 Rendering caps drawing-buffer size and adjusts resolution after sustained slow frames, with slower
-quality recovery. Compact viewports use smaller shadow/reflection targets and SMAA instead of
+quality recovery. Native filtered PCF shadows remain active across viewport and quality changes.
+Compact viewports use smaller shadow/reflection targets and SMAA instead of
 multisampling. Adaptive resolution normally stops at DPR 1 on compact viewports and 0.85 on desktop;
 hard pixel and device limits still apply. Sustained pressure also disables optional AO and bloom.
 All powered fixtures retain illumination. Static sunlight shadows and mirror captures
@@ -244,6 +283,7 @@ preserving the viewing angle, pan and relative zoom.
 Read-only frame cadence and renderer counts are available in the canvas `data-render-metrics`
 attribute after warmup. These browser measurements include CPU, GPU and scheduling costs;
 phone-sized desktop viewports do not establish physical iPhone GPU, thermal or touch performance.
+Physical iPhone testing remains pending.
 
 Existing doors and windows can move along their wall or change dimensions through chat. Compatible
 axis-aligned internal partitions shared by two rectangular rooms can slide, updating both room bounds.
@@ -269,7 +309,8 @@ until another project is opened. History retains up to 50 changes within a 4 MB 
 invalid history is discarded without replacing a valid house.
 Original properties and chat context are saved independently of the active undo stack, including
 MongoDB snapshots. Context-only changes also mark a saved space as changed.
-New spaces can use one or two storeys, widths 11.5–16 m and depths 9.5–14 m.
+The catalogue’s parameterized starting homes support one or two storeys, widths 11.5–16 m
+and depths 9.5–14 m; prompt generation uses the limits above.
 
 Rendering assets are self-hosted. `client/public/manifest.json` records their
 source URLs, CC0 licences, authors, physical dimensions and checksums. The material
@@ -285,7 +326,9 @@ The TV clip is [BMKME's CC0 waterfall video](https://commons.wikimedia.org/wiki/
 - `getObjectCapabilities(object)`: derive supported editor and device actions.
 
 Commands add, remove, move, rotate, resize or replace furniture, change object, interior wall,
-exterior wall or roof materials, change room floor finishes, and set door, TV or light state. An edit carries an ID, timestamp, expected
+exterior wall or roof materials, change room floor finishes, and control door, television,
+light, cooker, water or openable state. Live ignition, water-start and relative device actions
+resolve against current state. An edit carries an ID, timestamp, expected
 revision and typed commands. Failed batches preserve the original document; successful
 batches increment its revision once and record inverse commands. Replacement preserves
 instance identity, room, floor and transform.
@@ -352,8 +395,8 @@ numerical tolerance. These are application constraints; structural engineering, 
 compliance, detailed asset silhouettes and arbitrary furniture support are outside
 the current validation.
 
-TV, light and door commands update validated state. The browser animates door hinges
-and updates their physics colliders while they move. TV playback reports loading,
+Device commands update validated state with exact inverse commands. Doors and openable
+fittings animate their mechanisms and keep collision clearance through opening and closing. TV playback reports loading,
 playing, blocked autoplay and source failures. Media
 sources accept HTTP(S) URLs or `asset:` references. The API stores approved source references
 and never fetches remote video; the browser plays them directly.
