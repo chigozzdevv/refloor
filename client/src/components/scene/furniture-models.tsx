@@ -10,78 +10,8 @@ import { RoomFixtures } from '@/components/scene/room-fixtures';
 import { Floodlight } from '@/components/objects/floodlight';
 import { WallLight } from '@/components/objects/wall-light';
 import { OutdoorPlanter } from '@/components/objects/outdoor-planter';
-
-function Bed({ object }: { object: SceneObject }) {
-  const body = useSurface(object.materials.body ?? finishes.linen),
-    frame = useSurface(object.materials.frame ?? finishes.walnut);
-  const { width: w, depth: d } = object.dimensions;
-  return (
-    <>
-      <RoundedBox
-        args={[w, 0.24, d]}
-        radius={0.035}
-        smoothness={4}
-        position={[0, 0.22, 0]}
-        material={frame}
-        castShadow
-        receiveShadow
-      />
-      <RoundedBox
-        args={[w - 0.12, 0.24, d - 0.15]}
-        radius={0.09}
-        smoothness={5}
-        position={[0, 0.46, 0.02]}
-        material={body}
-        castShadow
-        receiveShadow
-      />
-      <RoundedBox
-        args={[w - 0.04, 0.94, 0.13]}
-        radius={0.06}
-        smoothness={4}
-        position={[0, 0.58, -d / 2 + 0.04]}
-        material={body}
-        castShadow
-        receiveShadow
-      />
-      {[-1, 1].map((sign) => (
-        <RoundedBox
-          key={sign}
-          args={[w * 0.4, 0.15, 0.52]}
-          radius={0.075}
-          smoothness={6}
-          position={[sign * w * 0.23, 0.63, -d * 0.29]}
-          rotation={[0.08, 0, sign * 0.025]}
-          material={body}
-          castShadow
-          receiveShadow
-        />
-      ))}
-      <RoundedBox
-        args={[w - 0.08, 0.035, d * 0.42]}
-        radius={0.015}
-        smoothness={4}
-        position={[0, 0.605, d * 0.25]}
-        castShadow
-        receiveShadow
-      >
-        <meshPhysicalMaterial color="#a9af9c" roughness={0.95} sheen={0.65} sheenColor="#d8d7c7" />
-      </RoundedBox>
-      {[-1, 1].flatMap((x) =>
-        [-1, 1].map((z) => (
-          <mesh
-            key={`${x}:${z}`}
-            position={[x * (w / 2 - 0.16), 0.08, z * (d / 2 - 0.16)]}
-            castShadow
-          >
-            <cylinderGeometry args={[0.035, 0.03, 0.16, 12]} />
-            <meshStandardMaterial color="#443d30" roughness={0.6} />
-          </mesh>
-        )),
-      )}
-    </>
-  );
-}
+import { Bed } from '@/components/scene/bed';
+import { FurnitureSolid as Solid } from '@/components/scene/furniture-solid';
 
 function Cabinet({ object }: { object: SceneObject }) {
   const material = useSurface(object.materials.body ?? finishes.oak),
@@ -90,38 +20,40 @@ function Cabinet({ object }: { object: SceneObject }) {
   const sections = Math.max(2, Math.round(w / 0.55));
   return (
     <>
-      <RoundedBox
-        args={[w, h - 0.1, d]}
-        radius={0.014}
-        smoothness={3}
-        position={[0, (h + 0.1) / 2, 0]}
-        material={material}
-        castShadow
-        receiveShadow
+      <Solid
+        size={[w - 0.035, h - 0.14, d - 0.045]}
+        at={[0, (h + 0.1) / 2, -0.012]}
+        material={frame}
       />
+      <Solid size={[w, 0.025, d]} at={[0, h - 0.0125, 0]} material={material} />
+      {[-1, 1].map((side) => (
+        <Solid
+          key={side}
+          size={[0.025, h - 0.11, d]}
+          at={[side * (w / 2 - 0.0125), (h + 0.1) / 2, 0]}
+          material={material}
+        />
+      ))}
       {Array.from({ length: sections }, (_, i) => (
         <group
           key={i}
-          position={[-w / 2 + ((i + 0.5) * w) / sections, h / 2 + 0.04, d / 2 + 0.004]}
+          position={[-w / 2 + ((i + 0.5) * w) / sections, h / 2 + 0.035, d / 2 - 0.014]}
         >
-          <RoundedBox
-            args={[w / sections - 0.008, h - 0.15, 0.018]}
+          <Solid
+            size={[w / sections - 0.009, h - 0.16, 0.026]}
+            at={[0, 0, 0]}
             radius={0.004}
-            smoothness={2}
             material={material}
-            castShadow
-            receiveShadow
           />
-          <mesh position={[(w / sections) * 0.33, 0.08, 0.014]}>
-            <boxGeometry args={[0.018, 0.09, 0.012]} />
-            <meshStandardMaterial color="#847354" metalness={0.8} roughness={0.3} />
-          </mesh>
+          <Solid
+            size={[(w / sections) * 0.43, 0.012, 0.018]}
+            at={[0, (h - 0.16) / 2 - 0.022, 0.012]}
+            radius={0.004}
+            material={frame}
+          />
         </group>
       ))}
-      <mesh position={[0, 0.055, 0]} castShadow>
-        <boxGeometry args={[w - 0.14, 0.11, d - 0.12]} />
-        <primitive object={frame} attach="material" />
-      </mesh>
+      <Solid size={[w - 0.18, 0.09, d - 0.14]} at={[0, 0.045, 0]} material={frame} />
     </>
   );
 }
@@ -136,8 +68,8 @@ function Pendant({ object }: { object: SceneObject }) {
     shade = useSurface(object.materials.body ?? finishes.linen),
     frame = useSurface(object.materials.frame ?? finishes.brass);
   useEffect(() => {
-    shade.transmission = 0.15;
-    shade.thickness = 0.08;
+    shade.transmission = 0;
+    shade.thickness = 0;
     shade.emissive.set(state?.color ?? '#ffe6bf');
     shade.emissiveIntensity = (intensity / normal) * 0.8;
     shade.needsUpdate = true;
