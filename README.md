@@ -44,7 +44,8 @@ Reloading or returning opens the current house directly, restoring its camera, f
 position, lighting and overview target. Older drafts without a saved view open at the entrance.
 Reloading an active generation resumes its saved job rather than submitting another request.
 New house opens the prompt without moving the player; Back to your house restores the prior view.
-New prompts start with an editable brick-bungalow description; pending requests keep their own text.
+New prompts start with an editable brick bungalow whose entrance opens into a furnished parlor/dining room; bedrooms, kitchen and bathroom open directly from it without a passage. Stereo speakers share the TV soundtrack and its sound controls.
+Pending requests keep their own text.
 Before generation or a starting house replaces the current draft, its latest contents are saved
 to MongoDB. A failed save keeps the current house open and prevents replacement.
 The API key stays on the server. Responses use Structured Outputs with storage disabled and
@@ -59,7 +60,8 @@ Generation currently supports rectangular houses with one or two storeys, 14–2
 Unspecified width follows the programme and circulation; Z3 solves depth and room allocation.
 Choose a central hall with balanced wings or a wider public wing, or a daylit side gallery
 with rooms spanning the other side. Galleries can run left or right; stairs can sit towards
-the front or rear. The entrance follows the circulation layout. Two-storey homes reserve a
+the front or rear. Living-hub bungalows use a central living or living/dining room as their circulation, with a direct front entrance and doors into every adjoining room. This layout needs at least two enclosed rooms, a separate kitchen when requested, and enough width for furnishing and clear routes.
+The entrance follows the circulation layout. Two-storey homes reserve a
 shared stairwell, upper-floor opening and landing access. Living, dining and kitchen can
 share one open room in any combination; bedrooms, bathrooms and workspaces stay enclosed.
 Room uses persist for zoned furnishing and completion of missing essentials. Public zones sit side by side when wide
@@ -153,7 +155,7 @@ Shift+click, right-click, or selecting it in overview opens door editing. Nearby
 burner controls and tap/shower handles operate their device in walk mode; the remaining
 item surfaces open editing. Clicking items, walls or floors opens a small chat anchored
 beside it with a speech-bubble tail and a selection outline. Recent conversation expands inside
-the bubble. Exterior wall chat shows brick and marble finish suggestions; other suggestions are collapsed behind a help icon. Selecting one fills the composer for review before sending. GPT-6 Luna interprets supported changes; the server validates commands and placement,
+the bubble. Chat shows suggested text commands, which can be collapsed with the help icon. There are no separate playback or sound action buttons. Selecting one fills the composer for review before sending. Unambiguous selected-device commands such as “turn on”, “open the tap”, “unmute the TV” and “set volume to 35%” execute locally through the same validated transaction, history and saved-rule system. Other requests use GPT-6 Luna; the server validates commands and placement,
 and the client checks that the scene has not changed before applying them. Item chat
 can only affect the selected entity; house chat can change finishes or devices across
 the current building. Drag or swipe to look around, then select a floor ring to travel
@@ -195,9 +197,10 @@ The library uses the same placement and initially selects the occupied room. Cha
 televisions, lights, doors and supported household fixtures. Accepted edits
 update collision geometry and support undo/redo (also Cmd/Ctrl+Z and Shift+Cmd/Ctrl+Z).
 Chat stays busy through the committed scene frame, refreshed shadows and affected finite
-animations. Running water, flames and video do not keep a completed command loading.
+animations. Running water and flames do not keep a completed command loading. Starting or changing TV playback waits for the actual playing state, reports blocked/failed playback, and times out safely if a source remains unavailable.
 TV controls play the included clip or a compatible direct video URL on the 3D screen;
-power, mute and volume update the actual media player. Light controls update fixture
+power, mute and volume update the actual media player. Sending a direct playback or unmute command supplies the browser gesture needed for audio; blocked playback can be retried through text.
+Cinema mode switches off ceiling lights in the TV room, dims any lower accent lamps to 20% warm light, and preserves other rooms, exterior lights and the TV’s own settings. A powered TV adds a soft screen glow. “Whenever I turn on this TV, activate cinema mode” saves this preset against the TV power event, with effects included in the trigger’s undo transaction. Light controls update fixture
 emission, intensity, colour and cached local shadows in high quality mode.
 Cookers have four named burners with individual on/off, shared 0–100% heat and visible flames.
 Tap and shower commands identify the component: “open the tap” starts water, while “open the oven”
@@ -321,9 +324,9 @@ The catalogue’s parameterized starting homes support one or two storeys, width
 and depths 9.5–14 m; prompt generation uses the limits above.
 
 Rendering assets are self-hosted. `client/public/manifest.json` records their
-source URLs, CC0 licences, authors, physical dimensions and checksums. The material
+source URLs, licences, authors, physical dimensions and checksums. The material
 maps, HDR sky and four scanned furniture models are from [Poly Haven](https://polyhaven.com/license).
-The TV clip is [BMKME's CC0 waterfall video](https://commons.wikimedia.org/wiki/File:V8.webm).
+The TV plays a 36-second edited excerpt (06:16–06:52) from [Spring](https://studio.blender.org/projects/spring/pages/about/), © Blender Foundation | cloud.blender.org/spring, under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The excerpt is resized, letterboxed and converted to H.264/AAC, with attribution permanently visible in its lower bar. `asset:spring` is the current source; saved `asset:waterfall` references remain compatible with the included clip.
 
 ## Scene API
 
@@ -403,7 +406,7 @@ numerical tolerance. These are application constraints; structural engineering, 
 compliance, detailed asset silhouettes and arbitrary furniture support are outside
 the current validation.
 
-Device commands update validated state with exact inverse commands. Doors and openable
+Device commands update validated state with exact inverse commands. Successful static geometry checks are reused for matching geometry; every document still parses and compiles, door sweep and leaf checks run on every edit, and player occupancy remains checked. Changes to room footprints, collisions, fixture opening reservations or navigation settings invalidate reuse. Scanned furniture keeps its model and materials through unrelated state edits. Light primitives stay mounted at zero intensity when off, and the TV retains the same physical screen material, avoiding shader changes caused by light counts or switching screen material types. Door animation and entry use bounded elapsed time so low frame rates do not multiply their duration. Doors and openable
 fittings animate their mechanisms and keep collision clearance through opening and closing. TV playback reports loading,
 playing, blocked autoplay and source failures. Media
 sources accept HTTP(S) URLs or `asset:` references. The API stores approved source references
