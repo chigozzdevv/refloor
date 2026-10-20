@@ -3,6 +3,7 @@ import { createFurniture } from '@refloor/catalogue/furniture';
 import { finish, finishes } from '@refloor/catalogue/materials';
 import type { HouseRequirements } from '@refloor/server/shared/planning/requirements';
 import type { HouseLayout } from '@refloor/server/shared/planning/solver';
+import { roomZones } from '@refloor/server/shared/planning/zones';
 
 export function furnishLayout(
   building: Building,
@@ -44,9 +45,7 @@ export function furnishLayout(
   for (const planned of layout.rooms) {
     const floor = building.floors[planned.requirement.floor]!;
     const roomId = `${floor.id}/room-${planned.index}`;
-    const fp = planned.footprint,
-      centre = fp.x + fp.width / 2,
-      rear = fp.z + fp.depth;
+    const fp = planned.footprint;
     const add = (
       name: string,
       asset: string,
@@ -66,38 +65,50 @@ export function furnishLayout(
       building.objects.push(object);
       return object;
     };
-    add('pendant', 'pendant', centre, fp.z + fp.depth / 2, 0, 2.33);
-    const sideBySide = planned.requirement.uses.length === 2 && fp.width >= 8.4;
-    for (const use of planned.requirement.uses) {
-      const centre = sideBySide
-          ? fp.x + fp.width * (use === 'living' ? 0.75 : 0.25)
-          : fp.x + fp.width / 2,
-        zoneWidth = sideBySide ? fp.width / 2 : fp.width;
+    const zones = roomZones(planned.requirement, fp);
+    for (const zone of zones) {
+      const { use, footprint: fp } = zone,
+        centre = fp.x + fp.width / 2,
+        rear = fp.z + fp.depth;
+      add(
+        zones.length === 1 ? 'pendant' : `pendant-${use}`,
+        'pendant',
+        centre,
+        fp.z + fp.depth / 2,
+        0,
+        2.33,
+      );
       if (use === 'living') {
-        add('sofa', 'sofa', centre, rear - 3.4);
-        add('coffee-table', 'coffee-table', centre, rear - 2);
-        add('television', 'television', centre, rear - 0.18, Math.PI, 1.05);
-        add('sideboard', 'cabinet', centre, rear - 0.4, Math.PI);
-        if (design && zoneWidth >= 4.8) {
-          add('lounge-chair-left', 'chair', centre - 1.65, rear - 2.2, Math.PI / 3);
-          if (design.style !== 'natural-minimal')
-            add('lounge-chair-right', 'chair', centre + 1.65, rear - 2.2, -Math.PI / 3);
+        const front = zone.facing === 'front',
+          at = (distance: number) => (front ? fp.z + distance : rear - distance),
+          turn = front ? Math.PI : 0;
+        add('sofa', 'sofa', centre, at(3.4), turn);
+        add('coffee-table', 'coffee-table', centre, at(2), turn);
+        add('television', 'television', centre, at(0.18), front ? 0 : Math.PI, 1.05);
+        add('sideboard', 'cabinet', centre, at(0.4), front ? 0 : Math.PI);
+        if (design && fp.width >= 5.2) {
+          // Keep a continuous walkway around the seating and opening storage.
+          const offset = Math.min(2.1, fp.width / 2 - 1.32);
+          add('lounge-chair-left', 'chair', centre - offset, at(2.2), turn + Math.PI / 3);
+          if (design.style !== 'natural-minimal' && fp.width >= 6.9)
+            add('lounge-chair-right', 'chair', centre + offset, at(2.2), turn - Math.PI / 3);
         }
       } else if (use === 'bedroom') {
         add('bed', 'bed', centre, rear - 1.3, Math.PI);
+        const frontWardrobe = fp.width < 5.6;
         add(
           'wardrobe',
           'wardrobe',
-          planned.side === 0 ? fp.x + 0.4 : fp.x + fp.width - 0.4,
-          fp.z + 1.5,
-          planned.side === 0 ? Math.PI / 2 : -Math.PI / 2,
+          frontWardrobe ? centre : planned.side === 0 ? fp.x + 0.4 : fp.x + fp.width - 0.4,
+          fp.z + (frontWardrobe ? 0.4 : 1.5),
+          frontWardrobe ? 0 : planned.side === 0 ? Math.PI / 2 : -Math.PI / 2,
         );
         if (fp.width >= 5.2) {
-          add('bedside-left', 'bedside', centre - 1.25, rear - 1.2);
-          add('bedside-right', 'bedside', centre + 1.25, rear - 1.2);
+          add('bedside-left', 'bedside', centre - 1.25, rear - 1.2, Math.PI);
+          add('bedside-right', 'bedside', centre + 1.25, rear - 1.2, Math.PI);
         }
       } else if (use === 'dining') {
-        const z = sideBySide ? fp.z + fp.depth / 2 : fp.z + 2.3;
+        const z = zones.length > 1 ? fp.z + fp.depth / 2 : fp.z + 2.3;
         add('dining-table', 'dining-table', centre, z, Math.PI / 2);
         add('dining-chair-1', 'dining-chair', centre, z - 1.35);
         add('dining-chair-2', 'dining-chair', centre, z + 1.35, Math.PI);
@@ -128,8 +139,17 @@ export function furnishLayout(
     if (
       design &&
       planned.requirement.uses.some((use) => ['living', 'bedroom', 'workspace'].includes(use))
-    )
-      add('plant', 'plant', planned.side === 0 ? fp.x + 0.5 : fp.x + fp.width - 0.5, rear - 0.55);
+    ) {
+      const entrySidePlant = planned.requirement.uses.includes('bedroom') && fp.width < 5.6;
+      add(
+        'plant',
+        'plant',
+        (planned.side === 0) !== entrySidePlant ? fp.x + 0.5 : fp.x + fp.width - 0.5,
+        zones.length > 1 && zones[0]?.use === 'living' && zones[0].facing === 'front'
+          ? fp.z + 0.55
+          : fp.z + fp.depth - 0.55,
+      );
+    }
   }
   for (const floor of building.floors) {
     const hall = floor.rooms.find((room) => room.kind === 'corridor');

@@ -13,11 +13,13 @@ export const circulationSchema = z.strictObject({
   family: z.enum(['central-hall', 'side-gallery']),
   gallerySide: z.enum(['left', 'right']),
   stairPosition: z.enum(['front', 'rear']),
+  balance: z.enum(['balanced', 'public-wide']).nullish(),
 });
 export const designSchema = z.strictObject({
   style: z.enum(['warm-contemporary', 'natural-minimal', 'moody-modern']),
   joinery: z.enum(['oak', 'walnut']),
   hardware: z.enum(['black', 'brass']),
+  glazing: z.enum(['standard', 'generous']).nullish(),
   exterior: z.strictObject({
     finish: z.enum(['plaster', 'brick', 'marble']),
     color: colorSchema,
@@ -60,7 +62,14 @@ export type RoomRequirement = HouseRequirements['rooms'][number];
 export const houseResponseSchema = z.strictObject({
   requirements: requirementsSchema
     .omit({ unsupported: true })
-    .extend({ circulation: circulationSchema.nullable(), design: designSchema.nullable() })
+    .extend({
+      circulation: circulationSchema
+        .extend({ balance: z.enum(['balanced', 'public-wide']).nullable() })
+        .nullable(),
+      design: designSchema
+        .extend({ glazing: z.enum(['standard', 'generous']).nullable() })
+        .nullable(),
+    })
     .nullable(),
   unsupported: z.array(z.string().max(200)).max(10),
 });
@@ -93,11 +102,12 @@ export function validateRequirements(input: unknown): HouseRequirements {
   if (
     requirements.rooms.some(
       (room) =>
-        room.uses.length > 1 && room.uses.some((use) => !['living', 'dining'].includes(use)),
+        room.uses.length > 1 &&
+        room.uses.some((use) => !['living', 'dining', 'kitchen'].includes(use)),
     )
   )
     throw new Error(
-      'Combined rooms currently support an open living and dining area. Request other spaces as separate rooms.',
+      'Open-plan rooms can combine living, dining and kitchen uses. Bedrooms, bathrooms and workspaces need their own enclosed room.',
     );
   if (requirements.rooms.some((room) => room.uses.includes('living') && room.floor !== 0))
     throw new Error('The main living area must be on the ground floor.');

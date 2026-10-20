@@ -6,8 +6,10 @@ import { solveLayout } from '@refloor/server/shared/planning/solver';
 import { validateRequirements } from '@refloor/server/shared/planning/requirements';
 import { furnishLayout } from '@refloor/server/shared/planning/placement';
 import { validateBuildingAssets } from '@refloor/catalogue/validation';
-import { validateBuilding } from '@refloor/engine';
+import { validateFurnishedHouse } from '@refloor/server/shared/planning/decor';
 import { furnishExterior } from '@refloor/catalogue/houses/exterior';
+import { roomWindows } from '@refloor/server/shared/planning/windows';
+import { validateFixtureOpenings } from '@refloor/server/shared/planning/fixture-clearance';
 
 export async function generateLayout(
   id: string,
@@ -22,7 +24,9 @@ export async function generateLayout(
   furnishExterior(building);
   progress?.('validating');
   validateBuildingAssets(building);
-  return validateBuilding(building).building;
+  const validated = validateFurnishedHouse(building);
+  validateFixtureOpenings(validated);
+  return validated;
 }
 
 export function assembleHouse(
@@ -132,15 +136,13 @@ export function assembleHouse(
         };
         partition.openings.push(opening);
         const outer = side === 0 ? west : east;
-        outer.openings.push({
-          id: `${roomId}/window`,
-          kind: 'window',
-          offset: fp.z + fp.depth / 2 - 0.8,
-          width: 1.6,
-          height: 1.5,
-          sill: 0.85,
-          material: structuredClone(finishes.glass),
-        });
+        for (const [index, window] of roomWindows(planned.requirement, fp, design).entries())
+          outer.openings.push({
+            id: `${roomId}/window${index === 0 ? '' : `-${index + 1}`}`,
+            kind: 'window',
+            ...window,
+            material: structuredClone(finishes.glass),
+          });
         const walls = [partition, outer];
         if (fp.z === 0) walls.push(south);
         else {
@@ -153,6 +155,7 @@ export function assembleHouse(
           id: roomId,
           name: planned.requirement.name,
           kind: planned.requirement.uses[0] ?? 'other',
+          uses: planned.requirement.uses,
           footprint: fp,
           wallIds: walls.map((item) => item.id),
           floorMaterial: structuredClone(flooring),

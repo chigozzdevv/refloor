@@ -31,24 +31,48 @@ export async function solveLayout(requirements: HouseRequirements): Promise<Hous
   const depth = Int.const('house_depth');
   solver.add(depth.ge(90), depth.le(240));
   if (requirements.depth !== null) solver.add(depth.eq(Math.round(requirements.depth * 10)));
-  const width = requirements.width ?? 14;
   const family = requirements.circulation?.family ?? 'central-hall';
   const hallWidth = requirements.storeys === 2 ? 5.4 : 1.8;
+  const largestProgramme = Math.max(...requirements.rooms.map((room) => room.uses.length));
+  const publicWide =
+    family === 'central-hall' && requirements.circulation?.balance === 'public-wide';
+  const typicalRoomWidth = largestProgramme === 3 ? 5.8 : largestProgramme === 2 ? 5.2 : 4.2;
+  const wingWidth =
+    family === 'side-gallery'
+      ? largestProgramme * 4.2
+      : publicWide
+        ? 4.2 + (largestProgramme > 1 ? 8.4 : 6)
+        : typicalRoomWidth * 2;
+  const width = requirements.width ?? Math.max(14, Math.round((hallWidth + wingWidth) * 10) / 10);
   const galleryLeft = requirements.circulation?.gallerySide !== 'right';
+  const publicSide =
+    requirements.rooms.find((room) => room.uses.includes('living'))?.side === 'right' ? 1 : 0;
+  const availableWidth = Math.round((width - hallWidth) * 10) / 10;
+  const narrowWidth = Math.max(4.2, Math.floor((availableWidth / 3) * 10 + 1e-6) / 10);
   const hallX =
-    family === 'central-hall' ? (width - hallWidth) / 2 : galleryLeft ? 0 : width - hallWidth;
-  const roomWidth = family === 'central-hall' ? hallX : width - hallWidth;
+    family === 'central-hall'
+      ? publicWide
+        ? publicSide === 0
+          ? Math.round((availableWidth - narrowWidth) * 10) / 10
+          : narrowWidth
+        : availableWidth / 2
+      : galleryLeft
+        ? 0
+        : availableWidth;
+  const leftWidth = hallX,
+    rightWidth = Math.round((availableWidth - hallX) * 1e6) / 1e6;
   const variables = requirements.rooms.map((requirement, index) => {
     const side = Int.const(`side_${index}`),
       start = Int.const(`start_${index}`),
       size = Int.const(`depth_${index}`),
-      minimum = minimumDepth(
-        roomWidth >= 8.4 && requirement.uses.length === 2
-          ? { ...requirement, uses: ['living'] }
-          : requirement,
+      minimum = If(
+        side.eq(0),
+        minimumDepth(requirement, leftWidth),
+        minimumDepth(requirement, rightWidth),
       );
     solver.add(side.ge(0), side.le(1), start.ge(0), size.ge(minimum), start.add(size).le(depth));
     if (family === 'side-gallery') solver.add(side.eq(galleryLeft ? 1 : 0));
+    if (publicWide && requirement.uses.includes('living')) solver.add(side.eq(publicSide));
     if (requirement.side !== null) solver.add(side.eq(requirement.side === 'left' ? 0 : 1));
     return { requirement, index, side, start, size, minimum };
   });
@@ -112,7 +136,7 @@ export async function solveLayout(requirements: HouseRequirements): Promise<Hous
       footprint: {
         x: value(room.side) === 0 ? 0 : hallX + hallWidth,
         z: value(room.start) / 10,
-        width: roomWidth,
+        width: value(room.side) === 0 ? leftWidth : rightWidth,
         depth: value(room.size) / 10,
       },
     })),
