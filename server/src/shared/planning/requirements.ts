@@ -8,6 +8,25 @@ export const roomUseSchema = z.enum([
   'bathroom',
   'workspace',
 ]);
+const colorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/);
+export const circulationSchema = z.strictObject({
+  family: z.enum(['central-hall', 'side-gallery']),
+  gallerySide: z.enum(['left', 'right']),
+  stairPosition: z.enum(['front', 'rear']),
+});
+export const designSchema = z.strictObject({
+  style: z.enum(['warm-contemporary', 'natural-minimal', 'moody-modern']),
+  joinery: z.enum(['oak', 'walnut']),
+  hardware: z.enum(['black', 'brass']),
+  exterior: z.strictObject({
+    finish: z.enum(['plaster', 'brick', 'marble']),
+    color: colorSchema,
+  }),
+  roof: z.strictObject({
+    finish: z.enum(['asphalt', 'metal']),
+    color: colorSchema,
+  }),
+});
 export const requirementsSchema = z.strictObject({
   name: z.string().min(1).max(80),
   storeys: z.number().int().min(1).max(2),
@@ -26,8 +45,10 @@ export const requirementsSchema = z.strictObject({
     )
     .min(2)
     .max(12),
-  wallColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
-  upholsteryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  circulation: circulationSchema.nullish(),
+  design: designSchema.nullish(),
+  wallColor: colorSchema,
+  upholsteryColor: colorSchema,
   flooring: z.enum(['oak', 'walnut', 'tile']),
   roof: z.enum(['flat', 'gable']),
   unsupported: z.array(z.string().max(200)).max(10),
@@ -37,7 +58,10 @@ export type HouseRequirements = z.infer<typeof requirementsSchema>;
 export type RoomRequirement = HouseRequirements['rooms'][number];
 
 export const houseResponseSchema = z.strictObject({
-  requirements: requirementsSchema.omit({ unsupported: true }).nullable(),
+  requirements: requirementsSchema
+    .omit({ unsupported: true })
+    .extend({ circulation: circulationSchema.nullable(), design: designSchema.nullable() })
+    .nullable(),
   unsupported: z.array(z.string().max(200)).max(10),
 });
 
@@ -57,7 +81,7 @@ export function validateRequirements(input: unknown): HouseRequirements {
     const rooms = requirements.rooms.filter((room) => room.floor === floor);
     if (rooms.length < 2 || rooms.length > 8)
       throw new Error(
-        'Each floor currently supports two to eight rooms around a circulation hall.',
+        'Each floor currently supports two to eight rooms connected to a circulation hall.',
       );
   }
   if (requirements.rooms.some((room) => room.floor >= requirements.storeys))
@@ -82,5 +106,12 @@ export function validateRequirements(input: unknown): HouseRequirements {
     requirements.rooms.length
   )
     throw new Error('Room names must be unique.');
+  if (requirements.circulation?.family === 'side-gallery') {
+    const occupiedSide = requirements.circulation.gallerySide === 'left' ? 'right' : 'left';
+    if (requirements.rooms.some((room) => room.side !== null && room.side !== occupiedSide))
+      throw new Error(
+        'A side gallery has rooms on its opposite side. Use a central hall for rooms on both sides.',
+      );
+  }
   return requirements;
 }

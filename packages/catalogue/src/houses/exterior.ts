@@ -43,6 +43,8 @@ export function exteriorAdditions(building: Building): SceneObject[] {
             (point.z - wall.start.z) * (wall.end.z - wall.start.z)) /
           wallLength;
         return (
+          y >= 0.12 &&
+          y + height <= wall.height - 0.12 &&
           offset - width / 2 > 0.12 &&
           offset + width / 2 < wallLength - 0.12 &&
           !wall.openings.some((opening) => {
@@ -59,16 +61,32 @@ export function exteriorAdditions(building: Building): SceneObject[] {
       for (const side of [-1, 1]) {
         const label = side < 0 ? 'Left' : 'Right';
         const suffix = side < 0 ? 'left' : 'right';
-        add({
-          ...assetFromCatalogue('catalogue/floodlight'),
-          id: `site/floodlight-${suffix}`,
-          label: `${label} entrance floodlight`,
-          floorId: ground.id,
-          roomId: room.id,
-          placement: 'exterior',
-          position: position(side * 1.8, 0.28, 2.4),
-          rotation,
-        });
+        const floodlight = assetFromCatalogue('catalogue/floodlight');
+        const floodHeight = Math.min(2.4, wall.height - floodlight.dimensions.height - 0.15);
+        const floodSide = Array.from({ length: 16 }, (_, i) => side * (1.8 - i * 0.1)).find(
+          (offset) =>
+            solidWall(
+              position(offset, 0, floodHeight),
+              floodlight.dimensions.width,
+              floodHeight,
+              floodlight.dimensions.height,
+            ),
+        );
+        if (floodSide !== undefined)
+          add({
+            ...floodlight,
+            id: `site/floodlight-${suffix}`,
+            label: `${label} entrance floodlight`,
+            floorId: ground.id,
+            roomId: room.id,
+            placement: 'exterior',
+            position: position(
+              floodSide,
+              wall.thickness / 2 + floodlight.dimensions.depth / 2 + 0.012,
+              floodHeight,
+            ),
+            rotation,
+          });
         const sconce = assetFromCatalogue('catalogue/wall-light');
         const height = Math.min(1.65, ground.height - sconce.dimensions.height - 0.15);
         const lightSide = Array.from(

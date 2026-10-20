@@ -31,6 +31,7 @@ export function assembleHouse(
   layout: HouseLayout,
 ): Building {
   const { width, depth, hallX, hallWidth } = layout;
+  const design = requirements.design;
   const building: Building = {
     id,
     name: requirements.name,
@@ -46,7 +47,14 @@ export function assembleHouse(
       pitch: requirements.roof === 'gable' ? Math.PI / 8 : 0,
       overhang: 0.24,
       material: structuredClone(
-        requirements.roof === 'gable' ? finishes.metalRoof : finishes.asphalt,
+        design
+          ? {
+              ...finishes[design.roof.finish === 'metal' ? 'metalRoof' : 'asphalt'],
+              color: design.roof.color,
+            }
+          : requirements.roof === 'gable'
+            ? finishes.metalRoof
+            : finishes.asphalt,
       ),
     },
   };
@@ -65,6 +73,12 @@ export function assembleHouse(
       east = wall('east', width, 0, width, depth),
       south = wall('south', 0, 0, width, 0),
       north = wall('north', 0, depth, width, depth);
+    if (design)
+      for (const exterior of [west, east, south, north])
+        exterior.exteriorMaterial =
+          design.exterior.finish === 'plaster'
+            ? finish(design.exterior.color, 'plaster', 0.9)
+            : { ...finishes[design.exterior.finish], color: design.exterior.color };
     if (level === 0)
       south.openings.push({
         id: `${floorId}/entrance`,
@@ -75,7 +89,7 @@ export function assembleHouse(
         hinge: 'end',
         swing: 'inward',
         state: { open: false },
-        material: structuredClone(finishes.oak),
+        material: structuredClone(finishes[design?.joinery ?? 'oak']),
       });
     const flooring =
       requirements.flooring === 'tile'
@@ -98,6 +112,7 @@ export function assembleHouse(
       const rooms = layout.rooms
         .filter((room) => room.requirement.floor === level && room.side === side)
         .sort((a, b) => a.footprint.z - b.footprint.z);
+      if (!rooms.length) continue;
       const partition = wall(`hall-${side}`, boundary, 0, boundary, depth);
       sides.push(partition);
       floor.walls.push(partition);
@@ -113,7 +128,7 @@ export function assembleHouse(
           hinge: 'start' as const,
           swing: side === 0 ? ('inward' as const) : ('outward' as const),
           state: { open: false },
-          material: structuredClone(finishes.oak),
+          material: structuredClone(finishes[design?.joinery ?? 'oak']),
         };
         partition.openings.push(opening);
         const outer = side === 0 ? west : east;
@@ -150,9 +165,37 @@ export function assembleHouse(
       name: level === 0 ? 'Entrance hall' : 'Landing',
       kind: 'corridor',
       footprint: { x: hallX, z: 0, width: hallWidth, depth },
-      wallIds: [south, north, ...sides].map((item) => item.id),
+      wallIds: [
+        south,
+        north,
+        ...sides,
+        ...(hallX === 0 ? [west] : []),
+        ...(Math.abs(hallX + hallWidth - width) < 1e-6 ? [east] : []),
+      ].map((item) => item.id),
       floorMaterial: structuredClone(flooring),
     });
+    north.openings.push({
+      id: `${floorId}/hall-window`,
+      kind: 'window',
+      offset: hallX + 0.2,
+      width: Math.min(1.6, hallWidth - 0.4),
+      height: 1.5,
+      sill: 0.85,
+      material: structuredClone(finishes.glass),
+    });
+    if (layout.family === 'side-gallery') {
+      const outer = hallX === 0 ? west : east;
+      for (let z = 1.2; z + 1.6 < depth - 0.6; z += 3.2)
+        outer.openings.push({
+          id: `${floorId}/gallery-window-${outer.openings.length}`,
+          kind: 'window',
+          offset: z,
+          width: 1.6,
+          height: 1.5,
+          sill: 0.85,
+          material: structuredClone(finishes.glass),
+        });
+    }
     for (const room of floor.rooms) {
       for (const other of floor.walls) {
         const fp = room.footprint;
@@ -169,7 +212,13 @@ export function assembleHouse(
     building.floors.push(floor);
   }
   if (requirements.storeys === 2) {
-    const footprint = { x: hallX + 1.5, z: 1.6, width: 2.4, depth: 4 };
+    const rear = layout.stairPosition === 'rear';
+    const footprint = {
+      x: hallX + (hallWidth - 2.4) / 2,
+      z: rear ? depth - 5.6 : 1.6,
+      width: 2.4,
+      depth: 4,
+    };
     building.floors[1]!.voids.push({ id: 'stairwell', kind: 'stairwell', footprint });
     building.stairs.push({
       id: 'staircase',
@@ -178,12 +227,12 @@ export function assembleHouse(
       upperFloorId: 'first',
       openingId: 'stairwell',
       footprint,
-      heading: Math.PI,
+      heading: rear ? 0 : Math.PI,
       flightWidth: 1,
       landingDepth: 1.1,
       treadDepth: 0.28,
       risers: 18,
-      material: structuredClone(finishes.oak),
+      material: structuredClone(finishes[design?.joinery ?? 'oak']),
     });
   }
   return building;

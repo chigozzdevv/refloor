@@ -14,10 +14,12 @@ export type PlannedRoom = {
   footprint: Footprint;
 };
 export type HouseLayout = {
+  family: 'central-hall' | 'side-gallery';
   width: number;
   depth: number;
   hallX: number;
   hallWidth: number;
+  stairPosition: 'front' | 'rear';
   rooms: PlannedRoom[];
 };
 
@@ -30,25 +32,29 @@ export async function solveLayout(requirements: HouseRequirements): Promise<Hous
   solver.add(depth.ge(90), depth.le(240));
   if (requirements.depth !== null) solver.add(depth.eq(Math.round(requirements.depth * 10)));
   const width = requirements.width ?? 14;
+  const family = requirements.circulation?.family ?? 'central-hall';
   const hallWidth = requirements.storeys === 2 ? 5.4 : 1.8;
-  const hallX = (width - hallWidth) / 2;
+  const galleryLeft = requirements.circulation?.gallerySide !== 'right';
+  const hallX =
+    family === 'central-hall' ? (width - hallWidth) / 2 : galleryLeft ? 0 : width - hallWidth;
+  const roomWidth = family === 'central-hall' ? hallX : width - hallWidth;
   const variables = requirements.rooms.map((requirement, index) => {
     const side = Int.const(`side_${index}`),
       start = Int.const(`start_${index}`),
-      size = Int.const(`depth_${index}`);
-    solver.add(
-      side.ge(0),
-      side.le(1),
-      start.ge(0),
-      size.ge(minimumDepth(requirement)),
-      start.add(size).le(depth),
-    );
+      size = Int.const(`depth_${index}`),
+      minimum = minimumDepth(
+        roomWidth >= 8.4 && requirement.uses.length === 2
+          ? { ...requirement, uses: ['living'] }
+          : requirement,
+      );
+    solver.add(side.ge(0), side.le(1), start.ge(0), size.ge(minimum), start.add(size).le(depth));
+    if (family === 'side-gallery') solver.add(side.eq(galleryLeft ? 1 : 0));
     if (requirement.side !== null) solver.add(side.eq(requirement.side === 'left' ? 0 : 1));
-    return { requirement, index, side, start, size };
+    return { requirement, index, side, start, size, minimum };
   });
   for (let floor = 0; floor < requirements.storeys; floor++) {
     const rooms = variables.filter((room) => room.requirement.floor === floor);
-    for (const side of [0, 1])
+    for (const side of family === 'central-hall' ? [0, 1] : [galleryLeft ? 1 : 0])
       solver.add(
         rooms
           .reduce<Arith<'house'>>(
@@ -77,11 +83,7 @@ export async function solveLayout(requirements: HouseRequirements): Promise<Hous
   solver.minimize(
     variables.reduce<Arith<'house'>>(
       (sum, room) =>
-        sum.add(
-          room.size
-            .sub(minimumDepth(room.requirement))
-            .mul(room.requirement.size === 'spacious' ? 1 : 2),
-        ),
+        sum.add(room.size.sub(room.minimum).mul(room.requirement.size === 'spacious' ? 1 : 2)),
       Int.val(0),
     ),
   );
@@ -97,10 +99,12 @@ export async function solveLayout(requirements: HouseRequirements): Promise<Hous
   const model = solver.model();
   const value = (expression: typeof depth) => Number(model.eval(expression).toString());
   const layout: HouseLayout = {
+    family,
     width,
     depth: value(depth) / 10,
     hallX,
     hallWidth,
+    stairPosition: requirements.circulation?.stairPosition ?? 'front',
     rooms: variables.map((room) => ({
       index: room.index,
       requirement: room.requirement,
@@ -108,7 +112,7 @@ export async function solveLayout(requirements: HouseRequirements): Promise<Hous
       footprint: {
         x: value(room.side) === 0 ? 0 : hallX + hallWidth,
         z: value(room.start) / 10,
-        width: hallX,
+        width: roomWidth,
         depth: value(room.size) / 10,
       },
     })),
