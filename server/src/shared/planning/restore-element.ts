@@ -4,6 +4,11 @@ import { commandTouches, snapshotFor } from '@refloor/scene/edit-memory';
 import type { ElementSnapshot } from '@refloor/scene/edit-memory';
 import type { LanguageEditRequest } from '@refloor/scene/chat';
 import { defaultSiteMaterial } from '@refloor/scene/site-material';
+import { getCatalogueEntry } from '@refloor/catalogue';
+import {
+  objectMaterial,
+  objectMaterialCommand,
+} from '@refloor/server/shared/planning/object-material';
 
 function beforeCommand(
   current: ElementSnapshot | null,
@@ -103,9 +108,9 @@ function propertyOf(
       case 'size':
         return value.dimensions;
       case 'appearance':
-        return surface ? value.materials[surface] : value.materials;
+        return surface ? objectMaterial(value, surface) : value.materials;
       case 'color':
-        return value.materials[surface ?? 'body']?.color;
+        return objectMaterial(value, surface ?? 'body')?.color;
       case 'power':
         return light?.powered ?? television?.powered;
       case 'volume':
@@ -146,7 +151,7 @@ export function restoreElement(
   input: LanguageEditRequest,
   id: string,
   reference: string,
-  surface: 'body' | 'frame' | 'walls' | 'floors' | 'exterior' | 'roof' | null,
+  surface: 'body' | 'frame' | 'top' | 'walls' | 'floors' | 'exterior' | 'roof' | null,
 ): SceneCommand[] {
   const match =
     /^(original|previous)\.(position|rotation|size|appearance|color|power|volume|brightness|light-color|source|open|all)$/.exec(
@@ -210,25 +215,29 @@ export function restoreElement(
       return [{ type: 'resize-object', objectId: id, dimensions: object.dimensions }];
     if (property === 'appearance' || property === 'color') {
       const slots =
-        surface === 'body' || surface === 'frame'
+        surface === 'body' || surface === 'frame' || surface === 'top'
           ? [surface]
           : property === 'color'
             ? ['body']
-            : Object.keys(object.materials);
+            : [
+                ...new Set([
+                  ...Object.keys(object.materials),
+                  ...(getCatalogueEntry(object.assetId).optionalMaterials ?? []),
+                ]),
+              ];
+      const currentObject = structuredClone(current.value);
       return slots.map((slot): SceneCommand => {
-        const savedMaterial = object.materials[slot],
-          currentMaterial = current.value.materials[slot];
+        const savedMaterial = objectMaterial(object, slot),
+          currentMaterial = objectMaterial(currentObject, slot);
         if (!savedMaterial || !currentMaterial)
           throw new Error('That original surface is unavailable on the current item.');
-        return {
-          type: 'set-object-material',
-          objectId: id,
-          slot,
-          material:
+        const material =
             property === 'color'
               ? { ...currentMaterial, color: savedMaterial.color }
               : savedMaterial,
-        };
+          command = objectMaterialCommand(currentObject, slot, material);
+        currentObject.materials[slot] = structuredClone(material);
+        return command;
       });
     }
     const light = object.behaviours.find((item) => item.kind === 'light'),

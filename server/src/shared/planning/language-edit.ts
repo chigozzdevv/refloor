@@ -8,12 +8,17 @@ import {
   lightTuning,
   validateCommandTuning,
   placementProfile,
+  getCatalogueEntry,
 } from '@refloor/catalogue';
 import { applyCommands } from '@refloor/scene';
 import type { Building, Material, SceneCommand, SceneAction } from '@refloor/scene';
 import type { ChatTarget, LanguageEditRequest } from '@refloor/scene/chat';
 import { scopedEditMemory } from '@refloor/scene/edit-memory';
 import { restoreElement } from '@refloor/server/shared/planning/restore-element';
+import {
+  objectMaterial,
+  objectMaterialCommand,
+} from '@refloor/server/shared/planning/object-material';
 import {
   spatialCommands,
   spatialPlacementSchema,
@@ -58,7 +63,7 @@ export const languageActionSchema = z.strictObject({
     'source',
   ]),
   targetId: z.string(),
-  surface: z.enum(['body', 'frame', 'walls', 'floors', 'exterior', 'roof']).nullable(),
+  surface: z.enum(['body', 'frame', 'top', 'walls', 'floors', 'exterior', 'roof']).nullable(),
   vector: vector.nullable(),
   relative: z.boolean().nullable(),
   space: z.enum(['world', 'view']).nullable(),
@@ -147,7 +152,7 @@ export function languageContext(input: LanguageEditRequest) {
       slot,
       label: siteSurfaceLabels[slot],
       material: siteSurfaceMaterial(input.building, slot),
-      actions: ['color', 'finish', 'restore'],
+      actions: slot === 'planting' ? ['color', 'restore'] : ['color', 'finish', 'restore'],
     })),
     supportedEvents: [
       'door opens/closes',
@@ -181,7 +186,7 @@ export function languageContext(input: LanguageEditRequest) {
         rotation,
         floorId,
         roomId,
-        materials,
+        materials: { ...getCatalogueEntry(assetId).materials, ...materials },
         behaviours,
       }),
     ),
@@ -262,7 +267,8 @@ export function languageCommands(
     const wholeHouse = target.kind === 'house' && action.targetId === building.id;
     const material = (base: Material): Material => {
       if (action.action === 'finish') {
-        const value = required(action.value);
+        const requested = required(action.value),
+          value = action.surface === 'top' && requested === 'marble' ? 'marbleSlab' : requested;
         if (!Object.hasOwn(finishes, value)) throw new Error('That finish is unavailable.');
         return structuredClone(finishes[value as keyof typeof finishes]);
       }
@@ -297,6 +303,10 @@ export function languageCommands(
       );
     } else if (action.action === 'color' || action.action === 'finish') {
       const siteSlot = siteSurfaceSlot(building, action.targetId);
+      if (siteSlot === 'planting' && action.action === 'finish')
+        throw new Error(
+          'Border foliage supports colour changes; change the bed or edging finish separately.',
+        );
       const exteriorWalls = building.floors.flatMap((floor) =>
         floor.walls.filter((item) => wallExteriorSide(floor, item) !== null),
       );
@@ -336,14 +346,13 @@ export function languageCommands(
               preserveExterior: true,
             });
       } else if (object) {
-        const slot = action.surface === 'frame' ? 'frame' : 'body';
-        if (!object.materials[slot]) throw new Error('That surface is unavailable on this item.');
-        commands.push({
-          type: 'set-object-material',
-          objectId: object.id,
-          slot,
-          material: material(object.materials[slot]),
-        });
+        const slot =
+            action.surface === 'frame' || action.surface === 'top' ? action.surface : 'body',
+          current = objectMaterial(object, slot);
+        if (!current) throw new Error('That surface is unavailable on this item.');
+        if (options.preserveRelative && !object.materials[slot])
+          throw new Error('Change this countertop once before adding it to a saved action.');
+        commands.push(objectMaterialCommand(object, slot, material(current)));
       } else if (wall) {
         const exterior = target.side === 'exterior' || action.surface === 'exterior';
         if (exterior && !exteriorWalls.some((item) => item.id === wall.id))
