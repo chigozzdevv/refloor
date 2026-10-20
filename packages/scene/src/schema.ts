@@ -43,6 +43,20 @@ export const buildingSchema = buildingModelSchema.superRefine((building, context
     floor.rooms.forEach((room, ri) => {
       const rp = [...fp, 'rooms', ri];
       register(room.id, [...rp, 'id']);
+      if (room.uses) {
+        if (new Set(room.uses).size !== room.uses.length)
+          report('Room uses must be unique', [...rp, 'uses']);
+        if (room.uses[0] !== room.kind)
+          report('The primary room use must match its kind', [...rp, 'uses']);
+        if (
+          room.uses.length > 1 &&
+          room.uses.some((use) => !['living', 'dining', 'kitchen'].includes(use))
+        )
+          report('Only living, dining and kitchen uses can share an open-plan room', [
+            ...rp,
+            'uses',
+          ]);
+      }
       if (!contains(floor.footprint, room.footprint)) report('Room extends outside its floor', rp);
       if (new Set(room.wallIds).size !== room.wallIds.length)
         report('Room wall references must be unique', [...rp, 'wallIds']);

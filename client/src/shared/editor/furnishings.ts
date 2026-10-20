@@ -58,16 +58,21 @@ export async function completeFurnishings(
   }
   for (const floor of original.building.floors) {
     for (const room of floor.rooms) {
-      const assets =
-        room.kind === 'kitchen'
-          ? ['kitchen-counter', 'fridge']
-          : room.kind === 'bathroom'
-            ? ['vanity', 'toilet', 'shower']
-            : room.kind === 'workspace'
-              ? ['desk']
-              : room.kind === 'bedroom'
-                ? ['wardrobe']
-                : [];
+      const assets = [
+        ...new Set(
+          (room.uses ?? [room.kind]).flatMap((use) =>
+            use === 'kitchen'
+              ? ['kitchen-counter', 'fridge']
+              : use === 'bathroom'
+                ? ['vanity', 'toilet', 'shower']
+                : use === 'workspace'
+                  ? ['desk']
+                  : use === 'bedroom'
+                    ? ['wardrobe']
+                    : [],
+          ),
+        ),
+      ];
       const fp = room.footprint;
       for (const asset of assets) {
         const assetId = `catalogue/${asset}`;
