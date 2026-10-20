@@ -1,9 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { Worker } from 'node:worker_threads';
-import { z } from 'zod';
-import { buildingSchema } from '@refloor/scene/schema';
-import { generationUsageSchema } from '@refloor/scene/contracts';
+import { MessageChannel, Worker } from 'node:worker_threads';
+import type { MessagePort } from 'node:worker_threads';
 import type { GenerationRequest } from '@refloor/scene/contracts';
 import type { ServerConfig } from '@refloor/server/shared/config/env';
 import type { HouseService } from '@refloor/server/features/houses/house.service';
@@ -11,24 +9,11 @@ import type { GenerationRepository } from '@refloor/server/features/generation/g
 import { generationDocument } from '@refloor/server/features/generation/generation.model';
 import { ApiError } from '@refloor/server/shared/http/errors';
 import { fingerprint } from '@refloor/server/shared/database/fingerprint';
-
-const workerMessage = z.discriminatedUnion('type', [
-  z.strictObject({
-    type: z.literal('progress'),
-    status: z.enum(['layout', 'validating']),
-    usage: generationUsageSchema,
-  }),
-  z.strictObject({
-    type: z.literal('complete'),
-    building: buildingSchema,
-    usage: generationUsageSchema,
-  }),
-  z.strictObject({
-    type: z.literal('failed'),
-    error: z.string(),
-    usage: generationUsageSchema.nullable(),
-  }),
-]);
+import {
+  GenerationWorkerFailure,
+  receiveGeneration,
+} from '@refloor/server/features/generation/generation.channel';
+import { generationFailureMessage } from '@refloor/server/features/generation/generation.error';
 
 export class GenerationService {
   private timer: ReturnType<typeof setInterval> | undefined;
@@ -125,71 +110,50 @@ export class GenerationService {
   private async run() {
     const job = await this.jobs.claim();
     if (!job || !this.ai || this.closed) return;
+    let results: MessagePort | undefined;
+    let output: MessagePort | undefined;
     try {
       const source = new URL('./generation.worker.ts', import.meta.url);
+      const { port1, port2 } = new MessageChannel();
+      results = port1;
+      output = port2;
       const worker = new Worker(
         existsSync(source) ? source : new URL('./generation.worker.js', import.meta.url),
         {
-          workerData: { id: job._id, prompt: job.prompt, ...this.ai },
+          workerData: { id: job._id, prompt: job.prompt, ...this.ai, resultPort: port2 },
+          transferList: [port2],
           ...(existsSync(source) ? { execArgv: ['--import', 'tsx'] } : {}),
           resourceLimits: { maxOldGenerationSizeMb: 512 },
         },
       );
       this.worker = worker;
-      await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(
-          () => reject(new Error('Generation exceeded its two-minute time limit.')),
-          120000,
-        );
-        let received = false;
-        let updates = Promise.resolve();
-        worker.on('message', (data: unknown) => {
-          updates = updates
-            .then(async () => {
-              const message = workerMessage.parse(data);
-              if (received) return;
-              if (message.type === 'progress')
-                await this.jobs.update(job._id, { status: message.status, usage: message.usage });
-              else {
-                received = true;
-                if (message.type === 'failed') {
-                  await this.jobs.update(job._id, { usage: message.usage });
-                  throw new Error(message.error);
-                }
-                await this.jobs.update(job._id, { status: 'saving', usage: message.usage });
-                const saved = await this.houses.create(job.ownerId, {
-                  requestId: job._id,
-                  building: message.building,
-                });
-                await this.jobs.update(job._id, {
-                  status: 'complete',
-                  active: false,
-                  projectId: saved.project.id,
-                });
-                resolve();
-              }
-            })
-            .catch(reject);
-        });
-        worker.once('error', reject);
-        worker.once('exit', () => {
-          void updates.then(() => {
-            if (!received) reject(new Error('The generation worker stopped before completing.'));
-          });
-        });
-        void new Promise<void>((done) => worker.once('exit', () => done())).finally(() =>
-          clearTimeout(timeout),
-        );
+      worker.on('error', this.report);
+      const result = await receiveGeneration(worker, port1, async (message) => {
+        await this.jobs.update(job._id, { status: message.status, usage: message.usage });
+      });
+      await this.jobs.update(job._id, { status: 'saving', usage: result.usage });
+      const saved = await this.houses.create(job.ownerId, {
+        requestId: job._id,
+        building: result.building,
+      });
+      await this.jobs.update(job._id, {
+        status: 'complete',
+        active: false,
+        projectId: saved.project.id,
       });
     } catch (error) {
+      this.report(error);
       await this.jobs.update(job._id, {
         status: 'failed',
         active: false,
-        error:
-          error instanceof Error ? error.message.slice(0, 500) : 'Generation could not complete.',
+        error: generationFailureMessage(error),
+        ...(error instanceof GenerationWorkerFailure ? { usage: error.usage } : {}),
       });
     } finally {
+      results?.close();
+      output?.close();
       await this.worker?.terminate();
+      this.worker?.off('error', this.report);
       this.worker = undefined;
     }
   }
