@@ -10,6 +10,8 @@ import type { EditResult } from '@refloor/scene/revision';
 import { parseBuilding } from '@refloor/scene/schema';
 import { conditionMatches, eventMatches, eventTargetExists } from '@refloor/scene/rules';
 import type { SceneEvent } from '@refloor/scene/rules';
+import { resolveRelativeCommand } from '@refloor/scene/relative-command';
+import type { ResolvedCommand } from '@refloor/scene/relative-command';
 
 function objectFor(building: Building, id: string): SceneObject {
   const object = building.objects.find((value) => value.id === id);
@@ -17,7 +19,7 @@ function objectFor(building: Building, id: string): SceneObject {
   return object;
 }
 
-function execute(building: Building, command: SceneCommand): SceneCommand {
+function execute(building: Building, command: ResolvedCommand): SceneCommand {
   switch (command.type) {
     case 'set-rules': {
       const inverse: SceneCommand = {
@@ -255,8 +257,9 @@ export function applyCommands(
         'UNSUPPORTED_ACTION',
         'Saved actions exceed the limit of 100 changes in one interaction',
       );
-    const command = commands[index]!,
+    const command = resolveRelativeCommand(draft, commands[index]!),
       inverse = execute(draft, command);
+    commands[index] = command;
     inverseCommands.unshift(inverse);
     if (options.evaluateRules === false) continue;
     if (command.type === 'remove-object' && draft.rules) {

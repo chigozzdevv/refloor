@@ -44,6 +44,12 @@ export function validateCommandTuning(building: Building, commands: SceneCommand
     else if (command.type === 'set-light') {
       const object = objects.get(command.objectId);
       if (object) check(object, command.state.intensity);
+    } else if (command.type === 'adjust-light-intensity') {
+      const object = objects.get(command.objectId);
+      if (object) {
+        check(object, command.limits.min);
+        check(object, command.limits.max);
+      }
     }
   }
 }

@@ -177,13 +177,21 @@ export const buildingSchema = buildingModelSchema.superRefine((building, context
       action.type === 'add-object' ? [action.object.id] : [],
     );
     for (const action of rule.actions) {
-      if (action.type === 'set-light' || action.type === 'set-television') {
+      if (
+        action.type === 'set-light' ||
+        action.type === 'adjust-light-intensity' ||
+        action.type === 'set-television' ||
+        action.type === 'adjust-television-volume'
+      ) {
         const object = building.objects.find((value) => value.id === action.objectId);
         if (
           object &&
           !object.behaviours.some(
             (behaviour) =>
-              behaviour.kind === (action.type === 'set-light' ? 'light' : 'television'),
+              behaviour.kind ===
+              (action.type === 'set-light' || action.type === 'adjust-light-intensity'
+                ? 'light'
+                : 'television'),
           )
         )
           report('Saved action requires a capability this object does not have', [

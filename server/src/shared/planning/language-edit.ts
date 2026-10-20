@@ -169,7 +169,11 @@ export function languageContext(input: LanguageEditRequest) {
   };
 }
 
-export function languageCommands(input: LanguageEditRequest, plan: LanguagePlan): SceneCommand[] {
+export function languageCommands(
+  input: LanguageEditRequest,
+  plan: LanguagePlan,
+  options: { preserveRelative?: boolean } = {},
+): SceneCommand[] {
   let building = input.building;
   const { target } = input;
   const commands: SceneCommand[] = [];
@@ -314,21 +318,28 @@ export function languageCommands(input: LanguageEditRequest, plan: LanguagePlan)
           position.z >= item.footprint.z &&
           position.z <= item.footprint.z + item.footprint.depth,
       );
-      commands.push({
-        type: 'move-object',
-        objectId: object.id,
-        roomId: nextRoom?.id ?? object.roomId,
-        position,
-        rotation: object.rotation,
-      });
+      commands.push(
+        options.preserveRelative && action.relative !== false
+          ? { type: 'translate-object', objectId: object.id, delta }
+          : {
+              type: 'move-object',
+              objectId: object.id,
+              roomId: nextRoom?.id ?? object.roomId,
+              position,
+              rotation: object.rotation,
+            },
+      );
     } else if (object && action.action === 'rotate') {
-      commands.push({
-        type: 'rotate-object',
-        objectId: object.id,
-        rotation:
-          (action.relative === false ? 0 : object.rotation) +
-          (required(action.amount) * Math.PI) / 180,
-      });
+      const radians = (required(action.amount) * Math.PI) / 180;
+      commands.push(
+        options.preserveRelative && action.relative !== false
+          ? { type: 'turn-object', objectId: object.id, radians }
+          : {
+              type: 'rotate-object',
+              objectId: object.id,
+              rotation: (action.relative === false ? 0 : object.rotation) + radians,
+            },
+      );
     } else if (object && action.action === 'resize') {
       const value = required(action.vector);
       commands.push({
@@ -367,25 +378,52 @@ export function languageCommands(input: LanguageEditRequest, plan: LanguagePlan)
           objectId: object.id,
           state: { muted: required(action.enabled) },
         });
-      else if (action.action === 'volume' && television)
-        commands.push({
-          type: 'set-television',
-          objectId: object.id,
-          state: { volume: required(action.amount) },
-        });
-      else if (action.action === 'source' && television)
+      else if (action.action === 'volume' && television) {
+        const amount = required(action.amount);
+        const current = object.behaviours.find((item) => item.kind === 'television')!.state.volume;
+        commands.push(
+          options.preserveRelative && action.relative === true
+            ? { type: 'adjust-television-volume', objectId: object.id, delta: amount }
+            : {
+                type: 'set-television',
+                objectId: object.id,
+                state: {
+                  volume:
+                    action.relative === true ? Math.max(0, Math.min(1, current + amount)) : amount,
+                },
+              },
+        );
+      } else if (action.action === 'source' && television)
         commands.push({
           type: 'set-television',
           objectId: object.id,
           state: { source: required(action.value) },
         });
-      else if (action.action === 'intensity' && light)
-        commands.push({
-          type: 'set-light',
-          objectId: object.id,
-          state: { intensity: required(action.amount) },
-        });
-      else if (action.action === 'light-color' && light)
+      else if (action.action === 'intensity' && light) {
+        const amount = required(action.amount),
+          tuning = lightTuning(object),
+          current = object.behaviours.find((item) => item.kind === 'light')!.state.intensity;
+        if (!tuning) throw new Error('This light has no brightness limits.');
+        commands.push(
+          options.preserveRelative && action.relative === true
+            ? {
+                type: 'adjust-light-intensity',
+                objectId: object.id,
+                delta: amount,
+                limits: { min: tuning.min, max: tuning.max },
+              }
+            : {
+                type: 'set-light',
+                objectId: object.id,
+                state: {
+                  intensity:
+                    action.relative === true
+                      ? Math.max(tuning.min, Math.min(tuning.max, current + amount))
+                      : amount,
+                },
+              },
+        );
+      } else if (action.action === 'light-color' && light)
         commands.push({
           type: 'set-light',
           objectId: object.id,
@@ -439,6 +477,7 @@ export function languageCommands(input: LanguageEditRequest, plan: LanguagePlan)
           actions: automation.actions,
           automations: [],
         },
+        { preserveRelative: true },
       );
       if (
         !actions.length ||

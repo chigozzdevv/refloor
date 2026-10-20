@@ -37,6 +37,70 @@ const input = (): LanguageEditRequest => {
 };
 
 describe('language-defined universal actions', () => {
+  it('keeps relative operations in saved rules and resolves them afresh for every event', () => {
+    const request = input(),
+      building = request.building,
+      tv = building.objects.find((object) => object.kind === 'television')!,
+      light = building.objects.find((object) => object.kind === 'light' && !object.placement)!;
+    const commands = languageCommands(request, {
+      message: 'Saved incremental changes.',
+      actions: [],
+      automations: [
+        {
+          operation: 'save',
+          id: null,
+          label: 'Incremental changes',
+          enabled: true,
+          trigger: { kind: 'object-click', objectId: tv.id },
+          conditions: [],
+          actions: [
+            action(tv.id, {
+              action: 'move',
+              vector: { x: 0.02, y: 0, z: 0 },
+              relative: true,
+              space: 'view',
+            }),
+            action(light.id, { action: 'rotate', amount: 2, relative: true }),
+            action(light.id, { action: 'intensity', amount: -0.5, relative: true }),
+            action(tv.id, { action: 'volume', amount: 0.1, relative: true }),
+          ],
+        },
+      ],
+    });
+    const apply = (current: typeof building, changes: typeof commands) =>
+      validatePlacement(current, {
+        id: crypto.randomUUID(),
+        at: new Date().toISOString(),
+        expectedRevision: current.revision,
+        commands: changes,
+      });
+    const configured = apply(building, commands);
+    expect(configured.building.rules![0]!.actions).toEqual([
+      { type: 'translate-object', objectId: tv.id, delta: { x: -0.02, y: 0, z: 0 } },
+      { type: 'turn-object', objectId: light.id, radians: (2 * Math.PI) / 180 },
+      {
+        type: 'adjust-light-intensity',
+        objectId: light.id,
+        delta: -0.5,
+        limits: { min: 0, max: 6 },
+      },
+      { type: 'adjust-television-volume', objectId: tv.id, delta: 0.1 },
+    ]);
+    const trigger: typeof commands = [
+      { type: 'emit-event', event: { kind: 'object-click', objectId: tv.id } },
+    ];
+    const first = apply(configured.building, trigger);
+    const second = apply(first.building, trigger);
+    expect(second.building.objects.find((object) => object.id === tv.id)!.position.x).toBeCloseTo(
+      tv.position.x - 0.04,
+    );
+    expect(
+      second.building.objects
+        .find((object) => object.id === light.id)!
+        .behaviours.find((behaviour) => behaviour.kind === 'light')!.state.intensity,
+    ).toBe(2);
+  });
+
   it('compiles device triggers and multiple actions without applying them during configuration', () => {
     const request = input(),
       building = request.building;

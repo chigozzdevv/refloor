@@ -245,4 +245,59 @@ describe('universal saved scene actions', () => {
       fingerprintBuilding(configured.compiled.building),
     );
   });
+
+  it('validates relative rule limits and rejects collisions without applying any triggered effect', () => {
+    const state = initial(),
+      building = state.compiled.building,
+      sofa = building.objects.find((object) => object.kind === 'sofa')!,
+      chair = building.objects.find(
+        (object) => object.kind === 'chair' && object.roomId === sofa.roomId,
+      )!,
+      light = building.objects.find((object) => object.kind === 'light' && !object.placement)!;
+    const rule: SceneRule = {
+      id: 'relative-collision',
+      label: 'Move chair',
+      enabled: true,
+      trigger: { kind: 'object-click', objectId: chair.id },
+      conditions: [],
+      actions: [
+        { type: 'set-light', objectId: light.id, state: { powered: false } },
+        {
+          type: 'translate-object',
+          objectId: chair.id,
+          delta: {
+            x: sofa.position.x - chair.position.x,
+            y: 0,
+            z: sofa.position.z - chair.position.z,
+          },
+        },
+      ],
+    };
+    const configured = editDocument(state, [{ type: 'set-rules', rules: [rule] }]);
+    const before = fingerprintBuilding(configured.compiled.building);
+    expect(() => editDocument(configured, [{ type: 'emit-event', event: rule.trigger }])).toThrow(
+      'overlaps',
+    );
+    expect(fingerprintBuilding(configured.compiled.building)).toBe(before);
+    expect(() =>
+      editDocument(state, [
+        {
+          type: 'set-rules',
+          rules: [
+            {
+              ...rule,
+              actions: [
+                {
+                  type: 'adjust-light-intensity',
+                  objectId: light.id,
+                  delta: 1,
+                  limits: { min: 0, max: 100 },
+                },
+              ],
+            },
+          ],
+        },
+      ]),
+    ).toThrow('200%');
+  });
 });

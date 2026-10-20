@@ -56,9 +56,11 @@ export function describeChange(building: Building, commands: SceneCommand[]) {
       label = `Remove ${object?.label ?? 'item'}`;
       break;
     case 'move-object':
+    case 'translate-object':
       label = `Move ${object?.label ?? 'item'}`;
       break;
     case 'rotate-object':
+    case 'turn-object':
       label = `Rotate ${object?.label ?? 'item'}`;
       break;
     case 'resize-object':
@@ -86,9 +88,11 @@ export function describeChange(building: Building, commands: SceneCommand[]) {
       label = `${command.open ? 'Open' : 'Close'} door`;
       break;
     case 'set-light':
+    case 'adjust-light-intensity':
       label = `Update ${object?.label ?? 'light'}`;
       break;
     case 'set-television':
+    case 'adjust-television-volume':
       label = `Update ${object?.label ?? 'television'}`;
       break;
   }

@@ -17,6 +17,16 @@ export const sceneActionSchema = z.discriminatedUnion('type', [
   }),
   z.strictObject({ type: z.literal('remove-object'), objectId: idSchema }),
   z.strictObject({
+    type: z.literal('translate-object'),
+    objectId: idSchema,
+    delta: z.strictObject({ x: coordinateSchema, y: coordinateSchema, z: coordinateSchema }),
+  }),
+  z.strictObject({
+    type: z.literal('turn-object'),
+    objectId: idSchema,
+    radians: coordinateSchema,
+  }),
+  z.strictObject({
     type: z.literal('move-object'),
     objectId: idSchema,
     roomId: idSchema,
@@ -86,6 +96,22 @@ export const sceneActionSchema = z.discriminatedUnion('type', [
         (state) => Object.values(state).some((value) => value !== undefined),
         'Provide a light state change',
       ),
+  }),
+  z.strictObject({
+    type: z.literal('adjust-light-intensity'),
+    objectId: idSchema,
+    delta: coordinateSchema,
+    limits: z
+      .strictObject({
+        min: coordinateSchema.min(0).max(100),
+        max: coordinateSchema.min(0).max(100),
+      })
+      .refine((limits) => limits.min <= limits.max, 'Brightness limits are reversed'),
+  }),
+  z.strictObject({
+    type: z.literal('adjust-television-volume'),
+    objectId: idSchema,
+    delta: coordinateSchema,
   }),
 ]);
 

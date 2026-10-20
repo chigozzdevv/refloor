@@ -21,6 +21,16 @@ function actionLabel(building: Building, action: SceneAction) {
       : '';
   if (action.type === 'set-door')
     return `${action.open ? 'Open' : 'Close'} ${targetIdentity(building, { kind: 'door', id: action.doorId })?.label ?? 'door'}`;
+  if (action.type === 'translate-object') {
+    const distance = Math.hypot(action.delta.x, action.delta.y, action.delta.z);
+    return `Move ${label} ${Number((distance * 100).toFixed(1))} cm each time`;
+  }
+  if (action.type === 'turn-object')
+    return `Turn ${label} ${Number(((action.radians * 180) / Math.PI).toFixed(1))}° each time`;
+  if (action.type === 'adjust-light-intensity')
+    return `${action.delta >= 0 ? 'Brighten' : 'Dim'} ${label} each time`;
+  if (action.type === 'adjust-television-volume')
+    return `${action.delta >= 0 ? 'Raise' : 'Lower'} ${label} volume ${Number((Math.abs(action.delta) * 100).toFixed(1))}% each time`;
   if (action.type === 'set-light' || action.type === 'set-television') {
     const values = Object.entries(action.state).map(([key, value]) =>
       key === 'powered' ? (value ? 'on' : 'off') : `${key}: ${String(value)}`,
