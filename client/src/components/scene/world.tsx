@@ -17,6 +17,8 @@ import { ActionEvents } from '@/components/scene/action-events';
 import { useExperience } from '@/shared/scene/experience-store';
 import { exteriorUpgradeCommands } from '@/shared/editor/exterior-upgrade';
 import { SceneCapture } from '@/components/scene/capture';
+import { RenderPerformance } from '@/components/scene/render-performance';
+import { useRenderSettings } from '@/shared/scene/render-settings';
 
 function SceneReady() {
   const setReady = useProject((state) => state.setSceneReady);
@@ -30,18 +32,18 @@ function SceneReady() {
 }
 
 export function World() {
-  const quality = useProject((state) => state.quality),
-    epoch = useProject((state) => state.projectEpoch),
+  const epoch = useProject((state) => state.projectEpoch),
     select = useProject((state) => state.select);
   const stage = useExperience((state) => state.stage);
+  const dpr = useRenderSettings((state) => state.dpr);
   return (
     <Canvas
       frameloop={stage === 'prompt' ? 'demand' : 'always'}
       shadows
       camera={{ fov: 45, near: 0.08, far: 200, position: [16, 12, -8] }}
-      dpr={quality === 'high' ? [1, 1.75] : 1}
+      dpr={dpr}
       gl={{
-        antialias: true,
+        antialias: false,
         alpha: false,
         powerPreference: 'high-performance',
         toneMapping: NoToneMapping,
@@ -54,6 +56,7 @@ export function World() {
         if (event.target instanceof HTMLCanvasElement) select(null);
       }}
     >
+      <RenderPerformance />
       <Suspense fallback={null}>
         <Selection>
           <PhysicsRuntime />

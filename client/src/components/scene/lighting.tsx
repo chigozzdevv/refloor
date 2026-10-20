@@ -1,21 +1,29 @@
 import { Environment, SoftShadows } from '@react-three/drei';
-import { Bloom, EffectComposer, N8AO, Outline, ToneMapping } from '@react-three/postprocessing';
-import { ToneMappingMode } from 'postprocessing';
+import {
+  Bloom,
+  EffectComposer,
+  N8AO,
+  Outline,
+  SMAA,
+  ToneMapping,
+} from '@react-three/postprocessing';
+import { SMAAPreset, ToneMappingMode } from 'postprocessing';
 import { LightBudget } from '@/components/scene/light-budget';
 import { useProject } from '@/shared/scene/scene-store';
 import { useLayoutEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { invalidateShadows, refreshShadows, shadowRevision } from '@/shared/scene/shadow-updates';
+import { useRenderSettings } from '@/shared/scene/render-settings';
 
 function ShadowUpdates() {
   const compiled = useProject((state) => state.compiled),
     mode = useProject((state) => state.mode),
     floorId = useProject((state) => state.floorId),
-    quality = useProject((state) => state.quality),
+    resolution = useRenderSettings((state) => state.sunlightResolution),
     lighting = useProject((state) => state.lighting);
   const seen = useRef(-1),
     frames = useRef(0);
-  useLayoutEffect(invalidateShadows, [compiled, mode, floorId, quality, lighting]);
+  useLayoutEffect(invalidateShadows, [compiled, mode, floorId, resolution, lighting]);
   useFrame(({ scene, invalidate }) => {
     if (seen.current !== shadowRevision()) {
       seen.current = shadowRevision();
@@ -32,7 +40,7 @@ function ShadowUpdates() {
 
 export function Lighting() {
   const lighting = useProject((state) => state.lighting),
-    quality = useProject((state) => state.quality);
+    settings = useRenderSettings();
   const day = lighting === 'day';
   return (
     <>
@@ -47,11 +55,13 @@ export function Lighting() {
       <fog attach="fog" args={[day ? '#e7e7df' : '#121922', 45, 140]} />
       <hemisphereLight args={['#e4ebf2', '#aa9276', day ? 0.35 : 0.12]} />
       <directionalLight
+        key={settings.sunlightResolution}
         position={[-6, 12, -6]}
         color={day ? '#fff2d8' : '#b6cbe3'}
         intensity={day ? 3.2 : 0.35}
         castShadow
-        shadow-mapSize={quality === 'high' ? [2048, 2048] : [1024, 1024]}
+        shadow-mapSize={[settings.sunlightResolution, settings.sunlightResolution]}
+        shadow-autoUpdate={false}
         shadow-camera-left={-14}
         shadow-camera-right={14}
         shadow-camera-top={14}
@@ -61,13 +71,13 @@ export function Lighting() {
         shadow-normalBias={0.025}
         shadow-bias={-0.00008}
       />
-      {quality === 'high' && <SoftShadows size={12} samples={12} focus={0.3} />}
-      <EffectComposer autoClear={false} multisampling={quality === 'high' ? 4 : 0}>
+      {settings.softShadows && <SoftShadows size={12} samples={12} focus={0.3} />}
+      <EffectComposer autoClear={false} multisampling={settings.multisampling}>
         <N8AO
           aoRadius={0.45}
           intensity={1.35}
           distanceFalloff={1}
-          quality={quality === 'high' ? 'medium' : 'low'}
+          quality={settings.aoQuality}
           halfRes
         />
         <Bloom luminanceThreshold={1.6} intensity={0.16} mipmapBlur />
@@ -79,6 +89,7 @@ export function Lighting() {
           blur={false}
         />
         <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+        {settings.multisampling === 0 && <SMAA preset={SMAAPreset.MEDIUM} />}
       </EffectComposer>
     </>
   );
