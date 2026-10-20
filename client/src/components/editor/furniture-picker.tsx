@@ -10,13 +10,23 @@ import {
   Table2,
   X,
 } from 'lucide-react';
-import { catalogue } from '@refloor/catalogue';
+import { catalogue, placementProfile } from '@refloor/catalogue';
 import { useProject } from '@/shared/scene/scene-store';
+import { useNavigation } from '@/shared/navigation/navigation-store';
 
 export function FurniturePicker({ close }: { close: () => void }) {
   const { compiled, floorId, selection, select, addFurniture, focusObject } = useProject(),
-    floor = compiled.building.floors.find((value) => value.id === floorId)!;
-  const [roomId, setRoomId] = useState(floor.rooms[0]!.id),
+    floor = compiled.building.floors.find((value) => value.id === floorId)!,
+    player = useNavigation((state) => state.player),
+    currentRoom = floor.rooms.find(
+      (room) =>
+        player?.floorId === floor.id &&
+        player.position.x >= room.footprint.x &&
+        player.position.x <= room.footprint.x + room.footprint.width &&
+        player.position.z >= room.footprint.z &&
+        player.position.z <= room.footprint.z + room.footprint.depth,
+    );
+  const [roomId, setRoomId] = useState(currentRoom?.id ?? floor.rooms[0]!.id),
     [adding, setAdding] = useState(false);
   const room = floor.rooms.find((value) => value.id === roomId) ?? floor.rooms[0]!;
   return (
@@ -86,36 +96,38 @@ export function FurniturePicker({ close }: { close: () => void }) {
         </div>
       ) : (
         <div className="catalogue-grid">
-          {catalogue.map((entry) => {
-            const Icon =
-              entry.kind === 'bed'
-                ? BedDouble
-                : entry.kind === 'television'
-                  ? Monitor
-                  : entry.kind === 'light'
-                    ? LampCeiling
-                    : entry.kind === 'decor'
-                      ? Sprout
-                      : entry.kind === 'table' || entry.kind === 'storage'
-                        ? Table2
-                        : Armchair;
-            return (
-              <button
-                key={entry.assetId}
-                className="catalogue-card"
-                onClick={() => {
-                  if (addFurniture(entry.assetId, room.id)) close();
-                }}
-              >
-                <Icon size={27} strokeWidth={1.3} />
-                <strong>{entry.label}</strong>
-                <small>
-                  {entry.dimensions.width} × {entry.dimensions.depth} m
-                </small>
-                <span>+ Add to room</span>
-              </button>
-            );
-          })}
+          {catalogue
+            .filter((entry) => placementProfile(entry.assetId).location === 'interior')
+            .map((entry) => {
+              const Icon =
+                entry.kind === 'bed'
+                  ? BedDouble
+                  : entry.kind === 'television'
+                    ? Monitor
+                    : entry.kind === 'light'
+                      ? LampCeiling
+                      : entry.kind === 'decor'
+                        ? Sprout
+                        : entry.kind === 'table' || entry.kind === 'storage'
+                          ? Table2
+                          : Armchair;
+              return (
+                <button
+                  key={entry.assetId}
+                  className="catalogue-card"
+                  onClick={() => {
+                    if (addFurniture(entry.assetId, room.id)) close();
+                  }}
+                >
+                  <Icon size={27} strokeWidth={1.3} />
+                  <strong>{entry.label}</strong>
+                  <small>
+                    {entry.dimensions.width} × {entry.dimensions.depth} m
+                  </small>
+                  <span>+ Add to room</span>
+                </button>
+              );
+            })}
         </div>
       )}
     </aside>

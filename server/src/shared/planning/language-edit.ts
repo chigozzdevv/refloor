@@ -7,16 +7,23 @@ import {
   finishes,
   lightTuning,
   validateCommandTuning,
+  placementProfile,
 } from '@refloor/catalogue';
 import { applyCommands } from '@refloor/scene';
 import type { Building, Material, SceneCommand, SceneAction } from '@refloor/scene';
 import type { ChatTarget, LanguageEditRequest } from '@refloor/scene/chat';
 import { scopedEditMemory } from '@refloor/scene/edit-memory';
 import { restoreElement } from '@refloor/server/shared/planning/restore-element';
+import {
+  spatialCommands,
+  spatialPlacementSchema,
+} from '@refloor/server/shared/planning/spatial-edit';
 
 const vector = z.strictObject({ x: z.number(), y: z.number(), z: z.number() });
 export const languageActionSchema = z.strictObject({
   action: z.enum([
+    'add',
+    'place',
     'move',
     'rotate',
     'resize',
@@ -42,6 +49,7 @@ export const languageActionSchema = z.strictObject({
   amount: z.number().nullable(),
   enabled: z.boolean().nullable(),
   value: z.string().nullable(),
+  placement: spatialPlacementSchema.nullable().default(null),
 });
 export const languagePlanSchema = z.strictObject({
   message: z.string().max(240),
@@ -60,7 +68,7 @@ export const languagePlanSchema = z.strictObject({
     )
     .max(12),
 });
-export type LanguagePlan = z.infer<typeof languagePlanSchema>;
+export type LanguagePlan = z.input<typeof languagePlanSchema>;
 
 export function chatTargetExists(building: Building, target: ChatTarget): boolean {
   if (target.side && target.kind !== 'wall') return false;
@@ -99,6 +107,21 @@ export function languageContext(input: LanguageEditRequest) {
     instruction: input.message,
     view: input.view,
     houseId: input.building.id,
+    currentRoomId:
+      input.target.kind === 'floor'
+        ? input.target.id
+        : input.target.kind === 'object'
+          ? (input.building.objects.find((object) => object.id === input.target.id)?.roomId ?? null)
+          : (input.building.floors
+              .find((floor) => floor.id === input.player?.floorId)
+              ?.rooms.find(
+                (room) =>
+                  input.player &&
+                  input.player.position.x >= room.footprint.x &&
+                  input.player.position.x <= room.footprint.x + room.footprint.width &&
+                  input.player.position.z >= room.footprint.z &&
+                  input.player.position.z <= room.footprint.z + room.footprint.depth,
+              )?.id ?? null),
     savedActions: input.building.rules ?? [],
     roof: input.building.roof,
     supportedEvents: [
@@ -164,6 +187,7 @@ export function languageContext(input: LanguageEditRequest) {
       label,
       kind,
       dimensions,
+      placement: placementProfile(assetId),
     })),
     finishes: Object.keys(finishes),
   };
@@ -177,7 +201,17 @@ export function languageCommands(
   let building = input.building;
   const { target } = input;
   const commands: SceneCommand[] = [];
-  for (const action of plan.actions) {
+  const additions = plan.actions.flatMap((action) => {
+    if (action.action !== 'add') return [];
+    const quantity = action.amount ?? 1;
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 4)
+      throw new Error('Add between one and four items in each request.');
+    return Array.from({ length: quantity }, () => action);
+  });
+  for (const action of [
+    ...plan.actions.filter((action) => action.action !== 'add'),
+    ...additions,
+  ]) {
     const offset = commands.length;
     if (target.kind !== 'house' && action.targetId !== target.id)
       throw new Error(
@@ -204,7 +238,13 @@ export function languageCommands(
         .parse(required(action.value));
       return { ...base, color };
     };
-    if (action.action === 'restore') {
+    if (action.action === 'add' || action.action === 'place') {
+      if (options.preserveRelative)
+        throw new Error(
+          'Arrange or add furniture directly; saved actions can move existing items.',
+        );
+      commands.push(...spatialCommands(input, building, { ...action, action: action.action }));
+    } else if (action.action === 'restore') {
       commands.push(
         ...restoreElement(
           { ...input, building },
