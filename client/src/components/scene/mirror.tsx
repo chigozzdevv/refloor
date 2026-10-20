@@ -38,7 +38,16 @@ export function Mirror({ object, surface }: { object: SceneObject; surface: Mate
           !projection?.equals(camera.projectionMatrix) ||
           revision !== shadowRevision(),
         videoPlaying = [...mediaPlayers.values()].some((video) => !video.paused && !video.ended);
-      if (!changed && !videoPlaying && !state.interacting) return;
+      const runningFixture = state.compiled.building.objects.some(
+        (item) =>
+          item.floorId === object.floorId &&
+          item.behaviours.some(
+            (behaviour) =>
+              (behaviour.kind === 'water' && behaviour.state.powered && behaviour.state.flow > 0) ||
+              (behaviour.kind === 'cooker' && behaviour.state.powered && behaviour.state.heat > 0),
+          ),
+      );
+      if (!changed && !videoPlaying && !runningFixture && !state.interacting) return;
       captured = now;
       revision = shadowRevision();
       view = camera.matrixWorld.clone();

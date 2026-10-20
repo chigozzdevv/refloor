@@ -7,6 +7,7 @@ import { useSurface } from '@/shared/scene/asset-loader';
 import { useProject } from '@/shared/scene/scene-store';
 import { TelevisionScreen } from '@/components/objects/television';
 import { RoomFixtures } from '@/components/scene/room-fixtures';
+import { Cupboard } from '@/components/objects/cupboard';
 import { Floodlight } from '@/components/objects/floodlight';
 import { WallLight } from '@/components/objects/wall-light';
 import { OutdoorPlanter } from '@/components/objects/outdoor-planter';
@@ -17,43 +18,10 @@ function Cabinet({ object }: { object: SceneObject }) {
   const material = useSurface(object.materials.body ?? finishes.oak),
     frame = useSurface(object.materials.frame ?? finishes.black),
     { width: w, height: h, depth: d } = object.dimensions;
-  const sections = Math.max(2, Math.round(w / 0.55));
   return (
     <>
-      <Solid
-        size={[w - 0.035, h - 0.14, d - 0.045]}
-        at={[0, (h + 0.1) / 2, -0.012]}
-        material={frame}
-      />
+      <Cupboard object={object} w={w} h={h - 0.02} d={d} material={material} frame={frame} />
       <Solid size={[w, 0.025, d]} at={[0, h - 0.0125, 0]} material={material} />
-      {[-1, 1].map((side) => (
-        <Solid
-          key={side}
-          size={[0.025, h - 0.11, d]}
-          at={[side * (w / 2 - 0.0125), (h + 0.1) / 2, 0]}
-          material={material}
-        />
-      ))}
-      {Array.from({ length: sections }, (_, i) => (
-        <group
-          key={i}
-          position={[-w / 2 + ((i + 0.5) * w) / sections, h / 2 + 0.035, d / 2 - 0.014]}
-        >
-          <Solid
-            size={[w / sections - 0.009, h - 0.16, 0.026]}
-            at={[0, 0, 0]}
-            radius={0.004}
-            material={material}
-          />
-          <Solid
-            size={[(w / sections) * 0.43, 0.012, 0.018]}
-            at={[0, (h - 0.16) / 2 - 0.022, 0.012]}
-            radius={0.004}
-            material={frame}
-          />
-        </group>
-      ))}
-      <Solid size={[w - 0.18, 0.09, d - 0.14]} at={[0, 0.045, 0]} material={frame} />
     </>
   );
 }

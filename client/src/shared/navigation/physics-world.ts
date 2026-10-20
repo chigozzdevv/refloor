@@ -3,6 +3,8 @@ import type { CompiledBuilding, Point3, NavigationPoint } from '@refloor/engine'
 import { distanceToBox, rotate } from '@refloor/engine/math';
 import { entryPose } from '@/shared/navigation/entry';
 import { exteriorLayout } from '@/shared/scene/exterior';
+import { openableBounds } from '@refloor/engine/collision/openable';
+import { fixtureReservations } from '@/shared/behaviours/fixture-motion';
 
 let initialized: Promise<void> | undefined;
 export function initializePhysics(): Promise<void> {
@@ -16,6 +18,7 @@ export class CharacterWorld {
   readonly controller: RAPIER.KinematicCharacterController;
   private readonly colliders = new Map<string, RAPIER.Collider>();
   private readonly doorFractions = new Map<string, number>();
+  private readonly transientFixtures = new Set<string>();
   private velocityY = 0;
   private accumulator = 0;
 
@@ -113,6 +116,7 @@ export class CharacterWorld {
   }
 
   step(direction: { x: number; z: number }, delta: number): void {
+    this.syncFixtureMotions();
     const feet = this.feet;
     const swinging = this.compiled.doors.some(
       (door) =>
@@ -150,6 +154,45 @@ export class CharacterWorld {
         true,
       );
       this.velocityY = 0;
+    }
+  }
+
+  syncFixtureMotions(): void {
+    const reserved = fixtureReservations.forBuilding(this.compiled.building.id);
+    for (const id of this.transientFixtures) {
+      if (reserved.has(id)) continue;
+      const key = `${id}:openable-clearance`,
+        collider = this.colliders.get(key);
+      if (collider) this.world.removeCollider(collider, true);
+      this.colliders.delete(key);
+      this.transientFixtures.delete(id);
+    }
+    for (const id of reserved) {
+      const key = `${id}:openable-clearance`;
+      if (this.colliders.has(key)) continue;
+      const object = this.compiled.building.objects.find((value) => value.id === id),
+        floor = this.compiled.building.floors.find((value) => value.id === object?.floorId);
+      if (!object || !floor) continue;
+      const source = structuredClone(object),
+        mechanism = source.behaviours.find((value) => value.kind === 'openable');
+      if (!mechanism) continue;
+      mechanism.state.open = true;
+      const bounds = openableBounds(source, floor.elevation);
+      if (!bounds) continue;
+      const descriptor = RAPIER.ColliderDesc.cuboid(
+        bounds.size.x / 2,
+        bounds.size.y / 2,
+        bounds.size.z / 2,
+      )
+        .setTranslation(bounds.position.x, bounds.position.y, bounds.position.z)
+        .setRotation({
+          x: 0,
+          y: Math.sin(bounds.rotation / 2),
+          z: 0,
+          w: Math.cos(bounds.rotation / 2),
+        });
+      this.colliders.set(key, this.world.createCollider(descriptor));
+      this.transientFixtures.add(id);
     }
   }
 

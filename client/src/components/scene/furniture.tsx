@@ -83,6 +83,7 @@ function FurnitureInstance({ object }: { object: SceneObject }) {
   return (
     <>
       <group
+        userData={{ fixtureObjectId: object.id }}
         raycast={visibleGroupRaycast}
         visible={visible}
         position={[object.position.x, floor.elevation + object.position.y, object.position.z]}

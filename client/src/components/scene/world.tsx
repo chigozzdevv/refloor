@@ -1,6 +1,6 @@
 import { Suspense, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { NoToneMapping, PCFSoftShadowMap, SRGBColorSpace } from 'three';
+import { NoToneMapping, PCFShadowMap, SRGBColorSpace } from 'three';
 import { Selection } from '@react-three/postprocessing';
 import { useProject } from '@/shared/scene/scene-store';
 import { Lighting } from '@/components/scene/lighting';
@@ -19,13 +19,23 @@ import { exteriorUpgradeCommands } from '@/shared/editor/exterior-upgrade';
 import { SceneCapture } from '@/components/scene/capture';
 import { RenderPerformance } from '@/components/scene/render-performance';
 import { useRenderSettings } from '@/shared/scene/render-settings';
+import { catalogueBehaviourUpgrades } from '@refloor/catalogue';
 
 function SceneReady() {
   const setReady = useProject((state) => state.setSceneReady);
   useEffect(() => {
     const state = useProject.getState(),
-      commands = exteriorUpgradeCommands(state.compiled.building, state.memory);
-    if (commands.length) state.edit(commands, { label: 'Add editable exterior fixtures' });
+      commands = [
+        ...exteriorUpgradeCommands(state.compiled.building, state.memory),
+        ...catalogueBehaviourUpgrades(state.compiled.building),
+      ];
+    for (let offset = 0; offset < commands.length; offset += 100)
+      if (
+        !useProject
+          .getState()
+          .edit(commands.slice(offset, offset + 100), { label: 'Enable household interactions' })
+      )
+        break;
     setReady(true);
   }, [setReady]);
   return null;
@@ -38,6 +48,7 @@ export function World() {
   const dpr = useRenderSettings((state) => state.dpr);
   return (
     <Canvas
+      style={{ overflow: 'clip' }}
       frameloop={stage === 'prompt' ? 'demand' : 'always'}
       shadows
       camera={{ fov: 45, near: 0.08, far: 200, position: [16, 12, -8] }}
@@ -50,7 +61,7 @@ export function World() {
         outputColorSpace: SRGBColorSpace,
       }}
       onCreated={({ gl }) => {
-        gl.shadowMap.type = PCFSoftShadowMap;
+        gl.shadowMap.type = PCFShadowMap;
       }}
       onPointerMissed={(event) => {
         if (event.target instanceof HTMLCanvasElement) select(null);
