@@ -82,7 +82,8 @@ function Pendant({ object }: { object: SceneObject }) {
 
 function Television({ object }: { object: SceneObject }) {
   const { width: w, height: h, depth: d } = object.dimensions,
-    body = useSurface(object.materials.body ?? finishes.black);
+    body = useSurface(object.materials.body ?? finishes.black),
+    powered = object.behaviours.find((value) => value.kind === 'television')?.state.powered;
   return (
     <>
       <RoundedBox
@@ -97,6 +98,13 @@ function Television({ object }: { object: SceneObject }) {
         <planeGeometry args={[w - 0.035, h - 0.035]} />
         <TelevisionScreen object={object} />
       </mesh>
+      <pointLight
+        position={[0, h / 2, 0.25]}
+        color="#b5d5ff"
+        intensity={powered ? 1.8 : 0}
+        distance={2.8}
+        decay={2}
+      />
       <mesh position={[w / 2 - 0.05, 0.013, d / 2 + 0.002]}>
         <sphereGeometry args={[0.0025, 8, 6]} />
         <meshBasicMaterial color="#acb493" />

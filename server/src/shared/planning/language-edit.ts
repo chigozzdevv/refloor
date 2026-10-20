@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { cinemaCommands } from '@refloor/catalogue/room-lighting';
 import { wallExteriorSide } from '@refloor/scene/wall-exterior';
 import { sceneEventSchema, ruleConditionSchema } from '@refloor/scene/rules';
 import { poweredBehaviourKindSchema, isPoweredBehaviour } from '@refloor/scene/behaviour';
@@ -84,6 +85,7 @@ export const languageActionSchema = z.strictObject({
     'restore',
     'open',
     'source',
+    'cinema',
   ]),
   targetId: z.string(),
   targetCapability: targetCapabilitySchema.nullable().default(null),
@@ -311,7 +313,9 @@ export function languageCommands(
         .parse(required(action.value));
       return { ...base, color };
     };
-    if (action.action === 'opening') {
+    if (action.action === 'cinema') {
+      commands.push(...cinemaCommands(building, action.targetId));
+    } else if (action.action === 'opening') {
       if (options.preserveRelative)
         throw new Error('Adjust openings directly; saved actions can control door state.');
       commands.push(openingCommand(building, action.targetId, input.view, action));
