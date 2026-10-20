@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compileBuilding } from '@refloor/engine';
+import { compileBuilding, validateBuilding } from '@refloor/engine';
 import {
   wallInteractionPositions,
   interactionVisible,
@@ -8,6 +8,16 @@ import {
 import { createBuilding, getObject } from '@engine-test/fixtures';
 
 describe('wall-mounted object interaction approaches', () => {
+  it('accepts a wall-mounted screen facing its room and rejects one facing into the partition', () => {
+    const building = createBuilding(),
+      television = getObject(building, 'tv');
+    television.position.x = 5.8;
+    television.rotation = -Math.PI / 2;
+    expect(() => validateBuilding(building)).not.toThrow();
+    television.rotation = Math.PI / 2;
+    expect(() => validateBuilding(building)).toThrow('reachable interaction position');
+  });
+
   it('places open-drawer approaches beyond the extended front rather than inside it', () => {
     const object = getObject(createBuilding(), 'sofa');
     object.assetId = 'catalogue/vanity';

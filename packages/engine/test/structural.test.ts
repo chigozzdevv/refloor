@@ -98,7 +98,7 @@ describe('validated structural editing', () => {
     const original = createBuilding(),
       television = original.objects.find((object) => object.id === 'tv')!;
     television.position.x = 5.8;
-    television.rotation = Math.PI / 2;
+    television.rotation = -Math.PI / 2;
     expect(() => validateBuilding(original)).not.toThrow();
     const partition = { type: 'move-partition' as const, wallId: 'partition', position: 6.4 };
     expect(() => validatePlacement(original, edit([partition]))).toThrow('wall-mounted');
