@@ -6,6 +6,9 @@ import type { PendingGeneration } from '@/shared/refloor/progress';
 import { useSavedProjects } from '@/shared/scene/scene-sync';
 import { GenerationProgress } from '@/components/entrance/generation-progress';
 
+const defaultHousePrompt =
+  'Create a two-bedroom bungalow with an open-plan living, dining and kitchen area, one bathroom and a workspace. Use cream interior walls, a brick exterior, oak floors and cabinetry, large windows and a dark metal gable roof.';
+
 export function HousePrompt({
   close,
   resume,
@@ -18,7 +21,7 @@ export function HousePrompt({
   canResume: boolean;
 }) {
   const [pending, setPending] = useState<PendingGeneration | null>(restoreGeneration);
-  const [prompt, setPrompt] = useState(() => restoreGeneration()?.prompt ?? '');
+  const [prompt, setPrompt] = useState(() => restoreGeneration()?.prompt ?? defaultHousePrompt);
   const [job, setJob] = useState<Generation | null>(null),
     [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0),
