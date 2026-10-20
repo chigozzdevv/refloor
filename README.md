@@ -49,6 +49,9 @@ to MongoDB. A failed save keeps the current house open and prevents replacement.
 The API key stays on the server. Responses use Structured Outputs with storage disabled and
 no automatic provider retries. Generation allows 6,000 output tokens and 90 seconds;
 editing allows 4,800 output tokens and 25 seconds.
+Generation results use a dedicated worker channel, isolated from Node's dependency-watch
+messages. Internal failures are logged on the server; job status exposes readable failure
+messages rather than raw schema diagnostics.
 
 Generation currently supports rectangular houses with one or two storeys, 14–20 m width,
 9–24 m depth in 0.1 m increments, two to eight rooms per floor and twelve rooms total.
