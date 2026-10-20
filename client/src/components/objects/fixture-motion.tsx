@@ -6,6 +6,7 @@ import { fixtureProgress } from '@/shared/behaviours/fixture';
 import { invalidateShadows } from '@/shared/scene/shadow-updates';
 import { fixtureReservations } from '@/shared/behaviours/fixture-motion';
 import { useProject } from '@/shared/scene/scene-store';
+import { scenePresentation } from '@/shared/scene/presentation';
 
 export function FixtureMotion({
   open,
@@ -29,13 +30,18 @@ export function FixtureMotion({
     group = useRef<Group>(null),
     progress = useRef(open ? 1 : 0);
   useLayoutEffect(() => {
+    scenePresentation.motion(owner, buildingId, progress.current !== Number(open), objectId);
     if (!open && progress.current > 0) fixtureReservations.reserve(owner, buildingId, objectId);
-    return () => fixtureReservations.release(owner);
+    return () => {
+      fixtureReservations.release(owner);
+      scenePresentation.release(owner);
+    };
   }, [open, owner, buildingId, objectId]);
   useFrame((_state, delta) => {
     if (!group.current) return;
     const before = progress.current;
     progress.current = fixtureProgress(before, open ? 1 : 0, delta);
+    scenePresentation.motion(owner, buildingId, progress.current !== Number(open), objectId);
     if (!open && progress.current === 0) fixtureReservations.release(owner);
     if (before === progress.current) return;
     if (slide)

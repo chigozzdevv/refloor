@@ -7,6 +7,110 @@ import { physicsSession } from '@/shared/navigation/physics-session';
 import { walkInput } from '@/shared/navigation/input';
 import { editingError } from '@/shared/editor/errors';
 import { targetIdentity } from '@/shared/editor/identity';
+import { scenePresentation } from '@/shared/scene/presentation';
+import type { CompiledBuilding } from '@refloor/engine';
+
+export function changedMechanisms(before: CompiledBuilding, after: CompiledBuilding) {
+  const affected = new Set<string>();
+  for (const door of after.doors)
+    if (before.doors.find((value) => value.id === door.id)?.open !== door.open)
+      affected.add(door.id);
+  for (const object of after.building.objects) {
+    const previous = before.building.objects.find((value) => value.id === object.id),
+      open = object.behaviours.find((value) => value.kind === 'openable')?.state.open,
+      wasOpen = previous?.behaviours.find((value) => value.kind === 'openable')?.state.open;
+    if (open !== wasOpen) affected.add(object.id);
+  }
+  return affected;
+}
+
+async function presentEdit(
+  compiled: CompiledBuilding,
+  epoch: number,
+  affected: ReadonlySet<string>,
+) {
+  const controller = new AbortController(),
+    unsubscribe = useProject.subscribe((state) => {
+      if (state.projectEpoch !== epoch) controller.abort();
+    });
+  try {
+    if (useProject.getState().projectEpoch !== epoch) controller.abort();
+    await scenePresentation.waitFor(compiled, controller.signal, affected);
+  } finally {
+    unsubscribe();
+  }
+}
+
+export async function sendLanguageEdit(target: ChatTarget, message: string) {
+  const text = message.trim(),
+    before = useProject.getState(),
+    requestId = crypto.randomUUID();
+  if (!text || !before.beginChat(requestId)) return false;
+  let turn: ChatTurn | undefined;
+  const base = {
+    id: requestId,
+    at: new Date().toISOString(),
+    target,
+    message: text,
+    baseRevision: before.compiled.building.revision,
+  };
+  try {
+    const result = await editApi.interpret({
+      requestId,
+      target,
+      message: text,
+      building: before.compiled.building,
+      context: scopedEditMemory(before.memory, target),
+      view: { ...walkInput.view },
+      player: before.mode === 'walk' ? (physicsSession.current?.player ?? null) : null,
+    });
+    const current = useProject.getState();
+    if (
+      current.projectEpoch !== before.projectEpoch ||
+      current.compiled.building !== before.compiled.building ||
+      result.baseRevision !== current.compiled.building.revision
+    )
+      throw new Error('The space changed while I was working. Please try that again.');
+    const identity = targetIdentity(before.compiled.building, target);
+    if (
+      result.commands.length &&
+      !current.edit(result.commands, {
+        source: 'chat',
+        label: text,
+        target: identity ? `${identity.label} · ${identity.location}` : undefined,
+      })
+    )
+      throw new Error(useProject.getState().notice ?? 'That change could not be applied.');
+    turn = {
+      ...base,
+      reply: (result.message || 'Done.').slice(0, 1000),
+      status: result.commands.length ? 'applied' : 'clarification',
+      revisionId: result.commands.length ? useProject.getState().past.at(-1)!.revision.id : null,
+    };
+    if (result.commands.length) {
+      const applied = useProject.getState().compiled;
+      await presentEdit(applied, before.projectEpoch, changedMechanisms(current.compiled, applied));
+    }
+    return true;
+  } catch (error) {
+    const applied =
+        turn?.status === 'applied' && useProject.getState().projectEpoch === before.projectEpoch,
+      explanation = editingError(error);
+    turn = {
+      ...(turn ?? base),
+      reply: (applied
+        ? `Applied the change, but ${explanation.charAt(0).toLowerCase()}${explanation.slice(1)}`
+        : explanation
+      ).slice(0, 1000),
+      status: turn?.status === 'applied' ? 'applied' : 'rejected',
+      revisionId: turn?.revisionId ?? null,
+    };
+    return applied;
+  } finally {
+    const current = useProject.getState();
+    current.finishChat(requestId, current.projectEpoch === before.projectEpoch ? turn : undefined);
+  }
+}
 
 export function useLanguageEdit(target: ChatTarget) {
   const turns = useProject((state) => state.memory.turns);
@@ -27,68 +131,6 @@ export function useLanguageEdit(target: ChatTarget) {
           turn.target.side === target.side,
       ),
     );
-  const send = async (message: string) => {
-    const text = message.trim(),
-      before = useProject.getState(),
-      requestId = crypto.randomUUID();
-    if (!text || !before.beginChat(requestId)) return false;
-    let turn: ChatTurn | undefined;
-    const base = {
-      id: requestId,
-      at: new Date().toISOString(),
-      target,
-      message: text,
-      baseRevision: before.compiled.building.revision,
-    };
-    try {
-      const result = await editApi.interpret({
-        requestId,
-        target,
-        message: text,
-        building: before.compiled.building,
-        context: scopedEditMemory(before.memory, target),
-        view: { ...walkInput.view },
-        player: before.mode === 'walk' ? (physicsSession.current?.player ?? null) : null,
-      });
-      const current = useProject.getState();
-      if (
-        current.projectEpoch !== before.projectEpoch ||
-        current.compiled.building !== before.compiled.building ||
-        result.baseRevision !== current.compiled.building.revision
-      )
-        throw new Error('The space changed while I was working. Please try that again.');
-      const identity = targetIdentity(before.compiled.building, target);
-      if (
-        result.commands.length &&
-        !current.edit(result.commands, {
-          source: 'chat',
-          label: text,
-          target: identity ? `${identity.label} · ${identity.location}` : undefined,
-        })
-      )
-        throw new Error(useProject.getState().notice ?? 'That change could not be applied.');
-      turn = {
-        ...base,
-        reply: (result.message || 'Done.').slice(0, 1000),
-        status: result.commands.length ? 'applied' : 'clarification',
-        revisionId: result.commands.length ? useProject.getState().past.at(-1)!.revision.id : null,
-      };
-      return true;
-    } catch (error) {
-      turn = {
-        ...base,
-        reply: editingError(error).slice(0, 1000),
-        status: 'rejected',
-        revisionId: null,
-      };
-      return false;
-    } finally {
-      const current = useProject.getState();
-      current.finishChat(
-        requestId,
-        current.projectEpoch === before.projectEpoch ? turn : undefined,
-      );
-    }
-  };
+  const send = (message: string) => sendLanguageEdit(target, message);
   return { busy, reply: busy ? null : (lastTurn?.reply ?? null), history, send };
 }

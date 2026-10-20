@@ -1,4 +1,9 @@
-import { invalidateShadows, refreshShadows, shadowRevision } from '@/shared/scene/shadow-updates';
+import {
+  invalidateShadows,
+  refreshShadows,
+  shadowRevision,
+  shadowsCurrent,
+} from '@/shared/scene/shadow-updates';
 import { describe, expect, it } from 'vitest';
 import {
   BoxGeometry,
@@ -133,8 +138,10 @@ describe('rendering contracts', () => {
     scene.add(point, sun);
     const previous = shadowRevision();
     invalidateShadows();
+    expect(shadowsCurrent()).toBe(false);
     expect(shadowRevision()).toBeGreaterThan(previous);
     refreshShadows(scene);
+    expect(shadowsCurrent()).toBe(true);
     expect(point.shadow.needsUpdate).toBe(true);
     expect(sun.shadow.needsUpdate).toBe(true);
     expect(point.shadow.autoUpdate).toBe(false);

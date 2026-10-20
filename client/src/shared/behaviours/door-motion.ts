@@ -49,12 +49,13 @@ export class DoorMotion {
     const next = preview ?? this.origin + (Number(open) - this.origin) * progress;
     const steps = Math.max(1, Math.ceil(Math.abs(next - this.fraction) / 0.04));
     for (let step = 1; step <= steps; step++)
-      if (blocked(this.fraction + ((next - this.fraction) * step) / steps)) return;
+      if (blocked(this.fraction + ((next - this.fraction) * step) / steps)) return false;
     this.fraction = next;
     this.elapsed = nextTime;
     if (preview !== null && preview !== undefined) {
       this.origin = next;
       this.elapsed = 0;
     }
+    return true;
   }
 }

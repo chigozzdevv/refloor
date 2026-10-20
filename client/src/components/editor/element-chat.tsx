@@ -40,6 +40,7 @@ export function ElementChat({
     <section
       className="element-chat"
       aria-label={`${label} chat`}
+      aria-busy={busy}
       onPointerDown={(event) => event.stopPropagation()}
       onClick={(event) => event.stopPropagation()}
     >

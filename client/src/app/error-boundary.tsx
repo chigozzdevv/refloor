@@ -1,5 +1,6 @@
 import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
+import { scenePresentation } from '@/shared/scene/presentation';
 
 type Props = { children: ReactNode };
 export class ErrorBoundary extends Component<Props, { error: string | null }> {
@@ -8,6 +9,7 @@ export class ErrorBoundary extends Component<Props, { error: string | null }> {
     return { error: error.message };
   }
   override componentDidCatch(error: Error, info: ErrorInfo) {
+    scenePresentation.fail(new Error('The change was saved, but its appearance could not load.'));
     console.error('Refloor rendering error', error, info.componentStack);
   }
   override render() {

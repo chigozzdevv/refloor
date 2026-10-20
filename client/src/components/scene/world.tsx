@@ -20,6 +20,8 @@ import { SceneCapture } from '@/components/scene/capture';
 import { RenderPerformance } from '@/components/scene/render-performance';
 import { useRenderSettings } from '@/shared/scene/render-settings';
 import { catalogueBehaviourUpgrades } from '@refloor/catalogue';
+import { PresentedScene } from '@/components/scene/presentation';
+import { scenePresentation } from '@/shared/scene/presentation';
 
 function SceneReady() {
   const setReady = useProject((state) => state.setSceneReady);
@@ -46,6 +48,7 @@ export function World() {
     select = useProject((state) => state.select);
   const stage = useExperience((state) => state.stage);
   const dpr = useRenderSettings((state) => state.dpr);
+  useEffect(() => () => scenePresentation.fail(new Error('The scene renderer was closed.')), []);
   return (
     <Canvas
       style={{ overflow: 'clip' }}
@@ -83,6 +86,7 @@ export function World() {
           <SelectionChat />
           <SelectedFloor />
           <SceneReady key={epoch} />
+          <PresentedScene />
         </Selection>
       </Suspense>
     </Canvas>

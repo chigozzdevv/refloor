@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import type { ThreeEvent } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
@@ -17,6 +17,7 @@ import { hiddenExterior } from '@/shared/scene/visibility';
 import { isScenePointer, visibleGroupRaycast, visibleMeshRaycast } from '@/shared/editor/picking';
 import { invalidateShadows } from '@/shared/scene/shadow-updates';
 import { watchDoorDragCancellation } from '@/shared/behaviours/door-drag';
+import { scenePresentation } from '@/shared/scene/presentation';
 
 export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
   const pivot = useRef<Group>(null),
@@ -50,6 +51,17 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
     selection = useProject((state) => state.selection),
     compiled = useProject((state) => state.compiled);
   const cutaway = useProject((state) => state.cutaway);
+  const presentationOwner = useMemo(() => Symbol('door motion'), []),
+    buildingId = compiled.building.id;
+  useLayoutEffect(() => {
+    scenePresentation.motion(
+      presentationOwner,
+      buildingId,
+      motion.current.fraction !== Number(portal.open),
+      portal.id,
+    );
+    return () => scenePresentation.release(presentationOwner);
+  }, [presentationOwner, buildingId, portal.open, portal.id]);
   const cancelDrag = useCallback(() => {
     const captured = drag.current;
     if (!captured) return;
@@ -91,13 +103,25 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
       12,
       delta,
     );
-    motion.current.step(
+    const advanced = motion.current.step(
       portal.open,
       delta,
       (next) => mode === 'walk' && Boolean(physicsSession.current?.doorBlocked(portal.id, next)),
       preview.current,
       drag.current !== null,
     );
+    scenePresentation.motion(
+      presentationOwner,
+      buildingId,
+      motion.current.fraction !== Number(portal.open) || motion.current.handle > 0,
+      portal.id,
+    );
+    if (!advanced)
+      scenePresentation.fail(
+        new Error('The door is blocked. Step clear so it can finish moving.'),
+        buildingId,
+        portal.id,
+      );
     if (
       Math.abs(before - motion.current.fraction) > 0.0001 ||
       Math.abs(handle - motion.current.handle) > 0.0001
