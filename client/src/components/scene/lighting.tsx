@@ -74,13 +74,14 @@ export function Lighting() {
       {settings.softShadows && <SoftShadows size={12} samples={12} focus={0.3} />}
       <EffectComposer autoClear={false} multisampling={settings.multisampling}>
         <N8AO
+          enabled={settings.ambientOcclusion}
           aoRadius={0.45}
           intensity={1.35}
           distanceFalloff={1}
           quality={settings.aoQuality}
           halfRes
         />
-        <Bloom luminanceThreshold={1.6} intensity={0.16} mipmapBlur />
+        {settings.bloom && <Bloom luminanceThreshold={1.6} intensity={0.16} mipmapBlur />}
         <Outline
           edgeStrength={6}
           visibleEdgeColor="#edc379"

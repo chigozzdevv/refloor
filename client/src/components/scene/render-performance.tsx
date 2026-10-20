@@ -80,6 +80,8 @@ export function RenderPerformance() {
       multisampling: settings.multisampling,
       sunlightResolution: settings.sunlightResolution,
       mirrorResolution: settings.mirrorResolution,
+      ambientOcclusion: settings.ambientOcclusion,
+      bloom: settings.bloom,
     });
   }, 3);
   return null;

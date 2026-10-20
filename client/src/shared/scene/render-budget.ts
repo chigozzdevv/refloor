@@ -7,6 +7,8 @@ export type RenderBudget = {
   mirrorInterval: number;
   softShadows: boolean;
   aoQuality: 'medium' | 'low';
+  ambientOcclusion: boolean;
+  bloom: boolean;
   landscapeQuality: 'high' | 'balanced';
 };
 
@@ -35,16 +37,22 @@ export function renderBudget(input: {
       textureSize / width,
       textureSize / height,
     ),
-    dpr = Math.max(0.1, Math.floor(maximum * [1, 0.85, 0.7, 0.6][reduction]! * 100) / 100);
+    minimum = Math.min(maximum, compact ? 1 : 0.85),
+    dpr = Math.max(
+      Math.floor(minimum * 100) / 100,
+      Math.floor(maximum * [1, 0.85, 0.7, 0.6][reduction]! * 100) / 100,
+    );
   return {
     compact,
     dpr,
     multisampling: constrained ? 0 : Math.min(4, Math.max(0, input.maxSamples)),
     sunlightResolution: constrained ? 1024 : 2048,
-    mirrorResolution: reduction === 3 ? 128 : constrained ? 256 : 512,
+    mirrorResolution: constrained ? 256 : 512,
     mirrorInterval: constrained ? 1000 / 15 : 1000 / 30,
     softShadows: !constrained,
     aoQuality: constrained ? 'low' : 'medium',
+    ambientOcclusion: reduction < 3,
+    bloom: reduction < 3,
     landscapeQuality: constrained ? 'balanced' : 'high',
   };
 }

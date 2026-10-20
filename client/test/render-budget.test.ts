@@ -22,6 +22,8 @@ describe('render target budget', () => {
       mirrorResolution: 512,
       softShadows: true,
       landscapeQuality: 'high',
+      ambientOcclusion: true,
+      bloom: true,
     });
     expect(desktop.width * desktop.height * settings.dpr ** 2).toBeLessThanOrEqual(4_000_000);
   });
@@ -70,9 +72,38 @@ describe('render target budget', () => {
     expect(settings[1]!.softShadows).toBe(true);
     expect(settings[2]!.softShadows).toBe(false);
     expect(settings[2]!.landscapeQuality).toBe('balanced');
-    expect(settings[3]!.mirrorResolution).toBe(128);
+    expect(settings[3]!.mirrorResolution).toBe(256);
+    expect(settings[2]!.ambientOcclusion).toBe(true);
+    expect(settings[3]!.ambientOcclusion).toBe(false);
+    expect(settings[3]!.bloom).toBe(false);
     expect(renderBudget({ ...desktop, reduction: 100 })).toEqual(settings[3]);
     expect(renderBudget({ ...desktop, maxSamples: 2 }).multisampling).toBe(2);
+  });
+
+  it('keeps compact views at native-scale clarity when frame pressure comes from draw submission', () => {
+    for (const native of [1, 2, 3]) {
+      const levels = [0, 1, 2, 3].map((reduction) =>
+        renderBudget({
+          ...desktop,
+          width: 390,
+          height: 844,
+          devicePixelRatio: native,
+          reduction,
+        }),
+      );
+      expect(levels.every((settings) => settings.dpr >= 1)).toBe(true);
+      expect(levels[3]!.ambientOcclusion).toBe(false);
+      expect(levels[3]!.bloom).toBe(false);
+      expect(levels[3]!.mirrorResolution).toBe(256);
+    }
+    const limited = renderBudget({
+      ...desktop,
+      width: 3840,
+      height: 2160,
+      reduction: 3,
+    });
+    expect(limited.dpr).toBeLessThan(0.85);
+    expect(3840 * 2160 * limited.dpr ** 2).toBeLessThanOrEqual(4_000_000);
   });
 });
 
