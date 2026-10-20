@@ -55,6 +55,6 @@ describe('editable exterior surface presentation', () => {
       restoreEditMemory(building, legacy).originals.filter(
         (snapshot) => snapshot.kind === 'surface',
       ),
-    ).toHaveLength(8);
+    ).toHaveLength(12);
   });
 });

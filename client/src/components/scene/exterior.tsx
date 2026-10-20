@@ -107,14 +107,6 @@ export function ExteriorModel({ compiled }: { compiled: CompiledBuilding }) {
   return (
     <group>
       <Compound compiled={compiled} />
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[site.centre.x, site.ground.elevation - 0.205, site.centre.z]}
-        receiveShadow
-      >
-        <planeGeometry args={[200, 200]} />
-        <meshStandardMaterial color="#69735a" roughness={1} />
-      </mesh>
       <SiteSurface buildingId={compiled.building.id} slot="paving">
         {site.paving.map((paver) => (
           <group

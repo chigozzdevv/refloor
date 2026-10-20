@@ -14,6 +14,10 @@ export const siteSurfaceSlotSchema = z.enum([
   'canopy',
   'parapet',
   'roof-trim',
+  'lawn',
+  'planting-bed',
+  'planting',
+  'landscape-stone',
 ]);
 export type SiteSurfaceSlot = z.infer<typeof siteSurfaceSlotSchema>;
 export const siteMaterialsSchema = z
@@ -43,6 +47,10 @@ const defaults: Record<SiteSurfaceSlot, Material> = {
   canopy: finish('#555c59', 0.5, 0.25),
   parapet: finish('#d1d0c4', 0.9),
   'roof-trim': finish('#555c59', 0.5, 0.3),
+  lawn: finish('#465a2b', 0.98),
+  'planting-bed': finish('#3c3125', 1),
+  planting: finish('#60743b', 0.92),
+  'landscape-stone': finish('#b0aaa0', 0.94),
 };
 export const siteSurfaceLabels: Record<SiteSurfaceSlot, string> = {
   paving: 'Compound paving',
@@ -53,6 +61,10 @@ export const siteSurfaceLabels: Record<SiteSurfaceSlot, string> = {
   canopy: 'Entrance canopy',
   parapet: 'Roof parapet',
   'roof-trim': 'Roof trim',
+  lawn: 'Garden lawn',
+  'planting-bed': 'Border planting beds',
+  planting: 'Border planting',
+  'landscape-stone': 'Garden stone edging',
 };
 type SiteAppearance = {
   id: string;

@@ -115,6 +115,6 @@ describe('contextual exterior material editing', () => {
       validateMemory(request.building, legacy).originals.filter(
         (snapshot) => snapshot.kind === 'surface',
       ),
-    ).toHaveLength(8);
+    ).toHaveLength(12);
   });
 });

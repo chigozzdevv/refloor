@@ -46,7 +46,7 @@ describe('independent exterior surface materials', () => {
       canopy = siteSurfaceId(original, 'canopy');
     expect(
       createEditMemory(original).originals.filter((snapshot) => snapshot.kind === 'surface'),
-    ).toHaveLength(8);
+    ).toHaveLength(12);
     expect(snapshotFor(original, { kind: 'surface', id: paving })).toEqual({
       kind: 'surface',
       id: paving,

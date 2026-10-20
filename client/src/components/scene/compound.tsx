@@ -7,6 +7,7 @@ import { siteSurfaceMaterial } from '@refloor/scene/site-material';
 import { useSurface } from '@/shared/scene/asset-loader';
 import { applyMetricUVs } from '@/shared/scene/metric-uv';
 import { SiteBox, SiteSurface } from '@/components/scene/site-surface';
+import { Landscape } from '@/components/scene/landscape';
 
 export function Compound({ compiled }: { compiled: CompiledBuilding }) {
   const site = useMemo(() => exteriorLayout(compiled), [compiled]);
@@ -46,6 +47,7 @@ export function Compound({ compiled }: { compiled: CompiledBuilding }) {
   }, [tiles, site, override]);
   return (
     <group>
+      <Landscape site={site} building={compiled.building} />
       <SiteSurface buildingId={compiled.building.id} slot="paving">
         <SiteBox
           position={[
