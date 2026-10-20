@@ -15,6 +15,13 @@ import type { ResolvedCommand } from '@refloor/scene/relative-command';
 import { siteSurfaceSlot } from '@refloor/scene/site-material';
 import { movePartition, setOpening } from '@refloor/scene/structural-command';
 
+const powerBehaviour = {
+  'set-light': 'light',
+  'set-television': 'television',
+  'set-cooker': 'cooker',
+  'set-water': 'water',
+} as const;
+
 function objectFor(building: Building, id: string): SceneObject {
   const object = building.objects.find((value) => value.id === id);
   if (!object) throw new SceneError('NOT_FOUND', `Object does not exist: ${id}`);
@@ -134,6 +141,53 @@ function execute(building: Building, command: ResolvedCommand): SceneCommand {
       };
       Object.assign(object, structuredClone(command.asset));
       return inverse;
+    }
+    case 'add-object-behaviours': {
+      const object = objectFor(building, command.objectId);
+      const kinds = command.behaviours.map((behaviour) => behaviour.kind);
+      if (
+        new Set(kinds).size !== kinds.length ||
+        object.behaviours.some((behaviour) => kinds.includes(behaviour.kind)) ||
+        object.behaviours.length + command.behaviours.length > 3
+      )
+        throw new SceneError('INVALID_TARGET', 'Capabilities must be new and unique');
+      if (command.positions) {
+        if (
+          command.positions.length !== command.behaviours.length ||
+          command.positions.some(
+            (position, index) =>
+              position > object.behaviours.length + index ||
+              (index > 0 && position <= command.positions![index - 1]!),
+          )
+        )
+          throw new SceneError('INVALID_TARGET', 'Capability insertion positions are invalid');
+        for (const [index, behaviour] of command.behaviours.entries())
+          object.behaviours.splice(command.positions[index]!, 0, structuredClone(behaviour));
+      } else object.behaviours.push(...structuredClone(command.behaviours));
+      return { type: 'remove-object-behaviours', objectId: object.id, kinds };
+    }
+    case 'remove-object-behaviours': {
+      const object = objectFor(building, command.objectId);
+      const behaviours = object.behaviours.filter((behaviour) =>
+        command.kinds.includes(behaviour.kind),
+      );
+      const positions = object.behaviours.flatMap((behaviour, index) =>
+        command.kinds.includes(behaviour.kind) ? [index] : [],
+      );
+      if (
+        new Set(command.kinds).size !== command.kinds.length ||
+        behaviours.length !== command.kinds.length
+      )
+        throw new SceneError('INVALID_TARGET', 'Capability does not exist');
+      object.behaviours = object.behaviours.filter(
+        (behaviour) => !command.kinds.includes(behaviour.kind),
+      );
+      return {
+        type: 'add-object-behaviours',
+        objectId: object.id,
+        behaviours: structuredClone(behaviours),
+        positions,
+      };
     }
     case 'set-object-material': {
       const object = objectFor(building, command.objectId);
@@ -260,6 +314,45 @@ function execute(building: Building, command: ResolvedCommand): SceneCommand {
       Object.assign(behaviour.state, command.state);
       return inverse;
     }
+    case 'set-cooker': {
+      const object = objectFor(building, command.objectId);
+      const behaviour = object.behaviours.find((value) => value.kind === 'cooker');
+      if (!behaviour)
+        throw new SceneError('UNSUPPORTED_ACTION', 'This object has no cooker behaviour');
+      const inverse: SceneCommand = {
+        type: 'set-cooker',
+        objectId: object.id,
+        state: structuredClone(behaviour.state),
+      };
+      Object.assign(behaviour.state, structuredClone(command.state));
+      return inverse;
+    }
+    case 'set-water': {
+      const object = objectFor(building, command.objectId);
+      const behaviour = object.behaviours.find((value) => value.kind === 'water');
+      if (!behaviour)
+        throw new SceneError('UNSUPPORTED_ACTION', 'This object has no water behaviour');
+      const inverse: SceneCommand = {
+        type: 'set-water',
+        objectId: object.id,
+        state: structuredClone(behaviour.state),
+      };
+      Object.assign(behaviour.state, command.state);
+      return inverse;
+    }
+    case 'set-openable': {
+      const object = objectFor(building, command.objectId);
+      const behaviour = object.behaviours.find((value) => value.kind === 'openable');
+      if (!behaviour)
+        throw new SceneError('UNSUPPORTED_ACTION', 'This object has no openable behaviour');
+      const inverse: SceneCommand = {
+        type: 'set-openable',
+        objectId: object.id,
+        state: structuredClone(behaviour.state),
+      };
+      behaviour.state.open = command.state.open;
+      return inverse;
+    }
   }
 }
 
@@ -313,12 +406,29 @@ export function applyCommands(
     )
       event = { kind: 'door', doorId: command.doorId, open: command.open };
     else if (
-      (command.type === 'set-light' || command.type === 'set-television') &&
-      (inverse.type === 'set-light' || inverse.type === 'set-television') &&
+      (command.type === 'set-light' ||
+        command.type === 'set-television' ||
+        command.type === 'set-cooker' ||
+        command.type === 'set-water') &&
+      (inverse.type === 'set-light' ||
+        inverse.type === 'set-television' ||
+        inverse.type === 'set-cooker' ||
+        inverse.type === 'set-water') &&
       command.state.powered !== undefined &&
       command.state.powered !== inverse.state.powered
     )
-      event = { kind: 'power', objectId: command.objectId, powered: command.state.powered };
+      event = {
+        kind: 'power',
+        objectId: command.objectId,
+        powered: command.state.powered,
+        behaviour: powerBehaviour[command.type],
+      };
+    else if (
+      command.type === 'set-openable' &&
+      inverse.type === 'set-openable' &&
+      command.state.open !== inverse.state.open
+    )
+      event = { kind: 'openable', objectId: command.objectId, open: command.state.open };
     if (!event) continue;
     const effects = (draft.rules ?? []).flatMap((rule) => {
       if (

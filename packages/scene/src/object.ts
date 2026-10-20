@@ -27,7 +27,7 @@ export const objectAssetSchema = z.strictObject({
   materials: z
     .record(idSchema, materialSchema)
     .refine((value) => Object.keys(value).length > 0, 'An asset needs at least one material slot'),
-  behaviours: z.array(behaviourSchema).max(2),
+  behaviours: z.array(behaviourSchema).max(3),
 });
 export const sceneObjectSchema = objectAssetSchema.extend({
   id: idSchema,

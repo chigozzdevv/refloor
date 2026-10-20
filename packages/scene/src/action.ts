@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { lightStateSchema, televisionStateSchema } from '@refloor/scene/behaviour';
+import {
+  cookerStateSchema,
+  lightStateSchema,
+  openableStateSchema,
+  televisionStateSchema,
+  waterStateSchema,
+} from '@refloor/scene/behaviour';
 import { materialSchema } from '@refloor/scene/material';
 import { objectAssetSchema, sceneObjectSchema } from '@refloor/scene/object';
 import { partitionBoundsSchema } from '@refloor/scene/structural-command';
@@ -118,6 +124,60 @@ export const sceneActionSchema = z.discriminatedUnion('type', [
         (state) => Object.values(state).some((value) => value !== undefined),
         'Provide a light state change',
       ),
+  }),
+  z.strictObject({
+    type: z.literal('set-cooker'),
+    objectId: idSchema,
+    state: cookerStateSchema
+      .partial()
+      .refine(
+        (state) => Object.values(state).some((value) => value !== undefined),
+        'Provide a cooker state change',
+      ),
+  }),
+  z.strictObject({
+    type: z.literal('set-water'),
+    objectId: idSchema,
+    state: waterStateSchema
+      .partial()
+      .refine(
+        (state) => Object.values(state).some((value) => value !== undefined),
+        'Provide a water state change',
+      ),
+  }),
+  z.strictObject({
+    type: z.literal('set-openable'),
+    objectId: idSchema,
+    state: openableStateSchema,
+  }),
+  z.strictObject({
+    type: z.literal('ignite-cooker'),
+    objectId: idSchema,
+  }),
+  z.strictObject({
+    type: z.literal('start-water'),
+    objectId: idSchema,
+  }),
+  z.strictObject({
+    type: z.literal('set-cooker-burner'),
+    objectId: idSchema,
+    burner: z.number().int().min(0).max(3),
+    enabled: z.boolean(),
+  }),
+  z.strictObject({
+    type: z.literal('adjust-cooker-heat'),
+    objectId: idSchema,
+    delta: coordinateSchema,
+  }),
+  z.strictObject({
+    type: z.literal('adjust-water-flow'),
+    objectId: idSchema,
+    delta: coordinateSchema,
+  }),
+  z.strictObject({
+    type: z.literal('adjust-water-temperature'),
+    objectId: idSchema,
+    delta: coordinateSchema,
   }),
   z.strictObject({
     type: z.literal('adjust-light-intensity'),

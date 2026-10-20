@@ -1,7 +1,17 @@
 import type { SceneObject } from '@refloor/scene/object';
 
 export type ObjectCapability =
-  'move' | 'rotate' | 'resize' | 'replace' | 'remove' | 'material' | 'television' | 'light';
+  | 'move'
+  | 'rotate'
+  | 'resize'
+  | 'replace'
+  | 'remove'
+  | 'material'
+  | 'television'
+  | 'light'
+  | 'cooker'
+  | 'water'
+  | 'openable';
 
 export function getObjectCapabilities(object: SceneObject): ObjectCapability[] {
   return [

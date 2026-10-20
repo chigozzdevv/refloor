@@ -184,19 +184,32 @@ export const buildingSchema = buildingModelSchema.superRefine((building, context
         action.type === 'set-light' ||
         action.type === 'adjust-light-intensity' ||
         action.type === 'set-television' ||
-        action.type === 'adjust-television-volume'
+        action.type === 'adjust-television-volume' ||
+        action.type === 'set-cooker' ||
+        action.type === 'ignite-cooker' ||
+        action.type === 'set-cooker-burner' ||
+        action.type === 'adjust-cooker-heat' ||
+        action.type === 'set-water' ||
+        action.type === 'start-water' ||
+        action.type === 'adjust-water-flow' ||
+        action.type === 'adjust-water-temperature' ||
+        action.type === 'set-openable'
       ) {
         const object = building.objects.find((value) => value.id === action.objectId);
-        if (
-          object &&
-          !object.behaviours.some(
-            (behaviour) =>
-              behaviour.kind ===
-              (action.type === 'set-light' || action.type === 'adjust-light-intensity'
-                ? 'light'
-                : 'television'),
-          )
-        )
+        const capability =
+          action.type === 'set-light' || action.type === 'adjust-light-intensity'
+            ? 'light'
+            : action.type === 'set-television' || action.type === 'adjust-television-volume'
+              ? 'television'
+              : action.type === 'set-cooker' ||
+                  action.type === 'ignite-cooker' ||
+                  action.type === 'set-cooker-burner' ||
+                  action.type === 'adjust-cooker-heat'
+                ? 'cooker'
+                : action.type === 'set-openable'
+                  ? 'openable'
+                  : 'water';
+        if (object && !object.behaviours.some((behaviour) => behaviour.kind === capability))
           report('Saved action requires a capability this object does not have', [
             ...rp,
             'actions',
