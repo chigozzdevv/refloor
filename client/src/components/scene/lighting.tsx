@@ -10,10 +10,41 @@ import {
 import { SMAAPreset, ToneMappingMode } from 'postprocessing';
 import { LightBudget } from '@/components/scene/light-budget';
 import { useProject } from '@/shared/scene/scene-store';
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { Fog, Vector3 } from 'three';
 import { invalidateShadows, refreshShadows, shadowRevision } from '@/shared/scene/shadow-updates';
 import { useRenderSettings } from '@/shared/scene/render-settings';
+import { exteriorLayout } from '@/shared/scene/exterior';
+import { fogRange } from '@/shared/scene/atmosphere';
+
+function Atmosphere({ color }: { color: string }) {
+  const compiled = useProject((state) => state.compiled),
+    mode = useProject((state) => state.mode),
+    fog = useMemo(() => new Fog(color, 45, 140), [color]),
+    bounds = useMemo(() => {
+      const site = exteriorLayout(compiled);
+      return {
+        centre: new Vector3(
+          site.compound.x + site.compound.width / 2,
+          (site.ground.elevation + site.height) / 2,
+          site.compound.z + site.compound.depth / 2,
+        ),
+        radius:
+          Math.hypot(
+            site.compound.width,
+            site.height - site.ground.elevation,
+            site.compound.depth,
+          ) / 2,
+      };
+    }, [compiled]);
+  useFrame(({ camera }) => {
+    const range = fogRange(mode, camera.position.distanceTo(bounds.centre), bounds.radius);
+    fog.near = range.near;
+    fog.far = range.far;
+  }, -0.4);
+  return <primitive object={fog} attach="fog" />;
+}
 
 function ShadowUpdates() {
   const compiled = useProject((state) => state.compiled),
@@ -52,7 +83,7 @@ export function Lighting() {
         environmentRotation={[0, 2.3, 0]}
       />
       <color attach="background" args={[day ? '#e7e7df' : '#121922']} />
-      <fog attach="fog" args={[day ? '#e7e7df' : '#121922', 45, 140]} />
+      <Atmosphere color={day ? '#e7e7df' : '#121922'} />
       <hemisphereLight args={['#e4ebf2', '#aa9276', day ? 0.35 : 0.12]} />
       <directionalLight
         key={settings.sunlightResolution}
