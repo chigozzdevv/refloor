@@ -16,6 +16,7 @@ export function arrivalView(
   target: NavigationPoint,
   preferred?: Point3,
   entryDoorId?: string,
+  entryStairId?: string,
 ): ArrivalView | null {
   const floor = compiled.building.floors.find((value) => value.id === target.floorId);
   const room = floor?.rooms.find((value) => contains(value.footprint, target.position));
@@ -106,6 +107,7 @@ export function arrivalView(
       );
     if (
       stop.kind === 'stairs' &&
+      stop.stairId !== entryStairId &&
       !links.some((link) => link.id === stop.id && link.kind === 'waypoint') &&
       stop.approach &&
       contains(room.footprint, stop.approach.position) &&
@@ -124,7 +126,7 @@ export function arrivalView(
   }
   if (transit)
     for (const waypoint of links)
-      if (waypoint.kind === 'waypoint')
+      if (waypoint.kind === 'waypoint' && (!entryStairId || waypoint.stairId !== entryStairId))
         add(
           {
             point: { ...waypoint.anchor, y: floor.elevation + 1.1 },
@@ -153,6 +155,7 @@ export function arrivalView(
     const stops = destinations(compiled).filter(
       (stop) =>
         stop.floorId === floor.id &&
+        (!entryStairId || stop.stairId !== entryStairId) &&
         (stop.kind === 'room'
           ? stop.roomId === room.id
           : stop.kind === 'door'

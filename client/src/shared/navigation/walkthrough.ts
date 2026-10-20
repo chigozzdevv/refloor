@@ -30,6 +30,7 @@ export class Walkthrough {
     commands: SceneCommand[];
     facing?: Point3;
     entryDoorId?: string;
+    entryStairId?: string;
   } | null = null;
 
   reset() {
@@ -71,9 +72,12 @@ export class Walkthrough {
           .filter(({ door }) => door.floorId === request.target.floorId)
           .at(-1)?.door.id ??
         (this.leg?.requestId === request.id ? this.leg.entryDoorId : undefined);
+      const entryStairId =
+        plan.path.stairIds.at(-1) ??
+        (this.leg?.requestId === request.id ? this.leg.entryStairId : undefined);
       const facing = plan.staging
         ? plan.facing
-        : arrivalView(compiled, request.target, request.lookAt, entryDoorId)?.point;
+        : arrivalView(compiled, request.target, request.lookAt, entryDoorId, entryStairId)?.point;
       this.leg = {
         requestId: request.id,
         compiled,
@@ -81,6 +85,7 @@ export class Walkthrough {
         commands: plan.staging ? plan.commands : [],
         ...(facing ? { facing } : {}),
         ...(entryDoorId ? { entryDoorId } : {}),
+        ...(entryStairId ? { entryStairId } : {}),
       };
     }
     const { journey, facing, commands } = this.leg;

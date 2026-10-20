@@ -7,7 +7,7 @@ import { doorCrossings } from '@refloor/engine/navigation/doors';
 import { createEditMemory } from '@refloor/scene/edit-memory';
 import { applyCommands } from '@refloor/scene';
 import type { Building } from '@refloor/scene';
-import { destinations } from '@/shared/navigation/destinations';
+import { destinationRoute, destinations } from '@/shared/navigation/destinations';
 import { arrivalView } from '@/shared/navigation/arrival';
 import { tourPortals } from '@/shared/navigation/portals';
 import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
@@ -38,6 +38,12 @@ describe('complete walkthrough', () => {
       let view = { yaw: Math.PI, pitch: 0.2 };
       try {
         for (const stop of [...stops, ...stops.toReversed()]) {
+          const entryStairId = destinationRoute(
+            compiled,
+            world.player,
+            stop.target,
+            'openable',
+          )?.stairIds.at(-1);
           const request = {
             id: crypto.randomUUID(),
             target: stop.target,
@@ -106,7 +112,7 @@ describe('complete walkthrough', () => {
             compiled.doors.filter((door) => door.open),
             stop.label,
           ).toEqual([]);
-          const facing = arrivalView(compiled, stop.target, stop.lookAt, entryDoorId);
+          const facing = arrivalView(compiled, stop.target, stop.lookAt, entryDoorId, entryStairId);
           expect(facing, stop.label).not.toBeNull();
           const camera = new PerspectiveCamera(65, 1.6, 0.08, 200);
           camera.position.set(world.feet.x, world.feet.y + 1.62, world.feet.z);
