@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Armchair,
+  Camera,
   DoorOpen,
   Footprints,
   Globe2,
@@ -20,6 +21,7 @@ import { useNavigation } from '@/shared/navigation/navigation-store';
 import { EditHistory } from '@/components/editor/edit-history';
 import { useFurnishings } from '@/shared/editor/use-furnishings';
 import { SavedActions } from '@/components/editor/saved-actions';
+import { useCapture } from '@/shared/scene/capture';
 
 export function StudioHeader({
   openNewHome,
@@ -44,6 +46,7 @@ export function StudioHeader({
   } = useProject();
   const [open, setOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const capturing = useCapture((state) => state.pending || state.capturing);
   const { furnishing, complete } = useFurnishings();
   const panel = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -147,6 +150,16 @@ export function StudioHeader({
               </div>
               <SavedActions key={`actions:${projectEpoch}`} />
               <div className="house-actions">
+                <button
+                  disabled={capturing}
+                  onClick={() => {
+                    useCapture.getState().request();
+                    setOpen(false);
+                  }}
+                >
+                  <Camera size={16} />
+                  {capturing ? 'Saving view…' : 'Save current view'}
+                </button>
                 <button
                   disabled={furnishing}
                   onClick={() => {

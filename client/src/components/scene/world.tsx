@@ -16,6 +16,7 @@ import { EntranceCamera } from '@/components/entrance/entrance-camera';
 import { ActionEvents } from '@/components/scene/action-events';
 import { useExperience } from '@/shared/scene/experience-store';
 import { exteriorUpgradeCommands } from '@/shared/editor/exterior-upgrade';
+import { SceneCapture } from '@/components/scene/capture';
 
 function SceneReady() {
   const setReady = useProject((state) => state.setSceneReady);
@@ -57,6 +58,7 @@ export function World() {
         <Selection>
           <PhysicsRuntime />
           <Lighting />
+          <SceneCapture />
           <Building />
           <Furniture />
           <ArchitecturalDetails />
