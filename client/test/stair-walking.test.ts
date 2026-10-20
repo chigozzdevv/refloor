@@ -5,6 +5,7 @@ import { compileBuilding } from '@refloor/engine';
 import { createHouse } from '@refloor/catalogue/houses';
 import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
 import { StairWalker, stairAssist } from '@/shared/navigation/stair-assist';
+import { navigationPace } from '@/shared/navigation/pacing';
 
 beforeAll(initializePhysics);
 const houses = [
@@ -39,7 +40,10 @@ describe.each(houses)('stair walking in $name', (building) => {
       const landing = world.feet;
       for (let frame = 0; frame < 60; frame++) {
         expect(walker.step(world, forward, yaw, 1 / 60)).toBeNull();
-        world.step({ x: -Math.sin(yaw) * 1.65, z: -Math.cos(yaw) * 1.65 }, 1 / 60);
+        world.step(
+          { x: -Math.sin(yaw) * navigationPace.walk, z: -Math.cos(yaw) * navigationPace.walk },
+          1 / 60,
+        );
       }
       expect(Math.hypot(world.feet.x - landing.x, world.feet.z - landing.z)).toBeGreaterThan(0.7);
       expect(world.player.floorId).toBe(ascending ? stair.upper.floorId : stair.lower.floorId);

@@ -1,5 +1,6 @@
 import type { Point3 } from '@refloor/engine';
 import type { CharacterWorld } from '@/shared/navigation/physics-world';
+import { journeyPace, navigationPace } from '@/shared/navigation/pacing';
 
 export type Journey = {
   points: Point3[];
@@ -29,12 +30,11 @@ export function stepJourney(world: CharacterWorld, journey: Journey, delta: numb
   }
   const distance = Math.hypot(point.x - feet.x, point.z - feet.z),
     last = journey.points.at(-1)!,
-    remaining = Math.hypot(last.x - feet.x, last.z - feet.z, last.y - feet.y),
-    stairs = Math.abs(point.y - feet.y) > 0.08;
+    remaining = Math.hypot(last.x - feet.x, last.z - feet.z, last.y - feet.y);
   journey.speed = Math.min(
-    stairs ? 1.35 : 2.1,
-    journey.speed + dt * 3,
-    Math.max(0.3, Math.sqrt(remaining * 3)),
+    journeyPace(world.compiled, feet, point),
+    journey.speed + dt * navigationPace.acceleration,
+    Math.max(0.3, Math.sqrt(remaining * navigationPace.braking)),
   );
   const speed = Math.min(journey.speed, distance / Math.max(dt, 1 / 60)),
     x = distance > 0.0001 ? ((point.x - feet.x) / distance) * speed : 0,

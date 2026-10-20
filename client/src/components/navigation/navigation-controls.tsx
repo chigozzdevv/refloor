@@ -26,6 +26,7 @@ import {
   takeSceneView,
 } from '@/shared/scene/view';
 import { resizeOrbitCamera } from '@/shared/scene/orbit-framing';
+import { navigationPace } from '@/shared/navigation/pacing';
 
 export function NavigationControls() {
   const { camera, gl, size } = useThree(),
@@ -411,7 +412,7 @@ export function NavigationControls() {
         forward.current.normalize();
         right.current.crossVectors(forward.current, new Vector3(0, 1, 0));
         const length = Math.max(1, Math.hypot(f, r)),
-          speed = keys.has('shift') ? 2.5 : 1.65;
+          speed = keys.has('shift') ? navigationPace.fastWalk : navigationPace.walk;
         const x = ((forward.current.x * f + right.current.x * r) / length) * speed,
           z = ((forward.current.z * f + right.current.z * r) / length) * speed;
         world.step({ x, z }, dt);
