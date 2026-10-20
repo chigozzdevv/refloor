@@ -34,7 +34,7 @@ export function lightGroups(scene: Object3D, position: Vector3) {
   return [...groups.values()];
 }
 
-export function chooseLightGroups(
+export function chooseShadowGroups(
   groups: LightGroup[],
   options: {
     maxTextures: number;
@@ -45,6 +45,7 @@ export function chooseLightGroups(
     recentlyPowered?: Set<string>;
   },
 ) {
+  // Reserve texture units for PBR maps, transmission, the environment and sunlight shadows.
   const budget = Math.max(0, Math.min(4, options.maxTextures - 12));
   const score = (group: LightGroup) =>
     (group.id === options.selectedId ? -2000 : 0) +
@@ -61,4 +62,16 @@ export function chooseLightGroups(
       remaining -= group.lights.length;
     }
   return chosen;
+}
+
+export function applyShadowBudget(groups: LightGroup[], chosen: Set<string>) {
+  let changed = false;
+  for (const group of groups)
+    for (const light of group.lights) {
+      const shadow = chosen.has(group.id);
+      if (light.castShadow !== shadow) changed = true;
+      light.visible = true;
+      light.castShadow = shadow;
+    }
+  return changed;
 }

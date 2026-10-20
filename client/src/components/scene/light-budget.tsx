@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useProject } from '@/shared/scene/scene-store';
-import { chooseLightGroups, lightGroups } from '@/shared/scene/light-budget';
+import { applyShadowBudget, chooseShadowGroups, lightGroups } from '@/shared/scene/light-budget';
 import { invalidateShadows } from '@/shared/scene/shadow-updates';
 
 export function LightBudget() {
@@ -27,7 +27,7 @@ export function LightBudget() {
     for (const [id, until] of recentlyPowered.current)
       if (until < now) recentlyPowered.current.delete(id);
     present.current = new Set(groups.map((group) => group.id));
-    const chosen = chooseLightGroups(groups, {
+    const chosen = chooseShadowGroups(groups, {
       maxTextures: gl.capabilities.maxTextures,
       exterior,
       floorId: state.floorId,
@@ -35,15 +35,7 @@ export function LightBudget() {
       ...(state.selection?.kind === 'object' ? { selectedId: state.selection.id } : {}),
       recentlyPowered: new Set(recentlyPowered.current.keys()),
     });
-    let changed = false;
-    for (const group of groups)
-      for (const light of group.lights) {
-        const active = chosen.has(group.id);
-        if (light.visible !== active || light.castShadow !== active) changed = true;
-        light.visible = active;
-        light.castShadow = active;
-      }
-    if (changed) invalidateShadows();
+    if (applyShadowBudget(groups, chosen)) invalidateShadows();
     previous.current = chosen;
   }, -1);
   return null;

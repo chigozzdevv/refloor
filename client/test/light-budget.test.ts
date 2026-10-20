@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Group, PointLight, SpotLight, Vector3 } from 'three';
-import { chooseLightGroups, lightGroups } from '@/shared/scene/light-budget';
+import { applyShadowBudget, chooseShadowGroups, lightGroups } from '@/shared/scene/light-budget';
 
 function litScene() {
   const scene = new Group();
@@ -30,10 +30,10 @@ function litScene() {
   return scene;
 }
 
-describe('physical local light budget', () => {
-  it('keeps all powered fixtures within the fragment texture budget and both wall beams together', () => {
+describe('local light shadow budget', () => {
+  it('keeps shadow samplers within the fragment texture budget and both wall beams together', () => {
     const groups = lightGroups(litScene(), new Vector3(5, 1.8, -1));
-    const chosen = chooseLightGroups(groups, {
+    const chosen = chooseShadowGroups(groups, {
       maxTextures: 16,
       exterior: true,
       floorId: 'ground',
@@ -52,7 +52,7 @@ describe('physical local light budget', () => {
   it('prioritizes the occupied storey indoors and retains nearby choices across small camera movements', () => {
     const scene = litScene();
     const groups = lightGroups(scene, new Vector3(8, 4.6, 2));
-    const chosen = chooseLightGroups(groups, {
+    const chosen = chooseShadowGroups(groups, {
       maxTextures: 16,
       exterior: false,
       floorId: 'first',
@@ -60,7 +60,7 @@ describe('physical local light budget', () => {
     });
     expect(['pendant-3', 'pendant-4', 'pendant-5'].every((id) => chosen.has(id))).toBe(true);
     expect([...chosen].some((id) => id.startsWith('wall-'))).toBe(false);
-    const moved = chooseLightGroups(lightGroups(scene, new Vector3(8.02, 4.6, 2.02)), {
+    const moved = chooseShadowGroups(lightGroups(scene, new Vector3(8.02, 4.6, 2.02)), {
       maxTextures: 16,
       exterior: false,
       floorId: 'first',
@@ -69,15 +69,15 @@ describe('physical local light budget', () => {
     expect(moved).toEqual(chosen);
   });
 
-  it('shows a selected or newly powered fixture without taking unrelated indoor slots', () => {
+  it('prioritizes shadows on selected or newly powered fixtures without taking unrelated indoor slots', () => {
     const groups = lightGroups(litScene(), new Vector3(5, 1.8, -1));
-    const baseline = chooseLightGroups(groups, {
+    const baseline = chooseShadowGroups(groups, {
       maxTextures: 16,
       exterior: true,
       floorId: 'ground',
       previous: new Set(),
     });
-    const selected = chooseLightGroups(groups, {
+    const selected = chooseShadowGroups(groups, {
       maxTextures: 16,
       exterior: true,
       floorId: 'ground',
@@ -85,7 +85,7 @@ describe('physical local light budget', () => {
       selectedId: 'flood-1',
     });
     expect(selected.has('flood-1')).toBe(true);
-    const powered = chooseLightGroups(groups, {
+    const powered = chooseShadowGroups(groups, {
       maxTextures: 16,
       exterior: true,
       floorId: 'ground',
@@ -93,7 +93,7 @@ describe('physical local light budget', () => {
       recentlyPowered: new Set(['flood-1']),
     });
     expect(powered.has('flood-1')).toBe(true);
-    const indoors = chooseLightGroups(groups, {
+    const indoors = chooseShadowGroups(groups, {
       maxTextures: 16,
       exterior: false,
       floorId: 'first',
@@ -107,7 +107,7 @@ describe('physical local light budget', () => {
   it('reserves room for PBR textures and respects smaller device budgets', () => {
     const groups = lightGroups(litScene(), new Vector3(5, 1.8, -1));
     for (const maxTextures of [8, 12, 14, 16, 32]) {
-      const chosen = chooseLightGroups(groups, {
+      const chosen = chooseShadowGroups(groups, {
         maxTextures,
         exterior: true,
         floorId: 'ground',
@@ -119,5 +119,48 @@ describe('physical local light budget', () => {
           .reduce((sum, group) => sum + group.lights.length, 0),
       ).toBeLessThanOrEqual(Math.max(0, Math.min(4, maxTextures - 12)));
     }
+  });
+
+  it('keeps every powered light illuminating as the camera, storey and selection change', () => {
+    const scene = litScene(),
+      output = scene.children.map((child) => (child as PointLight).intensity);
+    let previous = new Set<string>();
+    for (const pose of [
+      { position: new Vector3(5, 1.8, -1), exterior: true, floorId: 'ground' },
+      { position: new Vector3(8, 4.6, 2), exterior: false, floorId: 'first' },
+      { position: new Vector3(0, 1.8, 2), exterior: false, floorId: 'ground' },
+    ]) {
+      const groups = lightGroups(scene, pose.position),
+        chosen = chooseShadowGroups(groups, {
+          ...pose,
+          maxTextures: 16,
+          previous,
+          selectedId: 'flood-1',
+        });
+      applyShadowBudget(groups, chosen);
+      expect(scene.children.every((light) => light.visible)).toBe(true);
+      expect(scene.children.map((light) => (light as PointLight).intensity)).toEqual(output);
+      expect(scene.children.filter((light) => light.castShadow)).toHaveLength(4);
+      expect(applyShadowBudget(groups, chosen)).toBe(false);
+      previous = chosen;
+    }
+  });
+
+  it('preserves illumination when no local shadow samplers are available', () => {
+    const scene = litScene(),
+      groups = lightGroups(scene, new Vector3(5, 1.8, -1)),
+      chosen = chooseShadowGroups(groups, {
+        maxTextures: 12,
+        exterior: true,
+        floorId: 'ground',
+        previous: new Set(),
+      });
+    for (const group of groups)
+      for (const light of group.lights) {
+        light.visible = false;
+        light.castShadow = true;
+      }
+    expect(applyShadowBudget(groups, chosen)).toBe(true);
+    expect(scene.children.every((light) => light.visible && !light.castShadow)).toBe(true);
   });
 });
