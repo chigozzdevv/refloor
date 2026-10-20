@@ -19,6 +19,14 @@ import {
   spatialPlacementSchema,
 } from '@refloor/server/shared/planning/spatial-edit';
 
+import {
+  siteSurfaceId,
+  siteSurfaceLabels,
+  siteSurfaceMaterial,
+  siteSurfaceSlot,
+  siteSurfaceSlotSchema,
+} from '@refloor/scene/site-material';
+
 const vector = z.strictObject({ x: z.number(), y: z.number(), z: z.number() });
 export const languageActionSchema = z.strictObject({
   action: z.enum([
@@ -72,6 +80,7 @@ export type LanguagePlan = z.input<typeof languagePlanSchema>;
 
 export function chatTargetExists(building: Building, target: ChatTarget): boolean {
   if (target.side && target.kind !== 'wall') return false;
+  if (target.kind === 'surface') return siteSurfaceSlot(building, target.id) !== null;
   if (target.kind === 'roof') return target.id === building.roof.id;
   return target.kind === 'house'
     ? target.id === building.id
@@ -124,6 +133,13 @@ export function languageContext(input: LanguageEditRequest) {
               )?.id ?? null),
     savedActions: input.building.rules ?? [],
     roof: input.building.roof,
+    siteSurfaces: siteSurfaceSlotSchema.options.map((slot) => ({
+      id: siteSurfaceId(input.building, slot),
+      slot,
+      label: siteSurfaceLabels[slot],
+      material: siteSurfaceMaterial(input.building, slot),
+      actions: ['color', 'finish', 'restore'],
+    })),
     supportedEvents: [
       'door opens/closes',
       'device powers on/off',
@@ -254,10 +270,17 @@ export function languageCommands(
         ),
       );
     } else if (action.action === 'color' || action.action === 'finish') {
+      const siteSlot = siteSurfaceSlot(building, action.targetId);
       const exteriorWalls = building.floors.flatMap((floor) =>
         floor.walls.filter((item) => wallExteriorSide(floor, item) !== null),
       );
-      if (wholeHouse) {
+      if (siteSlot)
+        commands.push({
+          type: 'set-site-material',
+          surfaceId: action.targetId,
+          material: material(siteSurfaceMaterial(building, siteSlot)),
+        });
+      else if (wholeHouse) {
         if (action.surface === 'roof')
           commands.push({
             type: 'set-roof-material',

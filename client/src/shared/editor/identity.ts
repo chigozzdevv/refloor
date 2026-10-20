@@ -1,5 +1,6 @@
 import type { Building, Floor, Position } from '@refloor/scene';
 import type { ChatTarget } from '@refloor/scene/chat';
+import { siteSurfaceLabels, siteSurfaceSlot } from '@refloor/scene/site-material';
 
 function nearbyRooms(floor: Floor, point: Pick<Position, 'x' | 'z'>) {
   return floor.rooms
@@ -16,6 +17,10 @@ function nearbyRooms(floor: Floor, point: Pick<Position, 'x' | 'z'>) {
 
 export function targetIdentity(building: Building, target: ChatTarget, point?: Position) {
   if (target.kind === 'house') return { label: 'House', location: building.name };
+  if (target.kind === 'surface') {
+    const slot = siteSurfaceSlot(building, target.id);
+    return slot ? { label: siteSurfaceLabels[slot], location: 'Exterior' } : null;
+  }
   if (target.kind === 'roof' && building.roof.id === target.id)
     return { label: 'Roof', location: 'Exterior' };
   if (target.kind === 'object') {

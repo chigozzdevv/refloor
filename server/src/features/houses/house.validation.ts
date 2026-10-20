@@ -1,21 +1,22 @@
 import { validateBuildingAssets, validateCommandTuning } from '@refloor/catalogue';
 import type { Building, SceneCommand } from '@refloor/scene';
 import { ApiError } from '@refloor/server/shared/http/errors';
-import { createEditMemory } from '@refloor/scene/edit-memory';
+import { captureElements, createEditMemory } from '@refloor/scene/edit-memory';
 import type { EditMemory } from '@refloor/scene/edit-memory';
 
 export function validateMemory(building: Building, memory?: EditMemory): EditMemory {
   if (memory && memory.sceneId !== building.id)
     throw new ApiError(422, 'CONTEXT_MISMATCH', 'Edit context belongs to another house.');
   const context = memory ?? createEditMemory(building);
-  if (context.originals.some((item) => item.kind === 'roof' && item.id === building.roof.id))
-    return context;
+  const known = new Set(context.originals.map((item) => `${item.kind}:${item.id}`)),
+    missing = captureElements(building).filter(
+      (item) =>
+        (item.kind === 'roof' || item.kind === 'surface') && !known.has(`${item.kind}:${item.id}`),
+    );
+  if (!missing.length) return context;
   return {
     ...context,
-    originals: [
-      ...context.originals,
-      { kind: 'roof', id: building.roof.id, value: structuredClone(building.roof) },
-    ],
+    originals: [...context.originals, ...missing],
   };
 }
 

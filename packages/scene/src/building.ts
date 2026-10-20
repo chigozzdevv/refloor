@@ -3,6 +3,7 @@ import { floorSchema } from '@refloor/scene/floor';
 import { materialSchema } from '@refloor/scene/material';
 import { sceneObjectSchema } from '@refloor/scene/object';
 import { sceneRuleSchema } from '@refloor/scene/rules';
+import { siteMaterialsSchema } from '@refloor/scene/site-material';
 import {
   coordinateSchema,
   dimensionSchema,
@@ -43,6 +44,7 @@ export const buildingModelSchema = z.strictObject({
   objects: z.array(sceneObjectSchema),
   rules: z.array(sceneRuleSchema).max(32).optional(),
   roof: roofSchema,
+  siteMaterials: siteMaterialsSchema.optional(),
 });
 
 export type Building = z.infer<typeof buildingModelSchema>;

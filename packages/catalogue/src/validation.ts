@@ -22,6 +22,7 @@ export function validateBuildingAssets(building: Building) {
       ]),
     ]),
     building.roof.material,
+    ...Object.values(building.siteMaterials ?? {}).filter((material) => material !== undefined),
     ...building.objects.flatMap((object) => Object.values(object.materials)),
     ...building.stairs.map((stair) => stair.material),
   ];

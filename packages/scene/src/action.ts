@@ -19,6 +19,11 @@ export const sceneActionSchema = z.discriminatedUnion('type', [
   }),
   z.strictObject({ type: z.literal('remove-object'), objectId: idSchema }),
   z.strictObject({
+    type: z.literal('set-site-material'),
+    surfaceId: idSchema,
+    material: materialSchema.nullable(),
+  }),
+  z.strictObject({
     type: z.literal('translate-object'),
     objectId: idSchema,
     delta: z.strictObject({ x: coordinateSchema, y: coordinateSchema, z: coordinateSchema }),

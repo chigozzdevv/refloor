@@ -1,6 +1,6 @@
 import { undoRevision } from '@refloor/scene';
 import type { Building } from '@refloor/scene';
-import { createEditMemory, editMemorySchema } from '@refloor/scene/edit-memory';
+import { captureElements, createEditMemory, editMemorySchema } from '@refloor/scene/edit-memory';
 import type { EditMemory } from '@refloor/scene/edit-memory';
 import type { HistoryRecord } from '@/shared/editor/history';
 
@@ -56,11 +56,12 @@ export function restoreEditMemory(building: Building, input?: unknown, past: His
   if (input === undefined) return recoverEditMemory(building, past);
   const memory = editMemorySchema.parse(input);
   if (memory.sceneId !== building.id) throw new Error('Edit context belongs to another house.');
-  if (!memory.originals.some((item) => item.kind === 'roof' && item.id === building.roof.id))
-    memory.originals.push({
-      kind: 'roof',
-      id: building.roof.id,
-      value: structuredClone(building.roof),
-    });
+  const known = new Set(memory.originals.map((item) => `${item.kind}:${item.id}`));
+  memory.originals.push(
+    ...captureElements(building).filter(
+      (item) =>
+        (item.kind === 'roof' || item.kind === 'surface') && !known.has(`${item.kind}:${item.id}`),
+    ),
+  );
   return memory;
 }

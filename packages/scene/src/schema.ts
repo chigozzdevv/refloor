@@ -2,6 +2,7 @@ import { buildingModelSchema } from '@refloor/scene/building';
 import type { Footprint } from '@refloor/scene/primitives';
 import { wallExteriorSide } from '@refloor/scene/wall-exterior';
 import { eventTargetExists } from '@refloor/scene/rules';
+import { siteSurfaceSlot } from '@refloor/scene/site-material';
 
 const epsilon = 1e-6;
 
@@ -177,6 +178,8 @@ export const buildingSchema = buildingModelSchema.superRefine((building, context
       action.type === 'add-object' ? [action.object.id] : [],
     );
     for (const action of rule.actions) {
+      if (action.type === 'set-site-material' && !siteSurfaceSlot(building, action.surfaceId))
+        report('Saved action refers to a missing exterior surface', [...rp, 'actions']);
       if (
         action.type === 'set-light' ||
         action.type === 'adjust-light-intensity' ||

@@ -1,10 +1,15 @@
 import { useEffect, useMemo } from 'react';
 import { RoundedBox } from '@react-three/drei';
 import { BufferGeometry, Float32BufferAttribute, Quaternion, Vector3 } from 'three';
+import type { MeshPhysicalMaterial } from 'three';
 import type { CompiledBuilding, Point3 } from '@refloor/engine';
 import { useProject } from '@/shared/scene/scene-store';
 import { exteriorLayout } from '@/shared/scene/exterior';
 import { Compound } from '@/components/scene/compound';
+import { siteSurfaceMaterial } from '@refloor/scene/site-material';
+import { useSurface } from '@/shared/scene/asset-loader';
+import { applyMetricUVs } from '@/shared/scene/metric-uv';
+import { SiteBox, SiteSurface } from '@/components/scene/site-surface';
 
 function RoofSeams({
   x,
@@ -47,12 +52,12 @@ function Beam({
   from,
   to,
   thickness = 0.055,
-  color = '#4d514d',
+  material,
 }: {
   from: Point3;
   to: Point3;
   thickness?: number;
-  color?: string;
+  material: MeshPhysicalMaterial;
 }) {
   const centre = new Vector3(from.x + to.x, from.y + to.y, from.z + to.z).multiplyScalar(0.5);
   const direction = new Vector3(to.x - from.x, to.y - from.y, to.z - from.z);
@@ -65,9 +70,10 @@ function Beam({
       position={centre}
       quaternion={new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), rotation.axis)}
       castShadow
+      material={material}
+      onUpdate={(mesh) => applyMetricUVs(mesh.geometry)}
     >
       <boxGeometry args={[thickness, rotation.length, thickness]} />
-      <meshStandardMaterial color={color} roughness={0.55} metalness={0.2} />
     </mesh>
   );
 }
@@ -85,7 +91,19 @@ export function ExteriorModel({ compiled }: { compiled: CompiledBuilding }) {
     roofDepth = top.depth + roof.overhang * 2;
   const roofX = top.x + top.width / 2,
     roofZ = top.z + top.depth / 2;
-  const trim = '#555c59';
+  const paving = useSurface(siteSurfaceMaterial(compiled.building, 'paving')),
+    plinth = useSurface(siteSurfaceMaterial(compiled.building, 'plinth')),
+    parapet = useSurface(siteSurfaceMaterial(compiled.building, 'parapet')),
+    roofTrim = useSurface(siteSurfaceMaterial(compiled.building, 'roof-trim')),
+    canopy = useSurface(siteSurfaceMaterial(compiled.building, 'canopy')),
+    canopyUnderside = useSurface(
+      compiled.building.siteMaterials?.canopy ?? {
+        ...siteSurfaceMaterial(compiled.building, 'canopy'),
+        color: '#b49b71',
+        roughness: 0.7,
+        metalness: 0,
+      },
+    );
   return (
     <group>
       <Compound compiled={compiled} />
@@ -97,79 +115,80 @@ export function ExteriorModel({ compiled }: { compiled: CompiledBuilding }) {
         <planeGeometry args={[200, 200]} />
         <meshStandardMaterial color="#69735a" roughness={1} />
       </mesh>
-      {site.paving.map((paver, index) => (
-        <group
-          key={paver.id}
-          position={[paver.position.x, paver.position.y, paver.position.z]}
-          rotation={[0, paver.rotation, 0]}
-        >
-          <RoundedBox
-            args={[paver.width, paver.height, paver.depth]}
-            radius={0.015}
-            smoothness={2}
-            receiveShadow
-            castShadow
+      <SiteSurface buildingId={compiled.building.id} slot="paving">
+        {site.paving.map((paver) => (
+          <group
+            key={paver.id}
+            position={[paver.position.x, paver.position.y, paver.position.z]}
+            rotation={[0, paver.rotation, 0]}
           >
-            <meshStandardMaterial color={index ? '#b8b7aa' : '#a6a699'} roughness={0.92} />
-          </RoundedBox>
-          {Array.from({ length: Math.floor(paver.depth / 0.75) }, (_, row) => (
-            <mesh
-              key={row}
-              position={[0, paver.height / 2 + 0.001, -paver.depth / 2 + (row + 1) * 0.75]}
-            >
-              <boxGeometry args={[paver.width - 0.03, 0.002, 0.008]} />
-              <meshStandardMaterial color="#8a8d80" roughness={1} />
-            </mesh>
-          ))}
-        </group>
-      ))}
-      {site.plinth.map((segment) => (
-        <mesh
-          key={segment.id}
-          position={[segment.position.x, segment.position.y, segment.position.z]}
-          rotation={[0, segment.rotation, 0]}
-          castShadow
-          receiveShadow
-        >
-          <boxGeometry args={[segment.width, segment.height, segment.depth]} />
-          <meshStandardMaterial color="#b7b7aa" roughness={0.9} />
-        </mesh>
-      ))}
+            <RoundedBox
+              args={[paver.width, paver.height, paver.depth]}
+              radius={0.015}
+              smoothness={2}
+              receiveShadow
+              castShadow
+              material={paving}
+              onUpdate={(mesh) => applyMetricUVs(mesh.geometry)}
+            ></RoundedBox>
+            {Array.from({ length: Math.floor(paver.depth / 0.75) }, (_, row) => (
+              <mesh
+                key={row}
+                position={[0, paver.height / 2 + 0.001, -paver.depth / 2 + (row + 1) * 0.75]}
+              >
+                <boxGeometry args={[paver.width - 0.03, 0.002, 0.008]} />
+                <meshStandardMaterial color="#8a8d80" roughness={1} />
+              </mesh>
+            ))}
+          </group>
+        ))}
+      </SiteSurface>
+      <SiteSurface buildingId={compiled.building.id} slot="plinth">
+        {site.plinth.map((segment) => (
+          <SiteBox
+            key={segment.id}
+            position={[segment.position.x, segment.position.y, segment.position.z]}
+            rotation={[0, segment.rotation, 0]}
+            size={[segment.width, segment.height, segment.depth]}
+            material={plinth}
+          />
+        ))}
+      </SiteSurface>
       {roof.kind === 'flat' ? (
         [-1, 1].map((side) => (
           <group key={side}>
-            <mesh
-              position={[
-                roofX,
-                site.eaves + site.top.slabThickness + 0.12,
-                roofZ + side * (roofDepth / 2 - 0.09),
-              ]}
-              castShadow
-              receiveShadow
-            >
-              <boxGeometry args={[roofWidth, 0.26, 0.18]} />
-              <meshStandardMaterial color="#d1d0c4" roughness={0.9} />
-            </mesh>
-            <mesh
-              position={[
-                roofX + side * (roofWidth / 2 - 0.09),
-                site.eaves + site.top.slabThickness + 0.12,
-                roofZ,
-              ]}
-              castShadow
-              receiveShadow
-            >
-              <boxGeometry args={[0.18, 0.26, roofDepth]} />
-              <meshStandardMaterial color="#d1d0c4" roughness={0.9} />
-            </mesh>
-            <mesh position={[roofX, site.height, roofZ + side * (roofDepth / 2 - 0.09)]} castShadow>
-              <boxGeometry args={[roofWidth + 0.04, 0.04, 0.23]} />
-              <meshStandardMaterial color={trim} roughness={0.5} metalness={0.3} />
-            </mesh>
-            <mesh position={[roofX + side * (roofWidth / 2 - 0.09), site.height, roofZ]} castShadow>
-              <boxGeometry args={[0.23, 0.04, roofDepth + 0.04]} />
-              <meshStandardMaterial color={trim} roughness={0.5} metalness={0.3} />
-            </mesh>
+            <SiteSurface buildingId={compiled.building.id} slot="parapet">
+              <SiteBox
+                position={[
+                  roofX,
+                  site.eaves + site.top.slabThickness + 0.12,
+                  roofZ + side * (roofDepth / 2 - 0.09),
+                ]}
+                size={[roofWidth, 0.26, 0.18]}
+                material={parapet}
+              />
+              <SiteBox
+                position={[
+                  roofX + side * (roofWidth / 2 - 0.09),
+                  site.eaves + site.top.slabThickness + 0.12,
+                  roofZ,
+                ]}
+                size={[0.18, 0.26, roofDepth]}
+                material={parapet}
+              />
+            </SiteSurface>
+            <SiteSurface buildingId={compiled.building.id} slot="roof-trim">
+              <SiteBox
+                position={[roofX, site.height, roofZ + side * (roofDepth / 2 - 0.09)]}
+                size={[roofWidth + 0.04, 0.04, 0.23]}
+                material={roofTrim}
+              />
+              <SiteBox
+                position={[roofX + side * (roofWidth / 2 - 0.09), site.height, roofZ]}
+                size={[0.23, 0.04, roofDepth + 0.04]}
+                material={roofTrim}
+              />
+            </SiteSurface>
           </group>
         ))
       ) : (
@@ -184,51 +203,64 @@ export function ExteriorModel({ compiled }: { compiled: CompiledBuilding }) {
               rise={site.height - site.eaves}
             />
           )}
-          {[-1, 1].map((side) => (
-            <group key={side}>
-              <Beam
-                from={{
-                  x: roofX + (side * roofWidth) / 2,
-                  y: site.eaves,
-                  z: roofZ - roofDepth / 2,
-                }}
-                to={{ x: roofX + (side * roofWidth) / 2, y: site.eaves, z: roofZ + roofDepth / 2 }}
-                thickness={0.12}
-              />
-              {[-1, 1].map((end) => (
+          <SiteSurface buildingId={compiled.building.id} slot="roof-trim">
+            {[-1, 1].map((side) => (
+              <group key={side}>
                 <Beam
-                  key={end}
                   from={{
                     x: roofX + (side * roofWidth) / 2,
                     y: site.eaves,
-                    z: roofZ + (end * roofDepth) / 2,
+                    z: roofZ - roofDepth / 2,
                   }}
-                  to={{ x: roofX, y: site.height, z: roofZ + (end * roofDepth) / 2 }}
-                  thickness={0.09}
+                  to={{
+                    x: roofX + (side * roofWidth) / 2,
+                    y: site.eaves,
+                    z: roofZ + roofDepth / 2,
+                  }}
+                  thickness={0.12}
+                  material={roofTrim}
                 />
-              ))}
-            </group>
-          ))}
-          <Beam
-            from={{ x: roofX, y: site.height, z: roofZ - roofDepth / 2 }}
-            to={{ x: roofX, y: site.height, z: roofZ + roofDepth / 2 }}
-            thickness={0.1}
-          />
+                {[-1, 1].map((end) => (
+                  <Beam
+                    key={end}
+                    from={{
+                      x: roofX + (side * roofWidth) / 2,
+                      y: site.eaves,
+                      z: roofZ + (end * roofDepth) / 2,
+                    }}
+                    to={{ x: roofX, y: site.height, z: roofZ + (end * roofDepth) / 2 }}
+                    thickness={0.09}
+                    material={roofTrim}
+                  />
+                ))}
+              </group>
+            ))}
+            <Beam
+              from={{ x: roofX, y: site.height, z: roofZ - roofDepth / 2 }}
+              to={{ x: roofX, y: site.height, z: roofZ + roofDepth / 2 }}
+              thickness={0.1}
+              material={roofTrim}
+            />
+          </SiteSurface>
         </>
       )}
-      <group
-        position={[site.door.centre.x, site.ground.elevation, site.door.centre.z]}
-        rotation={[0, site.rotation, 0]}
-      >
-        <mesh position={[0, site.door.height + 0.25, 0.56]} castShadow receiveShadow>
-          <boxGeometry args={[site.door.width + 1.1, 0.1, 1.2]} />
-          <meshStandardMaterial color={trim} roughness={0.5} metalness={0.25} />
-        </mesh>
-        <mesh position={[0, site.door.height + 0.195, 0.5]}>
-          <boxGeometry args={[site.door.width + 0.85, 0.012, 0.8]} />
-          <meshStandardMaterial color="#b49b71" roughness={0.7} />
-        </mesh>
-      </group>
+      <SiteSurface buildingId={compiled.building.id} slot="canopy">
+        <group
+          position={[site.door.centre.x, site.ground.elevation, site.door.centre.z]}
+          rotation={[0, site.rotation, 0]}
+        >
+          <SiteBox
+            position={[0, site.door.height + 0.25, 0.56]}
+            size={[site.door.width + 1.1, 0.1, 1.2]}
+            material={canopy}
+          />
+          <SiteBox
+            position={[0, site.door.height + 0.195, 0.5]}
+            size={[site.door.width + 0.85, 0.012, 0.8]}
+            material={canopyUnderside}
+          />
+        </group>
+      </SiteSurface>
     </group>
   );
 }

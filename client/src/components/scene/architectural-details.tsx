@@ -9,6 +9,8 @@ import type { Group } from 'three';
 import { hiddenExterior } from '@/shared/scene/visibility';
 import { Exterior } from '@/components/scene/exterior';
 import { exteriorNormal } from '@/shared/scene/exterior';
+import { siteSurfaceMaterial } from '@refloor/scene/site-material';
+import { SiteBox, SiteSurface } from '@/components/scene/site-surface';
 
 function WallDetails({ floor, wall }: { floor: Floor; wall: Wall }) {
   const ref = useRef<Group>(null),
@@ -26,8 +28,11 @@ function WallDetails({ floor, wall }: { floor: Floor; wall: Wall }) {
   });
   const length = Math.hypot(wall.end.x - wall.start.x, wall.end.z - wall.start.z),
     angle = Math.atan2(-(wall.end.z - wall.start.z), wall.end.x - wall.start.x);
-  const material = useSurface(finishes.chalk),
-    wood = useSurface(finishes.oak);
+  const building = useProject((state) => state.compiled.building),
+    material = useSurface(finishes.chalk),
+    wood = useSurface(finishes.oak),
+    windowTrim = useSurface(siteSurfaceMaterial(building, 'window-trim')),
+    doorTrim = useSurface(siteSurfaceMaterial(building, 'door-trim'));
   const outward = exteriorNormal(wall, floor);
   const normalSign = outward
     ? Math.sign(outward.x * Math.sin(angle) + outward.z * Math.cos(angle))
@@ -100,24 +105,38 @@ function WallDetails({ floor, wall }: { floor: Floor; wall: Wall }) {
                 </mesh>
               </>
             )}
-            {opening.kind === 'window' && outward && (
-              <group position={[0, 0, normalSign * (wall.thickness / 2 + 0.025)]}>
-                {[-1, 1].map((side) => (
-                  <group key={side}>
-                    <mesh
-                      position={[side * (opening.width / 2 - 0.025), opening.height / 2, 0]}
-                      castShadow
-                    >
-                      <boxGeometry args={[0.055, opening.height + 0.045, 0.065]} />
-                      <meshStandardMaterial color="#424c4a" roughness={0.45} metalness={0.4} />
-                    </mesh>
-                    <mesh position={[0, side === 1 ? opening.height : 0, 0]} castShadow>
-                      <boxGeometry args={[opening.width + 0.045, 0.055, 0.065]} />
-                      <meshStandardMaterial color="#424c4a" roughness={0.45} metalness={0.4} />
-                    </mesh>
-                  </group>
-                ))}
-              </group>
+            {outward && (
+              <SiteSurface
+                buildingId={building.id}
+                slot={opening.kind === 'door' ? 'door-trim' : 'window-trim'}
+              >
+                <group position={[0, 0, normalSign * (wall.thickness / 2 + 0.025)]}>
+                  {[-1, 1].map((side) => (
+                    <group key={side}>
+                      <SiteBox
+                        position={[
+                          side * (opening.width / 2 + (opening.kind === 'door' ? 0.015 : -0.025)),
+                          opening.height / 2,
+                          0,
+                        ]}
+                        size={[0.055, opening.height + 0.045, 0.065]}
+                        material={opening.kind === 'door' ? doorTrim : windowTrim}
+                      />
+                      {(opening.kind === 'window' || side === 1) && (
+                        <SiteBox
+                          position={[
+                            0,
+                            side === 1 ? opening.height + (opening.kind === 'door' ? 0.015 : 0) : 0,
+                            0,
+                          ]}
+                          size={[opening.width + 0.045, 0.055, 0.065]}
+                          material={opening.kind === 'door' ? doorTrim : windowTrim}
+                        />
+                      )}
+                    </group>
+                  ))}
+                </group>
+              </SiteSurface>
             )}
           </group>
         );

@@ -1,11 +1,29 @@
 import type { Building } from '@refloor/scene';
 import type { Selection } from '@/shared/editor/editor-store';
 import { targetIdentity } from '@/shared/editor/identity';
+import { siteSurfaceSlot } from '@refloor/scene/site-material';
 
 export function selectedContext(building: Building, selection: Selection) {
   if (!selection) return null;
   const identity = targetIdentity(building, selection, selection.point);
   if (!identity) return null;
+  if (selection.kind === 'surface') {
+    const slot = siteSurfaceSlot(building, selection.id),
+      ground = [...building.floors].sort((a, b) => a.elevation - b.elevation)[0]!;
+    return {
+      ...identity,
+      position: selection.point ?? {
+        x: ground.footprint.x + ground.footprint.width / 2,
+        y: ground.elevation,
+        z: ground.footprint.z - 1,
+      },
+      suggestions:
+        slot === 'paving' || slot === 'plinth'
+          ? ['Marble finish', 'Brick finish']
+          : ['Change the colour', 'Restore original finish'],
+      object: null,
+    };
+  }
   if (selection.kind === 'roof') {
     const top = [...building.floors].sort((a, b) => b.elevation - a.elevation)[0]!;
     return {

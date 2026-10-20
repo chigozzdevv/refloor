@@ -3,6 +3,7 @@ import type { SceneCommand } from '@refloor/scene';
 import { commandTouches, snapshotFor } from '@refloor/scene/edit-memory';
 import type { ElementSnapshot } from '@refloor/scene/edit-memory';
 import type { LanguageEditRequest } from '@refloor/scene/chat';
+import { defaultSiteMaterial } from '@refloor/scene/site-material';
 
 function beforeCommand(
   current: ElementSnapshot | null,
@@ -57,6 +58,8 @@ function beforeCommand(
     else before.value.exteriorMaterial = inverse.material;
   } else if (before.kind === 'roof' && inverse.type === 'set-roof-material')
     before.value.material = inverse.material;
+  else if (before.kind === 'surface' && inverse.type === 'set-site-material')
+    before.value.material = inverse.material;
   else if (before.kind === 'floor' && inverse.type === 'set-room-floor-material')
     before.value.floorMaterial = inverse.material;
   else if (before.kind === 'door' && inverse.type === 'set-door')
@@ -97,6 +100,10 @@ function propertyOf(
       case 'source':
         return television?.source;
     }
+  } else if (snapshot.kind === 'surface') {
+    const material = snapshot.value.material ?? defaultSiteMaterial(snapshot.value.slot);
+    if (property === 'appearance') return material;
+    if (property === 'color') return material.color;
   } else if (snapshot.kind === 'door')
     return property === 'open' ? snapshot.value.state.open : undefined;
   else {
@@ -227,6 +234,22 @@ export function restoreElement(
           { type: 'set-television', objectId: id, state: { powered: television.state.powered } },
         ];
     }
+  } else if (saved.kind === 'surface') {
+    const savedMaterial = saved.value.material ?? defaultSiteMaterial(saved.value.slot),
+      currentMaterial =
+        current?.kind === 'surface'
+          ? (current.value.material ?? defaultSiteMaterial(current.value.slot))
+          : null;
+    return [
+      {
+        type: 'set-site-material',
+        surfaceId: id,
+        material:
+          property === 'color' && currentMaterial
+            ? { ...currentMaterial, color: savedMaterial.color }
+            : saved.value.material,
+      },
+    ];
   } else if (saved.kind === 'door' && (property === 'open' || property === 'all'))
     return [{ type: 'set-door', doorId: id, open: saved.value.state.open }];
   else if (saved.kind === 'wall' || saved.kind === 'floor' || saved.kind === 'roof') {

@@ -7,11 +7,12 @@ import { roofSchema } from '@refloor/scene/building';
 import { doorSchema, wallSchema } from '@refloor/scene/floor';
 import { roomSchema } from '@refloor/scene/room';
 import { revisionSchema } from '@refloor/scene/revision';
+import { siteSurfaceSlot, siteSurfaceSnapshotSchema, siteSurfaceSnapshots } from '@refloor/scene/site-material';
 import type { Building } from '@refloor/scene/building';
 import type { SceneCommand } from '@refloor/scene/command';
 
 export const editTargetSchema = z.strictObject({
-  kind: z.enum(['house', 'object', 'wall', 'floor', 'door', 'roof']),
+  kind: z.enum(['house', 'object', 'wall', 'floor', 'door', 'roof', 'surface']),
   side: z.literal('exterior').optional(),
   id: idSchema,
 });
@@ -22,6 +23,7 @@ export const elementSnapshotSchema = z
     z.strictObject({ kind: z.literal('floor'), id: idSchema, value: roomSchema }),
     z.strictObject({ kind: z.literal('roof'), id: idSchema, value: roofSchema }),
     z.strictObject({ kind: z.literal('door'), id: idSchema, value: doorSchema }),
+    z.strictObject({ kind: z.literal('surface'), id: idSchema, value: siteSurfaceSnapshotSchema }),
   ])
   .refine((snapshot) => snapshot.id === snapshot.value.id, 'Snapshot identity does not match');
 export const chatTurnSchema = z.strictObject({
@@ -71,6 +73,7 @@ export type EditTransition = EditMemory['transitions'][number];
 export function captureElements(building: Building): ElementSnapshot[] {
   return structuredClone([
     { kind: 'roof', id: building.roof.id, value: building.roof },
+    ...siteSurfaceSnapshots(building).map((value): ElementSnapshot => ({ kind: 'surface', id: value.id, value })),
     ...building.objects.map((value): ElementSnapshot => ({ kind: 'object', id: value.id, value })),
     ...building.floors.flatMap((floor) => [
       ...floor.rooms.map((value): ElementSnapshot => ({ kind: 'floor', id: value.id, value })),
@@ -127,6 +130,8 @@ export function recordChatTurn(memory: EditMemory, turn: ChatTurn): EditMemory {
 
 export function commandTouches(command: SceneCommand, target: EditTarget): boolean {
   if (target.kind === 'house') return true;
+  if (target.kind === 'surface')
+    return command.type === 'set-site-material' && command.surfaceId === target.id;
   if (command.type === 'set-rules')
     return (
       command.rules?.some((rule) => {
@@ -201,6 +206,16 @@ export function scopedEditMemory(memory: EditMemory, target: EditTarget): EditMe
 }
 
 export function snapshotFor(building: Building, target: EditTarget): ElementSnapshot | null {
+  if (target.kind === 'surface') {
+    const slot = siteSurfaceSlot(building, target.id);
+    return slot
+      ? structuredClone({
+          kind: 'surface',
+          id: target.id,
+          value: { id: target.id, slot, material: building.siteMaterials?.[slot] ?? null },
+        })
+      : null;
+  }
   if (target.kind === 'roof' && building.roof.id === target.id)
     return structuredClone({ kind: 'roof', id: target.id, value: building.roof });
   if (target.kind === 'object') {

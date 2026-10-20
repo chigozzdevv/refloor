@@ -12,6 +12,7 @@ import { conditionMatches, eventMatches, eventTargetExists } from '@refloor/scen
 import type { SceneEvent } from '@refloor/scene/rules';
 import { resolveRelativeCommand } from '@refloor/scene/relative-command';
 import type { ResolvedCommand } from '@refloor/scene/relative-command';
+import { siteSurfaceSlot } from '@refloor/scene/site-material';
 import { movePartition, setOpening } from '@refloor/scene/structural-command';
 
 function objectFor(building: Building, id: string): SceneObject {
@@ -22,6 +23,28 @@ function objectFor(building: Building, id: string): SceneObject {
 
 function execute(building: Building, command: ResolvedCommand): SceneCommand {
   switch (command.type) {
+    case 'set-site-material': {
+      const slot = siteSurfaceSlot(building, command.surfaceId);
+      if (!slot)
+        throw new SceneError('NOT_FOUND', `Exterior surface does not exist: ${command.surfaceId}`);
+      const inverse: SceneCommand = {
+        type: 'set-site-material',
+        surfaceId: command.surfaceId,
+        material: building.siteMaterials?.[slot]
+          ? structuredClone(building.siteMaterials[slot])
+          : null,
+      };
+      if (command.material === null) {
+        if (building.siteMaterials) {
+          delete building.siteMaterials[slot];
+          if (!Object.keys(building.siteMaterials).length) delete building.siteMaterials;
+        }
+      } else {
+        building.siteMaterials ??= {};
+        building.siteMaterials[slot] = structuredClone(command.material);
+      }
+      return inverse;
+    }
     case 'set-rules': {
       const inverse: SceneCommand = {
         type: 'set-rules',
