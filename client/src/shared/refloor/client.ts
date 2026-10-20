@@ -68,6 +68,8 @@ export async function request<T>(
 }
 
 let session: Promise<unknown> | null = null;
+let sessionChange: Promise<unknown> | null = null;
+let sessionEpoch = 0;
 async function ensureSession() {
   session ??= request('/sessions', sessionReadySchema, 'POST').catch((error: unknown) => {
     session = null;
@@ -77,13 +79,37 @@ async function ensureSession() {
 }
 
 export async function authenticated<T>(run: () => Promise<T>): Promise<T> {
+  while (sessionChange) await sessionChange;
+  const epoch = sessionEpoch;
   await ensureSession();
   try {
     return await run();
   } catch (error) {
-    if (!(error instanceof ProjectApiError) || error.code !== 'SESSION_REQUIRED') throw error;
+    if (
+      !(error instanceof ProjectApiError) ||
+      error.code !== 'SESSION_REQUIRED' ||
+      epoch !== sessionEpoch
+    )
+      throw error;
     session = null;
     await ensureSession();
     return run();
+  }
+}
+
+export async function replaceSession<T>(run: () => Promise<T>): Promise<T> {
+  while (sessionChange) await sessionChange;
+  sessionEpoch++;
+  const change = (async () => {
+    await session?.catch(() => undefined);
+    const result = await run();
+    session = Promise.resolve();
+    return result;
+  })();
+  sessionChange = change;
+  try {
+    return await change;
+  } finally {
+    if (sessionChange === change) sessionChange = null;
   }
 }

@@ -15,6 +15,7 @@ export function SavedSpaces() {
     loading,
     saving,
     opening,
+    recovering,
     error,
     listError,
     conflict,
@@ -26,7 +27,7 @@ export function SavedSpaces() {
   const memoryDigest = useMemo(() => fingerprintEditMemory(memory), [memory]);
   const dirty =
     !remote || remote.savedFingerprint !== digest || remote.savedMemoryFingerprint !== memoryDigest;
-  const busy = saving || opening;
+  const busy = saving || opening || recovering;
   const openSpace = async (id: string) => {
     if (await open(id)) setConfirmId(null);
   };

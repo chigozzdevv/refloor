@@ -1,14 +1,11 @@
 import { useState } from 'react';
 import { Download, KeyRound } from 'lucide-react';
 import { sessionApi } from '@/shared/refloor/sessions';
-import { projectApi } from '@/shared/refloor/houses';
-import { ProjectApiError } from '@/shared/refloor/client';
-import { useProject } from '@/shared/scene/scene-store';
 import { useSavedProjects } from '@/shared/scene/scene-sync';
 import { downloadText } from '@/shared/scene/files';
 
 export function ProjectRecovery() {
-  const syncing = useSavedProjects((state) => state.saving || state.opening);
+  const syncing = useSavedProjects((state) => state.saving || state.opening || state.recovering);
   const [open, setOpen] = useState(false),
     [key, setKey] = useState(''),
     [created, setCreated] = useState<string | null>(null),
@@ -31,18 +28,10 @@ export function ProjectRecovery() {
     setBusy(true);
     setMessage(null);
     try {
-      await sessionApi.recover(key.trim());
-      useSavedProjects.setState({ items: [], cursor: null, error: null, conflict: false });
-      const state = useProject.getState();
-      if (state.remote) {
-        try {
-          await projectApi.get(state.remote.id);
-        } catch (error) {
-          if (error instanceof ProjectApiError && error.code === 'PROJECT_NOT_FOUND')
-            useProject.setState({ remote: null });
-        }
-      }
-      await useSavedProjects.getState().refresh();
+      if (!(await useSavedProjects.getState().restoreCollection(key.trim())))
+        throw new Error(
+          useSavedProjects.getState().error ?? 'The collection could not be restored.',
+        );
       setKey('');
       setCreated(null);
       setMessage('Collection restored. Your current draft is still open.');

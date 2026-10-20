@@ -4,6 +4,7 @@ import type { Building } from '@refloor/scene';
 import type { ProjectSummary } from '@refloor/scene/contracts';
 import { ProjectApiError } from '@/shared/refloor/client';
 import { projectApi } from '@/shared/refloor/houses';
+import { sessionApi } from '@/shared/refloor/sessions';
 import { parseProjectFile } from '@/shared/scene/files';
 import { useProject } from '@/shared/scene/scene-store';
 import type { EditMemory } from '@refloor/scene/edit-memory';
@@ -17,6 +18,7 @@ type PendingSave = {
   building: Building;
   memory: EditMemory;
   asNew: boolean;
+  collectionEpoch: number;
 };
 type SavedState = {
   items: ProjectSummary[];
@@ -24,6 +26,8 @@ type SavedState = {
   loading: boolean;
   saving: boolean;
   opening: boolean;
+  recovering: boolean;
+  collectionEpoch: number;
   error: string | null;
   listError: string | null;
   conflict: boolean;
@@ -31,6 +35,7 @@ type SavedState = {
   save: (asNew?: boolean, quiet?: boolean) => Promise<void>;
   preserve: () => Promise<boolean>;
   open: (id: string) => Promise<boolean>;
+  restoreCollection: (key: string) => Promise<boolean>;
 };
 let pending: PendingSave | null = null;
 const message = (error: unknown) =>
@@ -42,14 +47,18 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
   loading: false,
   saving: false,
   opening: false,
+  recovering: false,
+  collectionEpoch: 0,
   error: null,
   listError: null,
   conflict: false,
   refresh: async (more = false) => {
-    if (get().loading) return;
+    if (get().loading || get().recovering) return;
+    const collection = get().collectionEpoch;
     set({ loading: true, listError: null });
     try {
       const page = await projectApi.list(more ? (get().cursor ?? undefined) : undefined);
+      if (get().collectionEpoch !== collection) return;
       set((state) => ({
         items: more
           ? [...new Map([...state.items, ...page.items].map((item) => [item.id, item])).values()]
@@ -57,15 +66,21 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
         cursor: page.nextCursor,
       }));
     } catch (error) {
-      set({ listError: message(error) });
+      if (get().collectionEpoch === collection) set({ listError: message(error) });
     } finally {
-      set({ loading: false });
+      if (get().collectionEpoch === collection) set({ loading: false });
     }
   },
   save: async (asNew = false, quiet = false) => {
-    if (get().saving || get().opening) return;
-    const current = useProject.getState();
-    if (!pending || pending.epoch !== current.projectEpoch || pending.asNew !== asNew)
+    if (get().saving || get().opening || get().recovering) return;
+    const current = useProject.getState(),
+      collection = get().collectionEpoch;
+    if (
+      !pending ||
+      pending.epoch !== current.projectEpoch ||
+      pending.asNew !== asNew ||
+      pending.collectionEpoch !== collection
+    )
       pending = {
         id: crypto.randomUUID(),
         epoch: current.projectEpoch,
@@ -74,6 +89,7 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
         building: current.compiled.building,
         memory: current.memory,
         asNew,
+        collectionEpoch: collection,
       };
     const submitted = pending;
     set({ saving: true, error: null, conflict: false });
@@ -90,6 +106,7 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
             building: submitted.building,
             memory: submitted.memory,
           });
+      if (get().collectionEpoch !== collection) return;
       if (pending === submitted) pending = null;
       const state = useProject.getState();
       if (state.projectEpoch !== submitted.epoch) return;
@@ -130,16 +147,21 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
             : 'Snapshot saved. You have newer changes to save.',
         );
     } catch (error) {
+      if (get().collectionEpoch !== collection) return;
       const conflict =
         error instanceof ProjectApiError &&
         ['VERSION_CONFLICT', 'REVISION_CONFLICT'].includes(error.code);
       set({ error: message(error), conflict });
       if (error instanceof ProjectApiError && !error.retryable) pending = null;
     } finally {
-      set({ saving: false });
+      if (get().collectionEpoch === collection) set({ saving: false });
     }
   },
   preserve: async () => {
+    if (get().recovering) {
+      set({ error: 'Let collection recovery finish before replacing your current house.' });
+      return false;
+    }
     const state = useProject.getState();
     if (
       !state.saved &&
@@ -163,11 +185,13 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
     return false;
   },
   open: async (id) => {
-    if (get().saving || get().opening) return false;
-    const before = useProject.getState();
+    if (get().saving || get().opening || get().recovering) return false;
+    const before = useProject.getState(),
+      collection = get().collectionEpoch;
     set({ opening: true, error: null });
     try {
       const project = await projectApi.get(id);
+      if (get().collectionEpoch !== collection) return false;
       const compiled = parseProjectFile(JSON.stringify(project.building));
       const current = useProject.getState();
       if (
@@ -196,10 +220,59 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
       set({ conflict: false });
       return true;
     } catch (error) {
-      set({ error: message(error) });
+      if (get().collectionEpoch === collection) set({ error: message(error) });
       return false;
     } finally {
-      set({ opening: false });
+      if (get().collectionEpoch === collection) set({ opening: false });
+    }
+  },
+  restoreCollection: async (key) => {
+    if (get().saving || get().opening || get().recovering) {
+      set({
+        error: 'Let your current project finish saving or opening before restoring a collection.',
+      });
+      return false;
+    }
+    const collection = get().collectionEpoch + 1;
+    clearTimeout(syncTimer);
+    pending = null;
+    set({
+      recovering: true,
+      collectionEpoch: collection,
+      loading: false,
+      error: null,
+      listError: null,
+    });
+    try {
+      await sessionApi.recover(key.trim());
+      if (get().collectionEpoch !== collection) return false;
+      set({ items: [], cursor: null, conflict: false });
+      const state = useProject.getState(),
+        remote = state.remote;
+      if (remote) {
+        try {
+          await projectApi.get(remote.id);
+        } catch (error) {
+          if (!(error instanceof ProjectApiError) || error.code !== 'PROJECT_NOT_FOUND')
+            throw error;
+          const current = useProject.getState();
+          if (
+            get().collectionEpoch === collection &&
+            current.projectEpoch === state.projectEpoch &&
+            current.remote?.id === remote.id
+          )
+            useProject.setState({ remote: null });
+        }
+      }
+      const page = await projectApi.list();
+      if (get().collectionEpoch !== collection) return false;
+      set({ items: page.items, cursor: page.nextCursor, error: null, listError: null });
+      return true;
+    } catch (error) {
+      if (get().collectionEpoch === collection) set({ error: message(error) });
+      return false;
+    } finally {
+      if (get().collectionEpoch === collection) set({ recovering: false });
     }
   },
 }));
@@ -216,6 +289,7 @@ function scheduleCloudSave() {
       state.recovery ||
       saved.saving ||
       saved.opening ||
+      saved.recovering ||
       saved.conflict ||
       saved.error
     )
@@ -237,7 +311,11 @@ const unsubscribeScene = useProject.subscribe((state, previous) => {
     scheduleCloudSave();
 });
 const unsubscribeSync = useSavedProjects.subscribe((state, previous) => {
-  if ((previous.saving && !state.saving) || (previous.opening && !state.opening))
+  if (
+    (previous.saving && !state.saving) ||
+    (previous.opening && !state.opening) ||
+    (previous.recovering && !state.recovering)
+  )
     scheduleCloudSave();
 });
 if (typeof window !== 'undefined') scheduleCloudSave();
