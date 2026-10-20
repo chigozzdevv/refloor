@@ -9,14 +9,14 @@ import {
 } from '@/shared/scene/files';
 import { editingError } from '@/shared/editor/errors';
 import { SavedSpaces } from '@/components/editor/saved-spaces';
+import { useSavedProjects } from '@/shared/scene/scene-sync';
 
 export function ProjectActions() {
   const [open, setOpen] = useState(false),
     [busy, setBusy] = useState(false),
     input = useRef<HTMLInputElement>(null),
     panel = useRef<HTMLDivElement>(null);
-  const { compiled, memory, saved, saveError, recovery, resumeSaving, loadProject, notify } =
-    useProject();
+  const { compiled, memory, saved, saveError, recovery, resumeSaving, notify } = useProject();
   useEffect(() => {
     const pointer = (event: PointerEvent) => {
         if (event.target instanceof Node && !panel.current?.contains(event.target)) setOpen(false);
@@ -56,7 +56,12 @@ export function ProjectActions() {
             if (file.size > maxProjectBytes)
               throw new Error('Project files must be smaller than 2 MB.');
             const result = readProjectFile(await file.text());
-            loadProject(result.compiled, undefined, result.memory);
+            if (!(await useSavedProjects.getState().preserve()))
+              throw new Error(
+                useSavedProjects.getState().error ??
+                  'Your current space could not be saved. Keep it open and try again.',
+              );
+            useProject.getState().loadProject(result.compiled, undefined, result.memory);
             setOpen(false);
           } catch (error) {
             notify(`Could not open this project. ${editingError(error)}`);
