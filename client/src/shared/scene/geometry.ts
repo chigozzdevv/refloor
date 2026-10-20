@@ -27,10 +27,8 @@ export function partGeometry(part: MeshPart): BufferGeometry {
   }
   geometry.setAttribute('uv', new Float32BufferAttribute(uv, 2));
   geometry.setAttribute('uv1', new Float32BufferAttribute(uv, 2));
-  geometry.setIndex(mesh.indices);
   if (part.exterior || ['roof', 'slab', 'stair-tread', 'stair-landing'].includes(part.role)) {
-    let start = 0,
-      material = -1;
+    const materials: [number[], number[]] = [[], []];
     for (let i = 0; i < mesh.indices.length; i += 3) {
       const vertex = mesh.indices[i] ?? 0,
         next = part.exterior
@@ -44,14 +42,15 @@ export function partGeometry(part: MeshPart): BufferGeometry {
             : (mesh.normals[vertex * 3 + 1] ?? 0) > 0.5
               ? 0
               : 1;
-      if (next !== material) {
-        if (material !== -1) geometry.addGroup(start, i - start, material);
-        start = i;
-        material = next;
-      }
+      materials[next].push(mesh.indices[i]!, mesh.indices[i + 1]!, mesh.indices[i + 2]!);
     }
-    if (material !== -1) geometry.addGroup(start, mesh.indices.length - start, material);
-  }
+    let start = 0;
+    materials.forEach((indices, material) => {
+      if (indices.length) geometry.addGroup(start, indices.length, material);
+      start += indices.length;
+    });
+    geometry.setIndex(materials.flat());
+  } else geometry.setIndex(mesh.indices);
   geometry.computeBoundingSphere();
   return geometry;
 }
