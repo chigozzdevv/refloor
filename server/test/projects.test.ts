@@ -245,6 +245,69 @@ describe('MongoDB project API', () => {
     expect(wrong.json().error.code).toBe('CONTEXT_MISMATCH');
   });
 
+  it('persists named designs and a recoverable comparison through MongoDB project saves', async () => {
+    const cookies = await session(),
+      memory = createEditMemory(building),
+      id = randomUUID();
+    memory.designs = {
+      items: [{ id, name: 'Original', at: new Date().toISOString(), building }],
+      comparison: {
+        checkpointId: id,
+        working: structuredClone(building),
+        past: [],
+        future: [],
+        transitions: [],
+        turns: [],
+      },
+    };
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/projects',
+      cookies,
+      payload: { requestId: randomUUID(), building, memory },
+    });
+    expect(created.statusCode).toBe(201);
+    const project = projectWriteSchema.parse(created.json()).project;
+    const second = structuredClone(building);
+    second.roof.material.color = '#334455';
+    memory.designs.items.push({
+      id: randomUUID(),
+      name: 'Dark roof',
+      at: new Date().toISOString(),
+      building: second,
+    });
+    const saved = await app.inject({
+      method: 'PUT',
+      url: `/api/projects/${project.id}`,
+      cookies,
+      payload: { requestId: randomUUID(), expectedVersion: project.version, building, memory },
+    });
+    expect(saved.statusCode).toBe(200);
+    const reopened = projectSchema.parse(
+      (await app.inject({ method: 'GET', url: `/api/projects/${project.id}`, cookies })).json(),
+    );
+    expect(reopened.memory!.designs).toEqual(memory.designs);
+    const foreign = structuredClone(memory);
+    foreign.designs!.items[0]!.building.id = 'another-house';
+    const rejected = await app.inject({
+      method: 'PUT',
+      url: `/api/projects/${project.id}`,
+      cookies,
+      payload: {
+        requestId: randomUUID(),
+        expectedVersion: reopened.version,
+        building,
+        memory: foreign,
+      },
+    });
+    expect(rejected.statusCode).toBe(400);
+    expect(
+      projectSchema.parse(
+        (await app.inject({ method: 'GET', url: `/api/projects/${project.id}`, cookies })).json(),
+      ).memory!.designs,
+    ).toEqual(memory.designs);
+  });
+
   it('captures a legacy project roof baseline before its first API edit and retains it through undo', async () => {
     const cookies = await session(),
       created = await create(cookies),

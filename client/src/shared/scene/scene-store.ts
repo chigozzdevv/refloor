@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { createEditorState } from '@/shared/editor/editor-store';
 import type { EditorState } from '@/shared/editor/editor-store';
+import { createDesignState } from '@/shared/editor/design-store';
+import type { DesignState } from '@/shared/editor/design-store';
 import { createHouse } from '@refloor/catalogue/houses';
 import { compileBuilding } from '@refloor/engine';
 import type { CompiledBuilding } from '@refloor/engine';
@@ -17,33 +19,34 @@ import type { EditMemory } from '@refloor/scene/edit-memory';
 import { clearSceneView, restoreSceneView } from '@/shared/scene/view';
 
 export type ViewMode = 'entry' | 'orbit' | 'walk';
-export type ProjectState = EditorState & {
-  sceneReady: boolean;
-  setSceneReady: (ready: boolean) => void;
-  compiled: CompiledBuilding;
-  memory: EditMemory;
-  projectEpoch: number;
-  saveError: string | null;
-  recovery: string | null;
-  saved: boolean;
-  resumeSaving: () => void;
-  remote: RemoteLink | null;
-  loadProject: (compiled: CompiledBuilding, remote?: RemoteLink, memory?: EditMemory) => void;
-  floorId: string;
-  mode: ViewMode;
-  lighting: 'day' | 'evening';
-  quality: 'high' | 'balanced';
-  cutaway: boolean;
-  notice: string | null;
-  notify: (message: string) => void;
-  setWalkFloor: (id: string) => void;
-  setLighting: (lighting: 'day' | 'evening') => void;
-  setQuality: (quality: 'high' | 'balanced') => void;
-  setMode: (mode: ViewMode) => void;
-  setDoor: (id: string, open: boolean) => boolean;
-  enterHome: () => void;
-  createHome: (storeys: 1 | 2, width?: number, depth?: number) => void;
-};
+export type ProjectState = EditorState &
+  DesignState & {
+    sceneReady: boolean;
+    setSceneReady: (ready: boolean) => void;
+    compiled: CompiledBuilding;
+    memory: EditMemory;
+    projectEpoch: number;
+    saveError: string | null;
+    recovery: string | null;
+    saved: boolean;
+    resumeSaving: () => void;
+    remote: RemoteLink | null;
+    loadProject: (compiled: CompiledBuilding, remote?: RemoteLink, memory?: EditMemory) => void;
+    floorId: string;
+    mode: ViewMode;
+    lighting: 'day' | 'evening';
+    quality: 'high' | 'balanced';
+    cutaway: boolean;
+    notice: string | null;
+    notify: (message: string) => void;
+    setWalkFloor: (id: string) => void;
+    setLighting: (lighting: 'day' | 'evening') => void;
+    setQuality: (quality: 'high' | 'balanced') => void;
+    setMode: (mode: ViewMode) => void;
+    setDoor: (id: string, open: boolean) => boolean;
+    enterHome: () => void;
+    createHome: (storeys: 1 | 2, width?: number, depth?: number) => void;
+  };
 
 const restored = restoreDraft();
 const initial =
@@ -94,6 +97,7 @@ export const useProject = create<ProjectState>((set, get, store) => ({
     get().notify('Space opened.');
   },
   ...createEditorState(set, get, store),
+  ...createDesignState(set, get, store),
   past: restored.past,
   future: restored.future,
   memory: restored.memory ?? createEditMemory(initial.building),

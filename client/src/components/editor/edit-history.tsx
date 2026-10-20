@@ -1,5 +1,6 @@
 import { MessageCircle, Redo2, RotateCcw, Undo2, X } from 'lucide-react';
 import { useProject } from '@/shared/scene/scene-store';
+import { DesignCheckpoints } from '@/components/editor/design-checkpoints';
 import { isUndoable } from '@/shared/editor/history';
 
 export function EditHistory({ close }: { close: () => void }) {
@@ -24,6 +25,7 @@ export function EditHistory({ close }: { close: () => void }) {
           Redo
         </button>
       </div>
+      <DesignCheckpoints />
       {!records.length && (
         <p className="history-empty">
           Your changes will appear here and stay with this browser draft.

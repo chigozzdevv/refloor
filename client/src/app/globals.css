@@ -1336,6 +1336,138 @@ select option {
   border: 1px solid var(--line);
   border-radius: 8px;
 }
+.design-checkpoints {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+.design-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.design-heading h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+}
+.design-heading > span {
+  font-size: 10px;
+  color: var(--muted);
+}
+.design-save {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #ffffff05;
+}
+.design-save input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 0;
+  border: 0;
+  outline: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+}
+.design-save:focus-within {
+  border-color: var(--accent);
+}
+.design-list {
+  padding: 0;
+  margin: 9px 0 0;
+  list-style: none;
+}
+.design-list > li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 3px 4px;
+  border-radius: 8px;
+}
+.design-list > li[data-active] {
+  background: #ffffff0c;
+}
+.design-view {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  padding: 9px 4px;
+  text-align: left;
+}
+.design-view > svg {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.design-view > span {
+  min-width: 0;
+}
+.design-view strong,
+.design-view time {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.design-view strong {
+  font-size: 12px;
+  font-weight: 400;
+}
+.design-view time {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.design-empty,
+.design-comparison p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.design-comparison {
+  padding: 0 0 8px;
+}
+.design-comparison strong {
+  color: var(--ink);
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+.design-comparison > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--accent);
+  font-size: 11px;
+}
+.design-remove-confirm {
+  display: flex;
+  flex-basis: 100%;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 4px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.design-remove-confirm > span {
+  flex: 1;
+}
+.design-remove-confirm button {
+  padding: 5px;
+}
 .edit-history {
   position: absolute;
   top: 56px;

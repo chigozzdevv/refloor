@@ -7,9 +7,20 @@ import { roofSchema } from '@refloor/scene/building';
 import { doorSchema, wallSchema } from '@refloor/scene/floor';
 import { roomSchema } from '@refloor/scene/room';
 import { revisionSchema } from '@refloor/scene/revision';
-import { siteSurfaceSlot, siteSurfaceSnapshotSchema, siteSurfaceSnapshots } from '@refloor/scene/site-material';
+import {
+  siteSurfaceSlot,
+  siteSurfaceSnapshotSchema,
+  siteSurfaceSnapshots,
+} from '@refloor/scene/site-material';
 import type { Building } from '@refloor/scene/building';
 import type { SceneCommand } from '@refloor/scene/command';
+import { buildingSchema } from '@refloor/scene/schema';
+import {
+  designCheckpointSchema,
+  designHistoryRecordSchema,
+  maxDesignBytes,
+  maxDesigns,
+} from '@refloor/scene/design-checkpoint';
 
 export const editTargetSchema = z.strictObject({
   kind: z.enum(['house', 'object', 'wall', 'floor', 'door', 'roof', 'surface']),
@@ -36,6 +47,43 @@ export const chatTurnSchema = z.strictObject({
   baseRevision: z.number().int().nonnegative(),
   revisionId: idSchema.nullable(),
 });
+const transitionSchema = z.strictObject({
+  revision: revisionSchema,
+  kind: z.enum(['edit', 'undo', 'redo']),
+  label: z.string().max(500),
+  source: z.enum(['chat', 'manual', 'navigation']),
+});
+export const designHistorySchema = z
+  .strictObject({
+    items: z.array(designCheckpointSchema).max(maxDesigns),
+    comparison: z
+      .strictObject({
+        checkpointId: idSchema,
+        working: buildingSchema,
+        past: z.array(designHistoryRecordSchema).max(50),
+        future: z.array(designHistoryRecordSchema).max(50),
+        transitions: z.array(transitionSchema).max(50),
+        turns: z.array(chatTurnSchema).max(80),
+      })
+      .optional(),
+  })
+  .superRefine((history, context) => {
+    const unique = (values: string[]) => new Set(values).size === values.length;
+    if (!unique(history.items.map((item) => item.id)))
+      context.addIssue({ code: 'custom', message: 'Saved design identities must be unique' });
+    if (!unique(history.items.map((item) => item.name.toLocaleLowerCase())))
+      context.addIssue({ code: 'custom', message: 'Saved design names must be unique' });
+    if (
+      history.comparison &&
+      !history.items.some((item) => item.id === history.comparison!.checkpointId)
+    )
+      context.addIssue({ code: 'custom', message: 'The compared design is unavailable' });
+    if (new TextEncoder().encode(JSON.stringify(history)).length > maxDesignBytes)
+      context.addIssue({
+        code: 'custom',
+        message: 'Saved designs are too large. Remove a saved design before continuing.',
+      });
+  });
 export const editMemorySchema = z
   .strictObject({
     sceneId: idSchema,
@@ -47,21 +95,30 @@ export const editMemorySchema = z
         (items) => new Set(items.map((item) => `${item.kind}:${item.id}`)).size === items.length,
         'Original identities must be unique',
       ),
-    transitions: z
-      .array(
-        z.strictObject({
-          revision: revisionSchema,
-          kind: z.enum(['edit', 'undo', 'redo']),
-          label: z.string().max(500),
-          source: z.enum(['chat', 'manual', 'navigation']),
-        }),
-      )
-      .max(50),
+    transitions: z.array(transitionSchema).max(50),
     turns: z.array(chatTurnSchema).max(80),
+    designs: designHistorySchema.optional(),
   })
   .refine(
     (memory) => memory.transitions.every((item) => item.revision.sceneId === memory.sceneId),
     'Transition belongs to another house',
+  )
+  .refine(
+    (memory) =>
+      !memory.designs ||
+      (memory.designs.items.every((item) => item.building.id === memory.sceneId) &&
+        (!memory.designs.comparison ||
+          (memory.designs.comparison.working.id === memory.sceneId &&
+            memory.designs.comparison.past.every(
+              (item) => item.revision.sceneId === memory.sceneId,
+            ) &&
+            memory.designs.comparison.future.every(
+              (item) => item.revision.sceneId === memory.sceneId,
+            ) &&
+            memory.designs.comparison.transitions.every(
+              (item) => item.revision.sceneId === memory.sceneId,
+            )))),
+    'Saved design belongs to another house',
   );
 
 export type EditTarget = z.infer<typeof editTargetSchema>;
@@ -69,11 +126,16 @@ export type ElementSnapshot = z.infer<typeof elementSnapshotSchema>;
 export type ChatTurn = z.infer<typeof chatTurnSchema>;
 export type EditMemory = z.infer<typeof editMemorySchema>;
 export type EditTransition = EditMemory['transitions'][number];
+export type DesignHistory = z.infer<typeof designHistorySchema>;
 
 export function captureElements(building: Building): ElementSnapshot[] {
   return structuredClone([
     { kind: 'roof', id: building.roof.id, value: building.roof },
-    ...siteSurfaceSnapshots(building).map((value): ElementSnapshot => ({ kind: 'surface', id: value.id, value })),
+    ...siteSurfaceSnapshots(building).map((value): ElementSnapshot => ({
+      kind: 'surface',
+      id: value.id,
+      value,
+    })),
     ...building.objects.map((value): ElementSnapshot => ({ kind: 'object', id: value.id, value })),
     ...building.floors.flatMap((floor) => [
       ...floor.rooms.map((value): ElementSnapshot => ({ kind: 'floor', id: value.id, value })),
@@ -166,7 +228,9 @@ export function commandTouches(command: SceneCommand, target: EditTarget): boole
       command.wallId === target.id &&
       (target.side === 'exterior'
         ? command.type === 'set-wall-exterior-material' || command.type === 'set-wall-material'
-        : command.type === 'set-wall-material' || command.type === 'set-opening' || command.type === 'move-partition')
+        : command.type === 'set-wall-material' ||
+          command.type === 'set-opening' ||
+          command.type === 'move-partition')
     );
   if (target.kind === 'floor')
     return (
