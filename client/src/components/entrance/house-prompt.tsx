@@ -76,7 +76,12 @@ export function HousePrompt({
         current = { ...current, jobId: next.id };
         persistGeneration(current);
         setJob(next);
-        setError(next.error);
+        setError(
+          next.error ??
+            (next.status === 'failed'
+              ? 'This house could not be generated. Please try again.'
+              : null),
+        );
         if (!['complete', 'failed'].includes(next.status))
           timer = setTimeout(() => {
             void poll();
@@ -163,7 +168,7 @@ export function HousePrompt({
           Saving your current house…
         </p>
       )}
-      {pending && <GenerationProgress job={job} />}
+      {pending && !starting && !opening && !error && <GenerationProgress job={job} />}
       {opening && (
         <p className="generation-status" role="status">
           Preparing your entrance…
