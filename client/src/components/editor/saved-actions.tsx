@@ -23,6 +23,9 @@ function actionLabel(building: Building, action: SceneAction) {
       : '';
   if (action.type === 'set-door')
     return `${action.open ? 'Open' : 'Close'} ${targetIdentity(building, { kind: 'door', id: action.doorId })?.label ?? 'door'}`;
+  if (action.type === 'set-opening')
+    return `Door or window · ${action.width} × ${action.height} m · offset ${action.offset} m`;
+  if (action.type === 'move-partition') return `Move partition to ${action.position} m`;
   if (action.type === 'translate-object') {
     const distance = Math.hypot(action.delta.x, action.delta.y, action.delta.z);
     return `Move ${label} ${Number((distance * 100).toFixed(1))} cm each time`;

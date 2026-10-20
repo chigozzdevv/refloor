@@ -161,7 +161,7 @@ export function commandTouches(command: SceneCommand, target: EditTarget): boole
       command.wallId === target.id &&
       (target.side === 'exterior'
         ? command.type === 'set-wall-exterior-material' || command.type === 'set-wall-material'
-        : command.type === 'set-wall-material')
+        : command.type === 'set-wall-material' || command.type === 'set-opening' || command.type === 'move-partition')
     );
   if (target.kind === 'floor')
     return (
@@ -169,7 +169,10 @@ export function commandTouches(command: SceneCommand, target: EditTarget): boole
       command.type === 'set-room-floor-material' &&
       command.roomId === target.id
     );
-  return 'doorId' in command && command.doorId === target.id;
+  return (
+    ('doorId' in command && command.doorId === target.id) ||
+    (command.type === 'set-opening' && command.openingId === target.id)
+  );
 }
 
 export function scopedEditMemory(memory: EditMemory, target: EditTarget): EditMemory {

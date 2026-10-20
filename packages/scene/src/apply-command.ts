@@ -12,6 +12,7 @@ import { conditionMatches, eventMatches, eventTargetExists } from '@refloor/scen
 import type { SceneEvent } from '@refloor/scene/rules';
 import { resolveRelativeCommand } from '@refloor/scene/relative-command';
 import type { ResolvedCommand } from '@refloor/scene/relative-command';
+import { movePartition, setOpening } from '@refloor/scene/structural-command';
 
 function objectFor(building: Building, id: string): SceneObject {
   const object = building.objects.find((value) => value.id === id);
@@ -206,6 +207,10 @@ function execute(building: Building, command: ResolvedCommand): SceneCommand {
       opening.state.open = command.open;
       return inverse;
     }
+    case 'set-opening':
+      return setOpening(building, command);
+    case 'move-partition':
+      return movePartition(building, command);
     case 'set-television': {
       const object = objectFor(building, command.objectId);
       const behaviour = object.behaviours.find((value) => value.kind === 'television');

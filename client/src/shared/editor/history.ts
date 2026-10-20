@@ -7,6 +7,7 @@ export function describeTarget(building: Building, commands: SceneCommand[]) {
       return { kind: 'house' as const, id: building.id };
     if ('objectId' in command) return { kind: 'object' as const, id: command.objectId };
     if ('roofId' in command) return { kind: 'roof' as const, id: command.roofId };
+    if ('surfaceId' in command) return { kind: 'surface' as const, id: command.surfaceId };
     if ('wallId' in command)
       return {
         kind: 'wall' as const,
@@ -81,11 +82,20 @@ export function describeChange(building: Building, commands: SceneCommand[]) {
     case 'set-roof-material':
       label = 'Change roof finish';
       break;
+    case 'set-site-material':
+      label = 'Change exterior finish';
+      break;
     case 'set-room-floor-material':
       label = 'Change floor finish';
       break;
     case 'set-door':
       label = `${command.open ? 'Open' : 'Close'} door`;
+      break;
+    case 'set-opening':
+      label = 'Change door or window dimensions';
+      break;
+    case 'move-partition':
+      label = 'Move shared room partition';
       break;
     case 'set-light':
     case 'adjust-light-intensity':

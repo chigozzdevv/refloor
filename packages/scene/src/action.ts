@@ -2,11 +2,13 @@ import { z } from 'zod';
 import { lightStateSchema, televisionStateSchema } from '@refloor/scene/behaviour';
 import { materialSchema } from '@refloor/scene/material';
 import { objectAssetSchema, sceneObjectSchema } from '@refloor/scene/object';
+import { partitionBoundsSchema } from '@refloor/scene/structural-command';
 import {
   coordinateSchema,
   dimensionsSchema,
   idSchema,
   objectPositionSchema,
+  dimensionSchema,
 } from '@refloor/scene/primitives';
 
 export const sceneActionSchema = z.discriminatedUnion('type', [
@@ -77,6 +79,21 @@ export const sceneActionSchema = z.discriminatedUnion('type', [
     material: materialSchema,
   }),
   z.strictObject({ type: z.literal('set-door'), doorId: idSchema, open: z.boolean() }),
+  z.strictObject({
+    type: z.literal('set-opening'),
+    wallId: idSchema,
+    openingId: idSchema,
+    offset: coordinateSchema.nonnegative(),
+    width: dimensionSchema,
+    height: dimensionSchema,
+    sill: coordinateSchema.nonnegative().nullable(),
+  }),
+  z.strictObject({
+    type: z.literal('move-partition'),
+    wallId: idSchema,
+    position: coordinateSchema,
+    roomBounds: partitionBoundsSchema.optional(),
+  }),
   z.strictObject({
     type: z.literal('set-television'),
     objectId: idSchema,

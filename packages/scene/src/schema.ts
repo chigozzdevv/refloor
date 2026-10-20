@@ -222,6 +222,17 @@ export const buildingSchema = buildingModelSchema.superRefine((building, context
         !building.floors.some((floor) => floor.walls.some((wall) => wall.id === action.wallId))
       )
         report('Saved action refers to a missing wall', [...rp, 'actions']);
+      if (
+        action.type === 'set-opening' &&
+        !building.floors.some((floor) =>
+          floor.walls.some(
+            (wall) =>
+              wall.id === action.wallId &&
+              wall.openings.some((opening) => opening.id === action.openingId),
+          ),
+        )
+      )
+        report('Saved action refers to a missing opening', [...rp, 'actions']);
     }
   });
 
