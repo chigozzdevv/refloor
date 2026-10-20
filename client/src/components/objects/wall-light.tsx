@@ -52,25 +52,23 @@ export function WallLight({ object }: { object: SceneObject }) {
       {[0, 1].map((index) => (
         <group key={index}>
           <primitive object={targets[index]!} position={[0, index ? -1.1 : 1.1, -d * 0.84]} />
-          {output > 0 && (
-            <spotLight
-              position={[0, index ? -h * 0.025 : h * 1.025, -d * 0.05]}
-              target={targets[index]!}
-              userData={{ lightBudget: { id: object.id, floorId: object.floorId, exterior: true } }}
-              color={state?.color ?? '#ffd0a3'}
-              intensity={output * 2.5}
-              angle={0.48}
-              penumbra={0.65}
-              distance={2.8}
-              decay={2}
-              castShadow
-              shadow-mapSize={[256, 256]}
-              shadow-camera-near={0.025}
-              shadow-bias={-0.0001}
-              shadow-normalBias={0.004}
-              shadow-autoUpdate={false}
-            />
-          )}
+          <spotLight
+            position={[0, index ? -h * 0.025 : h * 1.025, -d * 0.05]}
+            target={targets[index]!}
+            userData={{ lightBudget: { id: object.id, floorId: object.floorId, exterior: true } }}
+            color={state?.color ?? '#ffd0a3'}
+            intensity={output * 2.5}
+            angle={0.48}
+            penumbra={0.65}
+            distance={2.8}
+            decay={2}
+            castShadow
+            shadow-mapSize={[256, 256]}
+            shadow-camera-near={0.025}
+            shadow-bias={-0.0001}
+            shadow-normalBias={0.004}
+            shadow-autoUpdate={false}
+          />
         </group>
       ))}
     </>

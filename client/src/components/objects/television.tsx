@@ -63,9 +63,17 @@ export function TelevisionScreen({ object }: { object: SceneObject }) {
       setPlayback(object.id, { status: 'off', message: null });
     }
   }, [object.id, source, state?.powered, state?.muted, state?.volume]);
-  return state?.powered && texture ? (
-    <meshBasicMaterial map={texture} toneMapped={false} />
-  ) : (
-    <meshPhysicalMaterial color="#151b19" roughness={0.12} metalness={0.15} clearcoat={1} />
+  return (
+    <meshPhysicalMaterial
+      color="#050505"
+      map={texture}
+      emissive="#ffffff"
+      emissiveMap={texture}
+      emissiveIntensity={state?.powered ? 1 : 0}
+      roughness={0.12}
+      metalness={0.15}
+      clearcoat={1}
+      toneMapped={false}
+    />
   );
 }

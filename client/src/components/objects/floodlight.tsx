@@ -33,25 +33,23 @@ export function Floodlight({ object }: { object: SceneObject }) {
           roughness={0.3}
         />
       </mesh>
-      {output > 0 && (
-        <spotLight
-          position={[0, 0.1, 0.15]}
-          target={target}
-          userData={{ lightBudget: { id: object.id, floorId: object.floorId, exterior: true } }}
-          color={state?.color ?? '#ffe6c4'}
-          intensity={output * 5}
-          angle={0.95}
-          penumbra={0.55}
-          distance={14}
-          decay={2}
-          castShadow
-          shadow-mapSize={[512, 512]}
-          shadow-bias={-0.00015}
-          shadow-normalBias={0.015}
-          shadow-camera-near={0.05}
-          shadow-autoUpdate={false}
-        />
-      )}
+      <spotLight
+        position={[0, 0.1, 0.15]}
+        target={target}
+        userData={{ lightBudget: { id: object.id, floorId: object.floorId, exterior: true } }}
+        color={state?.color ?? '#ffe6c4'}
+        intensity={output * 5}
+        angle={0.95}
+        penumbra={0.55}
+        distance={14}
+        decay={2}
+        castShadow
+        shadow-mapSize={[512, 512]}
+        shadow-bias={-0.00015}
+        shadow-normalBias={0.015}
+        shadow-camera-near={0.05}
+        shadow-autoUpdate={false}
+      />
     </>
   );
 }

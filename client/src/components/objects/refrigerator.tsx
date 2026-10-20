@@ -72,15 +72,13 @@ export function Refrigerator({ object, body, frame }: FixtureProps) {
           )}
         </FixtureMotion>
       ))}
-      {open && (
-        <pointLight
-          position={[0, h * 0.8, 0]}
-          color="#e1efff"
-          intensity={0.25}
-          distance={1.4}
-          decay={2}
-        />
-      )}
+      <pointLight
+        position={[0, h * 0.8, 0]}
+        color="#e1efff"
+        intensity={open ? 0.25 : 0}
+        distance={1.4}
+        decay={2}
+      />
       {[-1, 0, 1].map((line) => (
         <Solid
           key={line}

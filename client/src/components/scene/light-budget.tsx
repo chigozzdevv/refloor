@@ -23,10 +23,15 @@ export function LightBudget() {
       now = clock.elapsedTime;
     if (present.current)
       for (const group of groups)
-        if (!present.current.has(group.id)) recentlyPowered.current.set(group.id, now + 8);
+        if (!present.current.has(group.id) && group.lights.some((light) => light.intensity > 0))
+          recentlyPowered.current.set(group.id, now + 8);
     for (const [id, until] of recentlyPowered.current)
       if (until < now) recentlyPowered.current.delete(id);
-    present.current = new Set(groups.map((group) => group.id));
+    present.current = new Set(
+      groups
+        .filter((group) => group.lights.some((light) => light.intensity > 0))
+        .map((group) => group.id),
+    );
     const chosen = chooseShadowGroups(groups, {
       maxTextures: gl.capabilities.maxTextures,
       exterior,

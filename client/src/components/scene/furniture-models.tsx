@@ -33,7 +33,6 @@ function Pendant({ object }: { object: SceneObject }) {
     quality = useProject((value) => value.quality);
   const intensity = lightOutput(object),
     normal = lightTuning(object)?.normal ?? 3,
-    powered = intensity > 0,
     shade = useSurface(object.materials.body ?? finishes.linen),
     frame = useSurface(object.materials.frame ?? finishes.brass);
   useEffect(() => {
@@ -54,28 +53,26 @@ function Pendant({ object }: { object: SceneObject }) {
       <mesh position={[0, 0.44, 0]} material={frame}>
         <cylinderGeometry args={[0.065, 0.065, 0.018, 20]} />
       </mesh>
-      {powered && (
-        <pointLight
-          castShadow
-          userData={{
-            lightBudget: {
-              id: object.id,
-              floorId: object.floorId,
-              exterior: object.placement === 'exterior',
-            },
-          }}
-          shadow-mapSize={quality === 'high' ? [512, 512] : [256, 256]}
-          shadow-camera-near={0.08}
-          shadow-bias={-0.00015}
-          shadow-normalBias={0.015}
-          shadow-autoUpdate={false}
-          position={[0, 0.18, 0]}
-          color={state?.color ?? '#ffe6bf'}
-          intensity={intensity * (lighting === 'day' ? 4 : 7)}
-          distance={8}
-          decay={2}
-        />
-      )}
+      <pointLight
+        castShadow
+        userData={{
+          lightBudget: {
+            id: object.id,
+            floorId: object.floorId,
+            exterior: object.placement === 'exterior',
+          },
+        }}
+        shadow-mapSize={quality === 'high' ? [512, 512] : [256, 256]}
+        shadow-camera-near={0.08}
+        shadow-bias={-0.00015}
+        shadow-normalBias={0.015}
+        shadow-autoUpdate={false}
+        position={[0, 0.18, 0]}
+        color={state?.color ?? '#ffe6bf'}
+        intensity={intensity * (lighting === 'day' ? 4 : 7)}
+        distance={8}
+        decay={2}
+      />
     </>
   );
 }

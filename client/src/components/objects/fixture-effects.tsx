@@ -9,9 +9,21 @@ const noRaycast = () => undefined;
 
 export function CookerFlames({ object, top }: { object: SceneObject; top: number }) {
   const state = object.behaviours.find((value) => value.kind === 'cooker')?.state;
-  return state?.powered && state.heat > 0 ? (
-    <Flames object={object} top={top} heat={state.heat} burners={state.burners} />
-  ) : null;
+  const active = state?.powered ? state.burners.filter(Boolean).length : 0;
+  return (
+    <>
+      {state?.powered && state.heat > 0 && (
+        <Flames object={object} top={top} heat={state.heat} burners={state.burners} />
+      )}
+      <pointLight
+        position={[object.dimensions.width * 0.23, top + 0.12, 0]}
+        color="#4f8bff"
+        intensity={(state?.heat ?? 0) * active * 0.06}
+        distance={1.5}
+        decay={2}
+      />
+    </>
+  );
 }
 
 function Flames({
@@ -103,13 +115,6 @@ function Flames({
             }`}
         />
       </instancedMesh>
-      <pointLight
-        position={[object.dimensions.width * 0.23, top + 0.12, 0]}
-        color="#4f8bff"
-        intensity={heat * active.length * 0.06}
-        distance={1.5}
-        decay={2}
-      />
     </>
   );
 }
