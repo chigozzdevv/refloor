@@ -28,7 +28,7 @@ type SavedState = {
   listError: string | null;
   conflict: boolean;
   refresh: (more?: boolean) => Promise<void>;
-  save: (asNew?: boolean) => Promise<void>;
+  save: (asNew?: boolean, quiet?: boolean) => Promise<void>;
   preserve: () => Promise<boolean>;
   open: (id: string) => Promise<boolean>;
 };
@@ -62,7 +62,7 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
       set({ loading: false });
     }
   },
-  save: async (asNew = false) => {
+  save: async (asNew = false, quiet = false) => {
     if (get().saving || get().opening) return;
     const current = useProject.getState();
     if (!pending || pending.epoch !== current.projectEpoch || pending.asNew !== asNew)
@@ -114,14 +114,14 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
           },
         },
       });
-      await get().refresh();
+      if (!quiet) await get().refresh();
       if (newer)
         set({
           conflict: true,
           error:
             'Your save was accepted, but a newer version is now available. Open the latest saved version or save a new copy.',
         });
-      else
+      else if (!quiet)
         state.notify(
           fingerprintBuilding(state.compiled.building) ===
             fingerprintBuilding(submitted.building) &&
@@ -203,3 +203,47 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
     }
   },
 }));
+
+let syncTimer: ReturnType<typeof setTimeout> | undefined;
+function scheduleCloudSave() {
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
+    const state = useProject.getState(),
+      saved = useSavedProjects.getState();
+    if (
+      !state.remote ||
+      state.chatPending ||
+      state.recovery ||
+      saved.saving ||
+      saved.opening ||
+      saved.conflict ||
+      saved.error
+    )
+      return;
+    if (
+      state.remote.savedFingerprint !== fingerprintBuilding(state.compiled.building) ||
+      state.remote.savedMemoryFingerprint !== fingerprintEditMemory(state.memory)
+    )
+      void saved.save(false, true);
+  }, 2000);
+}
+const unsubscribeScene = useProject.subscribe((state, previous) => {
+  if (
+    state.remote !== previous.remote ||
+    state.compiled.building !== previous.compiled.building ||
+    state.memory !== previous.memory ||
+    state.chatPending !== previous.chatPending
+  )
+    scheduleCloudSave();
+});
+const unsubscribeSync = useSavedProjects.subscribe((state, previous) => {
+  if ((previous.saving && !state.saving) || (previous.opening && !state.opening))
+    scheduleCloudSave();
+});
+if (typeof window !== 'undefined') scheduleCloudSave();
+if (import.meta.hot)
+  import.meta.hot.dispose(() => {
+    clearTimeout(syncTimer);
+    unsubscribeScene();
+    unsubscribeSync();
+  });
