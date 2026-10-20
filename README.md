@@ -184,6 +184,14 @@ that allocation. Unshadowed lights do not provide physical wall occlusion.
 Colour-only scanned furniture edits preserve source texture, normal, roughness and metalness maps;
 explicit finish replacements change the material. Bathroom mirrors reflect the rendered room in walk mode,
 with bounded texture resolution and update rate. Roof exteriors retain their chosen finish above a neutral interior ceiling.
+Beds use layered mattresses, padded headboards, pillow seams and draped fabric. Kitchen and bathroom
+fittings have recessed joinery, separate stone worktops, curved taps, basins, appliance seams and shower
+hardware. Furniture textures use metre-based UVs, with continuous coordinates across cut worktops.
+New joinery uses [Poly Haven oak veneer](https://polyhaven.com/a/oak_veneer_01); worktops use
+[ambientCG Marble 012](https://ambientcg.com/view?id=Marble012). Both are CC0 and shipped locally at
+1K with source records and checksums in `client/public/manifest.json`. Countertops have their own
+`top` material: changing one preserves cabinetry. Older projects without that slot remain valid and
+receive it only when edited; undo restores the exact previous document.
 Chat can restore a light's original power, brightness and illumination colour. Chat and typed edits enforce
 brightness bounds of 0–200% of the catalogue default; legacy brighter values remain loadable
 with capped rendering. Item chats show the selected item name and accept changes through text.
@@ -216,6 +224,26 @@ as recovery versions before switching away. Full collections, oversized payloads
 positions and blocked escape routes reject the switch without replacing the current design.
 Snapshots contain buildings, not nested memory, and travel with browser drafts, project exports
 and MongoDB saves. Save current view downloads a PNG of the rendered scene without interface overlays.
+
+The garden follows the compound boundary with soil beds, shrubs, grasses, stone edging and trees
+outside the walking area. Lawn, soil, stone and foliage are separate editable surface groups; individual
+leaves are part of those groups. Instanced vegetation uses stable positions as density changes.
+Ground detail fades with distance to reduce shimmer.
+Paving switches between individual blocks and a filtered joint pattern according to projected size,
+with hysteresis to avoid flicker. Both representations share the same editable finish.
+
+Rendering caps drawing-buffer size and adjusts resolution after sustained slow frames, with slower
+quality recovery. Compact viewports use smaller shadow/reflection targets and SMAA instead of
+multisampling. Adaptive resolution normally stops at DPR 1 on compact viewports and 0.85 on desktop;
+hard pixel and device limits still apply. Sustained pressure also disables optional AO and bloom.
+All powered fixtures retain illumination. Static sunlight shadows and mirror captures
+are reused until their inputs change; flat window glazing and opal shades avoid a scene-refraction
+pass. Architectural trim and structural triangles are batched by material while exterior surfaces
+remain separately selectable. The house overview adapts its framing when the viewport changes,
+preserving the viewing angle, pan and relative zoom.
+Read-only frame cadence and renderer counts are available in the canvas `data-render-metrics`
+attribute after warmup. These browser measurements include CPU, GPU and scheduling costs;
+phone-sized desktop viewports do not establish physical iPhone GPU, thermal or touch performance.
 
 Existing doors and windows can move along their wall or change dimensions through chat. Compatible
 axis-aligned internal partitions shared by two rectangular rooms can slide, updating both room bounds.
