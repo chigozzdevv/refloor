@@ -6,6 +6,7 @@ import type {
   RoomRequirement,
 } from '@refloor/server/shared/planning/requirements';
 import { minimumDepth } from '@refloor/server/shared/planning/constraints';
+import { GenerationFailure } from '@refloor/server/features/generation/generation.error';
 
 export type PlannedRoom = {
   index: number;
@@ -114,7 +115,7 @@ export async function solveLayout(requirements: HouseRequirements): Promise<Hous
   const result = await solver.check();
   if (result !== 'sat') {
     solver.release();
-    throw new Error(
+    throw new GenerationFailure(
       result === 'unsat'
         ? 'The requested rooms do not fit these dimensions and side assignments. Increase the depth or relax a side preference.'
         : 'Layout solving exceeded its time limit. Try fewer rooms or simpler side preferences.',

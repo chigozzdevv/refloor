@@ -1,4 +1,5 @@
 import type { Generation } from '@refloor/scene/contracts';
+import { storedGenerationFailureMessage } from '@refloor/server/features/generation/generation.error';
 
 export type GenerationRecord = Omit<Generation, 'id'> & {
   _id: string;
@@ -17,7 +18,7 @@ export function generationDocument(record: GenerationRecord): Generation {
     id: record._id,
     status: record.status,
     projectId: record.projectId,
-    error: record.error,
+    error: storedGenerationFailureMessage(record.error),
     usage: record.usage,
   };
 }

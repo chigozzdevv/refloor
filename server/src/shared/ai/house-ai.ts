@@ -5,6 +5,7 @@ import { housePrompt } from '@refloor/server/shared/ai/house-prompt';
 import { editPrompt } from '@refloor/server/shared/ai/edit-prompt';
 import { languageContext, languagePlanSchema } from '@refloor/server/shared/planning/language-edit';
 import type { LanguageEditRequest } from '@refloor/scene/chat';
+import { GenerationFailure } from '@refloor/server/features/generation/generation.error';
 
 export type GenerationUsage = {
   model: string;
@@ -15,7 +16,7 @@ export type GenerationUsage = {
   durationMs: number;
 };
 
-export class HouseGenerationError extends Error {
+export class HouseGenerationError extends GenerationFailure {
   constructor(
     message: string,
     public readonly usage: GenerationUsage,

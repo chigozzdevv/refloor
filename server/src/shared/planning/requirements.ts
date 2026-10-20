@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { GenerationFailure } from '@refloor/server/features/generation/generation.error';
 
 export const roomUseSchema = z.enum([
   'living',
@@ -77,7 +78,7 @@ export const houseResponseSchema = z.strictObject({
 export function validateRequirements(input: unknown): HouseRequirements {
   const requirements = requirementsSchema.parse(input);
   if (requirements.unsupported.length)
-    throw new Error(
+    throw new GenerationFailure(
       `This request needs unsupported features: ${requirements.unsupported.join('; ')}`,
     );
   if (
@@ -85,20 +86,22 @@ export function validateRequirements(input: unknown): HouseRequirements {
       (value) => value !== null && Math.abs(value * 10 - Math.round(value * 10)) > 1e-6,
     )
   )
-    throw new Error('House dimensions currently use 0.1 metre increments.');
+    throw new GenerationFailure('House dimensions currently use 0.1 metre increments.');
   for (let floor = 0; floor < requirements.storeys; floor++) {
     const rooms = requirements.rooms.filter((room) => room.floor === floor);
     if (rooms.length < 2 || rooms.length > 8)
-      throw new Error(
+      throw new GenerationFailure(
         'Each floor currently supports two to eight rooms connected to a circulation hall.',
       );
   }
   if (requirements.rooms.some((room) => room.floor >= requirements.storeys))
-    throw new Error('The room programme references a floor outside the requested house.');
+    throw new GenerationFailure(
+      'The room programme references a floor outside the requested house.',
+    );
   if (requirements.rooms.filter((room) => room.uses.includes('living')).length !== 1)
-    throw new Error('The house must contain one main living area.');
+    throw new GenerationFailure('The house must contain one main living area.');
   if (requirements.rooms.some((room) => new Set(room.uses).size !== room.uses.length))
-    throw new Error('A room cannot repeat the same use.');
+    throw new GenerationFailure('A room cannot repeat the same use.');
   if (
     requirements.rooms.some(
       (room) =>
@@ -106,20 +109,20 @@ export function validateRequirements(input: unknown): HouseRequirements {
         room.uses.some((use) => !['living', 'dining', 'kitchen'].includes(use)),
     )
   )
-    throw new Error(
+    throw new GenerationFailure(
       'Open-plan rooms can combine living, dining and kitchen uses. Bedrooms, bathrooms and workspaces need their own enclosed room.',
     );
   if (requirements.rooms.some((room) => room.uses.includes('living') && room.floor !== 0))
-    throw new Error('The main living area must be on the ground floor.');
+    throw new GenerationFailure('The main living area must be on the ground floor.');
   if (
     new Set(requirements.rooms.map((room) => room.name.toLowerCase())).size !==
     requirements.rooms.length
   )
-    throw new Error('Room names must be unique.');
+    throw new GenerationFailure('Room names must be unique.');
   if (requirements.circulation?.family === 'side-gallery') {
     const occupiedSide = requirements.circulation.gallerySide === 'left' ? 'right' : 'left';
     if (requirements.rooms.some((room) => room.side !== null && room.side !== occupiedSide))
-      throw new Error(
+      throw new GenerationFailure(
         'A side gallery has rooms on its opposite side. Use a central hall for rooms on both sides.',
       );
   }
