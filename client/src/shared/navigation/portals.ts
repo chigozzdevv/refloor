@@ -93,6 +93,11 @@ export function navigationCues(
     room = floor?.rooms.find((value) => contains(value.footprint, player.position)),
     waypoints = links
       .filter((link) => link.kind === 'waypoint')
+      .toSorted((a, b) => a.id.localeCompare(b.id))
+      .filter(
+        (link, index, values) =>
+          !values.slice(0, index).some((previous) => previous.id === link.id),
+      )
       .map((destination) => ({ destination, label: destination.label })),
     stairs = links
       .filter(
