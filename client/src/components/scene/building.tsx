@@ -59,7 +59,7 @@ export function BuildingPart({ part }: { part: MeshPart }) {
         material={
           part.exterior
             ? [material, exteriorMaterial]
-            : ['slab', 'stair-tread', 'stair-landing'].includes(part.role)
+            : ['roof', 'slab', 'stair-tread', 'stair-landing'].includes(part.role)
               ? [material, ceiling]
               : material
         }

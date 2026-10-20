@@ -18,6 +18,22 @@ import { sameMaterial } from '@/shared/scene/finish';
 import { partGeometry } from '@/shared/scene/geometry';
 
 describe('rendering contracts', () => {
+  it('keeps exterior roofing separate from the interior ceiling on flat and gable roofs', () => {
+    for (const kind of ['flat', 'gable'] as const) {
+      const building = createHouse({ id: `ceiling-${kind}`, name: 'Finished ceiling', storeys: 2 });
+      building.roof = { ...building.roof, kind, pitch: kind === 'gable' ? 0.3 : 0 };
+      const compiled = compileBuilding(building),
+        roof = compiled.parts.find((part) => part.role === 'roof')!,
+        geometry = partGeometry(roof);
+      expect(new Set(geometry.groups.map((group) => group.materialIndex))).toEqual(new Set([0, 1]));
+      for (const group of geometry.groups)
+        for (let offset = group.start; offset < group.start + group.count; offset += 3) {
+          const vertex = geometry.index!.getX(offset);
+          expect(geometry.attributes.normal!.getY(vertex) < -0.5).toBe(group.materialIndex === 1);
+        }
+      geometry.dispose();
+    }
+  });
   it('recognizes a portal leaf through nested door handles without ignoring other occluders', () => {
     const door = new Group(),
       handle = new Mesh(new BoxGeometry(), new MeshBasicMaterial()),
