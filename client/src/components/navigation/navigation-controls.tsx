@@ -338,8 +338,8 @@ export function NavigationControls() {
     const dt = Math.min(delta, 0.05),
       feet = world.feet;
     if (transition.current !== null) {
-      transition.current += dt;
-      const t = MathUtils.smootherstep(transition.current, 0.08, 1.15);
+      transition.current += Math.min(delta, 0.12);
+      const t = MathUtils.smootherstep(transition.current, 0.04, 0.72);
       target.current.set(entry.threshold.x, entry.threshold.y + 1.62, entry.threshold.z);
       if (t < 0.65)
         camera.position
@@ -357,7 +357,7 @@ export function NavigationControls() {
       );
       walkInput.yaw = camera.rotation.y;
       walkInput.pitch = camera.rotation.x;
-      if (transition.current >= 1.15) transition.current = null;
+      if (transition.current >= 0.72) transition.current = null;
       return;
     }
     const keys = walkInput.keys;

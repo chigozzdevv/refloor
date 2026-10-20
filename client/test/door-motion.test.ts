@@ -9,16 +9,28 @@ import { Walkthrough } from '@/shared/navigation/walkthrough';
 
 beforeAll(initializePhysics);
 
-it('presses the handle before swinging and opens completely within 0.42 seconds', () => {
+it('presses the handle before swinging and opens completely within 0.34 seconds', () => {
   const motion = new DoorMotion(false);
-  for (let frame = 0; frame < 4; frame++) motion.step(true, 1 / 60, () => false);
-  expect(motion.handle).toBeGreaterThan(0.9);
+  for (let frame = 0; frame < 3; frame++) motion.step(true, 1 / 60, () => false);
+  expect(motion.handle).toBeGreaterThan(0.6);
   expect(motion.fraction).toBe(0);
-  for (let frame = 0; frame < 21; frame++) motion.step(true, 1 / 60, () => false);
+  for (let frame = 0; frame < 17; frame++) motion.step(true, 1 / 60, () => false);
   expect(motion.fraction).toBe(1);
   expect(motion.handle).toBe(0);
   for (let frame = 0; frame < 18; frame++) motion.step(false, 1 / 60, () => false);
   expect(motion.fraction).toBe(0);
+});
+
+it('keeps the door responsive at ten frames per second while checking its swept path', () => {
+  const motion = new DoorMotion(false);
+  let checks = 0;
+  for (let frame = 0; frame < 4; frame++)
+    motion.step(true, 0.1, () => {
+      checks++;
+      return false;
+    });
+  expect(motion.fraction).toBe(1);
+  expect(checks).toBeGreaterThan(20);
 });
 
 it('releases a held handle smoothly after a drag', () => {

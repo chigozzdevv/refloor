@@ -29,7 +29,7 @@ export class DoorMotion {
     preview?: number | null,
     holding = false,
   ) {
-    const dt = Math.min(delta, 0.05);
+    const dt = Math.min(delta, 0.12);
     if (open !== this.open) {
       this.open = open;
       this.origin = this.fraction;
@@ -45,7 +45,7 @@ export class DoorMotion {
         ? ease(this.handleElapsed / 0.08)
         : 1 - ease((this.handleElapsed - 0.1) / 0.18);
     const nextTime = this.elapsed + dt;
-    const progress = ease((nextTime - (open ? 0.08 : 0)) / (open ? 0.32 : 0.28));
+    const progress = ease((nextTime - (open ? 0.06 : 0)) / (open ? 0.26 : 0.24));
     const next = preview ?? this.origin + (Number(open) - this.origin) * progress;
     const steps = Math.max(1, Math.ceil(Math.abs(next - this.fraction) / 0.04));
     for (let step = 1; step <= steps; step++)
