@@ -1,8 +1,8 @@
-import { undoRevision } from '@refloor/scene';
+import { applyCommands, fingerprintBuilding, undoRevision } from '@refloor/scene';
 import { validateCommandTuning } from '@refloor/catalogue';
 import type { SceneCommand } from '@refloor/scene';
 import type { EditDetails, HistoryRecord } from '@/shared/editor/history';
-import { describeChange, describeTarget } from '@/shared/editor/history';
+import { describeChange, describeTarget, isUndoable } from '@/shared/editor/history';
 import { isPlayerPositionValid, validateBuilding, validatePlacement } from '@refloor/engine';
 import type { CompiledBuilding, NavigationPoint } from '@refloor/engine';
 import { recordTransition } from '@refloor/scene/edit-memory';
@@ -23,13 +23,21 @@ export function editDocument(
   details?: EditDetails,
 ): DocumentState {
   validateCommandTuning(state.compiled.building, commands);
+  const request = { ...metadata(), expectedRevision: state.compiled.building.revision, commands };
   const result = validatePlacement(
     state.compiled.building,
-    { ...metadata(), expectedRevision: state.compiled.building.revision, commands },
+    request,
     state.compiled.options,
     player,
   );
   validateCommandTuning(state.compiled.building, result.revision.commands);
+  const ruleEffects =
+    details?.source === 'navigation' &&
+    result.revision.commands.length > commands.length &&
+    fingerprintBuilding(result.building) !==
+      fingerprintBuilding(
+        applyCommands(state.compiled.building, request, { evaluateRules: false }).building,
+      );
   return {
     compiled: result.compiled,
     memory: recordTransition(state.memory, result.building, {
@@ -45,6 +53,7 @@ export function editDocument(
         label: details?.label ?? describeChange(state.compiled.building, commands),
         source: details?.source ?? 'manual',
         target: details?.target ?? describeTarget(state.compiled.building, commands),
+        ...(ruleEffects ? { undoable: true } : {}),
       },
     ].slice(-50),
     future: [],
@@ -96,7 +105,7 @@ export function restoreBefore(
 
 export function redoChange(state: DocumentState, player?: NavigationPoint): DocumentState {
   let result = reverseDocument(state, 'redo', player);
-  while (result.future.at(-1)?.source === 'navigation')
+  while (result.future.at(-1) && !isUndoable(result.future.at(-1)!))
     result = reverseDocument(result, 'redo', player);
   return result;
 }

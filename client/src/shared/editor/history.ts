@@ -35,7 +35,20 @@ export type HistoryRecord = {
   label: string;
   source: 'chat' | 'manual' | 'navigation';
   target?: string | undefined;
+  undoable?: boolean | undefined;
 };
+
+export function isUndoable(record: HistoryRecord) {
+  return (
+    record.source !== 'navigation' ||
+    record.undoable === true ||
+    (record.undoable === undefined &&
+      record.revision.beforeFingerprint !== record.revision.afterFingerprint &&
+      record.revision.commands.some(
+        (command) => command.type !== 'set-door' && command.type !== 'emit-event',
+      ))
+  );
+}
 
 export function describeChange(building: Building, commands: SceneCommand[]) {
   const command = commands[0];

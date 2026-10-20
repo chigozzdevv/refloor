@@ -5,6 +5,7 @@ import { physicsSession } from '@/shared/navigation/physics-session';
 import { editDocument, restoreBefore, redoChange } from '@/shared/editor/document';
 import type { DocumentState } from '@/shared/editor/document';
 import type { EditDetails } from '@/shared/editor/history';
+import { isUndoable } from '@/shared/editor/history';
 import { findFurniturePlacement } from '@/shared/editor/placement';
 import { editingError } from '@/shared/editor/errors';
 import { recordChatTurn } from '@refloor/scene/edit-memory';
@@ -94,7 +95,7 @@ export const createEditorState: StateCreator<ProjectState, [], [], EditorState> 
     }
   },
   undo: () => {
-    const record = get().past.findLast((value) => value.source !== 'navigation');
+    const record = get().past.findLast(isUndoable);
     if (record) get().undoTo(record.revision.id);
   },
   undoTo: (id) => {

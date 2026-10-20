@@ -5,7 +5,9 @@ import { compileBuilding } from '@refloor/engine';
 import { applyCommands, fingerprintBuilding, parseBuilding } from '@refloor/scene';
 import type { SceneRule, SceneCommand } from '@refloor/scene';
 import { createEditMemory } from '@refloor/scene/edit-memory';
-import { editDocument, reverseDocument } from '@/shared/editor/document';
+import { editDocument, reverseDocument, restoreBefore, redoChange } from '@/shared/editor/document';
+import { isUndoable } from '@/shared/editor/history';
+import { encodeDraft, decodeDraft } from '@/shared/scene/draft-codec';
 import { encodeProject, readProjectFile } from '@/shared/scene/files';
 import { savedActionCommands } from '@/shared/behaviours/saved-action';
 
@@ -26,6 +28,91 @@ const power = (building: ReturnType<typeof parseBuilding>, id: string) =>
   building.objects.find((object) => object.id === id)!.behaviours[0]!.state.powered;
 
 describe('universal saved scene actions', () => {
+  it('exposes each relative click as an undoable effect without removing its saved rule', () => {
+    const state = initial(),
+      sofa = state.compiled.building.objects.find((object) => object.kind === 'sofa')!,
+      rule: SceneRule = {
+        id: 'relative-click-history',
+        label: 'Move sofa right',
+        enabled: true,
+        trigger: { kind: 'object-click', objectId: sofa.id },
+        conditions: [],
+        actions: [{ type: 'translate-object', objectId: sofa.id, delta: { x: 0.25, y: 0, z: 0 } }],
+      },
+      configured = editDocument(state, [{ type: 'set-rules', rules: [rule] }], undefined, {
+        source: 'chat',
+      }),
+      once = editDocument(configured, [{ type: 'emit-event', event: rule.trigger }], undefined, {
+        source: 'navigation',
+      }),
+      twice = editDocument(once, [{ type: 'emit-event', event: rule.trigger }], undefined, {
+        source: 'navigation',
+      }),
+      record = twice.past.findLast(isUndoable)!;
+    expect(record.revision.id).toBe(twice.past.at(-1)!.revision.id);
+    expect(record).toMatchObject({ source: 'navigation', undoable: true });
+    expect(twice.past.filter(isUndoable)).toHaveLength(3);
+    const undone = restoreBefore(twice, record.revision.id);
+    expect(undone.compiled.building.rules).toEqual([rule]);
+    expect(
+      undone.compiled.building.objects.find((object) => object.id === sofa.id)!.position.x,
+    ).toBe(sofa.position.x + 0.25);
+    const redone = redoChange(undone);
+    expect(
+      redone.compiled.building.objects.find((object) => object.id === sofa.id)!.position.x,
+    ).toBe(sofa.position.x + 0.5);
+    expect(decodeDraft(encodeDraft(redone)).past.at(-1)).toMatchObject({ undoable: true });
+  });
+
+  it('makes room-entry effects and door-triggered door effects visible while retaining navigation ownership', () => {
+    const state = initial(),
+      building = state.compiled.building,
+      lamp = building.objects.find((object) => object.kind === 'light' && !object.placement)!,
+      doors = state.compiled.doors.filter((door) => door.id !== 'ground/entrance'),
+      rule: SceneRule = {
+        id: 'arrival-history',
+        label: 'Arrival lighting',
+        enabled: true,
+        trigger: { kind: 'room-enter', roomId: lamp.roomId },
+        conditions: [],
+        actions: [{ type: 'set-light', objectId: lamp.id, state: { intensity: 1 } }],
+      },
+      secondary: SceneRule = {
+        id: 'door-history',
+        label: 'Open connecting door',
+        enabled: true,
+        trigger: { kind: 'door', doorId: 'ground/entrance', open: true },
+        conditions: [],
+        actions: [{ type: 'set-door', doorId: doors[0]!.id, open: true }],
+      },
+      configured = editDocument(state, [{ type: 'set-rules', rules: [rule, secondary] }]),
+      arrived = editDocument(configured, [{ type: 'emit-event', event: rule.trigger }], undefined, {
+        source: 'navigation',
+      }),
+      entered = editDocument(
+        arrived,
+        [{ type: 'set-door', doorId: 'ground/entrance', open: true }],
+        undefined,
+        { source: 'navigation' },
+      );
+    expect(arrived.past.at(-1)).toMatchObject({ source: 'navigation', undoable: true });
+    expect(entered.past.at(-1)).toMatchObject({ source: 'navigation', undoable: true });
+    expect(entered.memory.transitions.at(-1)?.source).toBe('navigation');
+    const pure = editDocument(
+      state,
+      [{ type: 'set-door', doorId: 'ground/entrance', open: true }],
+      undefined,
+      { source: 'navigation' },
+    );
+    expect(isUndoable(pure.past[0]!)).toBe(false);
+    const unchanged = editDocument(
+      arrived,
+      [{ type: 'emit-event', event: rule.trigger }],
+      undefined,
+      { source: 'navigation' },
+    );
+    expect(isUndoable(unchanged.past.at(-1)!)).toBe(false);
+  });
   it('tests a selected rule with its conditions and records an undoable user change', () => {
     const state = initial(),
       building = state.compiled.building,

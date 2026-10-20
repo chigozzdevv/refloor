@@ -1,10 +1,11 @@
 import { MessageCircle, Redo2, RotateCcw, Undo2, X } from 'lucide-react';
 import { useProject } from '@/shared/scene/scene-store';
+import { isUndoable } from '@/shared/editor/history';
 
 export function EditHistory({ close }: { close: () => void }) {
   const { past, future, undo, redo, undoTo } = useProject();
-  const records = past.filter((record) => record.source !== 'navigation').toReversed(),
-    canRedo = future.some((record) => record.source !== 'navigation');
+  const records = past.filter(isUndoable).toReversed(),
+    canRedo = future.some(isUndoable);
   return (
     <section className="edit-history" aria-label="Edit history">
       <div className="panel-heading">

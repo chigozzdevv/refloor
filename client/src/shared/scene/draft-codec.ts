@@ -12,6 +12,7 @@ const historyRecordSchema = z.strictObject({
   label: z.string().max(500),
   source: z.enum(['chat', 'manual', 'navigation']),
   target: z.string().max(500).optional(),
+  undoable: z.boolean().optional(),
 });
 const historySchema = z.strictObject({
   past: z.array(historyRecordSchema).max(50),
