@@ -1,4 +1,4 @@
-import { Mesh } from 'three';
+import { InstancedMesh, Mesh } from 'three';
 import type { Intersection, Object3D, Raycaster } from 'three';
 
 export function isScenePointer(event: { nativeEvent: { target: EventTarget | null } }): boolean {
@@ -23,6 +23,14 @@ export function belongsToDoor(object: Object3D, doorId: string | undefined): boo
 
 export function visibleMeshRaycast(this: Mesh, raycaster: Raycaster, hits: Intersection[]) {
   if (isVisible(this)) Mesh.prototype.raycast.call(this, raycaster, hits);
+}
+
+export function visibleInstancedMeshRaycast(
+  this: InstancedMesh,
+  raycaster: Raycaster,
+  hits: Intersection[],
+) {
+  if (isVisible(this)) InstancedMesh.prototype.raycast.call(this, raycaster, hits);
 }
 
 export function visibleGroupRaycast(this: Object3D) {

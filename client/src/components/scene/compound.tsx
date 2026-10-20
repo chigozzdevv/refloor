@@ -8,14 +8,15 @@ import { useSurface } from '@/shared/scene/asset-loader';
 import { applyMetricUVs } from '@/shared/scene/metric-uv';
 import { SiteBox, SiteSurface } from '@/components/scene/site-surface';
 import { Landscape } from '@/components/scene/landscape';
+import { PavingSurface } from '@/components/scene/paving-surface';
+import { visibleInstancedMeshRaycast } from '@/shared/editor/picking';
 
 export function Compound({ compiled }: { compiled: CompiledBuilding }) {
   const site = useMemo(() => exteriorLayout(compiled), [compiled]);
   const paving = useRef<InstancedMesh>(null);
   const override = compiled.building.siteMaterials?.paving,
-    material = useSurface(
-      override ?? { ...siteSurfaceMaterial(compiled.building, 'paving'), color: '#ffffff' },
-    ),
+    finish = override ?? { ...siteSurfaceMaterial(compiled.building, 'paving'), color: '#ffffff' },
+    material = useSurface(finish),
     base = useSurface(
       override ?? {
         ...siteSurfaceMaterial(compiled.building, 'paving'),
@@ -62,11 +63,18 @@ export function Compound({ compiled }: { compiled: CompiledBuilding }) {
           ref={paving}
           args={[undefined, undefined, tiles.length]}
           receiveShadow
-          castShadow
+          visible={false}
+          raycast={visibleInstancedMeshRaycast}
           material={material}
         >
           <boxGeometry args={[0.43, 0.06, 0.21]} />
         </instancedMesh>
+        <PavingSurface
+          site={site}
+          material={material}
+          overridden={Boolean(override)}
+          detailed={paving}
+        />
       </SiteSurface>
       <SiteSurface buildingId={compiled.building.id} slot="kerb">
         {[-1, 1].flatMap((side) => [
