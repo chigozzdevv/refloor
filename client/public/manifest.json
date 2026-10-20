@@ -421,35 +421,35 @@
       "licenseUrl": "https://polyhaven.com/license"
     },
     {
-      "id": "waterfall",
+      "id": "spring",
       "provider": "Wikimedia Commons",
-      "providerId": "File:V8.webm",
-      "name": "Rainbow over Murchison Falls National Park",
+      "providerId": "File:Spring - Blender Open Movie.webm",
+      "name": "Spring — mountain finale excerpt",
       "kind": "video",
-      "sourcePage": "https://commons.wikimedia.org/wiki/File:V8.webm",
+      "sourcePage": "https://studio.blender.org/projects/spring/pages/about/",
       "authors": {
-        "BMKME": "Original video"
+        "Andy Goralczyk / Blender Foundation": "Original film"
       },
-      "license": "CC0-1.0",
-      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "attribution": "Rainbow over Murchison Falls National Park by BMKME, CC0, via Wikimedia Commons.",
-      "durationSeconds": 6.4,
+      "license": "CC-BY-4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "attribution": "© Blender Foundation | cloud.blender.org/spring. CC BY 4.0. Edited excerpt, 06:16–06:52.",
+      "durationSeconds": 36,
       "width": 960,
       "height": 540,
-      "framesPerSecond": 30,
+      "framesPerSecond": 24,
       "videoCodec": "H.264 High profile, yuv420p",
       "audioCodec": "AAC-LC stereo, 48000 Hz",
-      "modifications": "Resized from 1920×1080 to 960×540; converted VP9/Opus WebM to H.264/AAC MP4 with FFmpeg 7.1; source duration and sound preserved; source metadata removed; fast-start enabled.",
-      "sourceBytes": 3145371,
-      "sourceSha256": "c6a21a3a7619ca7fbcbc1b4d012d7098d18f599f0200f735d31cae15a4772dd1",
+      "modifications": "36-second excerpt from 06:16 to 06:52. Resized to 960×402 and letterboxed to 960×540, with permanent attribution in the lower bar; converted VP9/Opus to H.264/AAC with FFmpeg 7.1; stereo sound retained; source metadata removed; fast-start enabled.",
+      "sourceBytes": 81781205,
+      "sourceSha256": "d691a199035cc7d295210b286f8f6734893c7d4358d228081af6f0da98a56343",
       "files": [
         {
           "role": "video",
           "path": "/media/tv-demo.mp4",
-          "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a7/V8.webm",
-          "bytes": 884988,
-          "md5": "bc517cacac79d8538756754a83cab480",
-          "sha256": "ce92afd0dc7d5d98165dd01ce1570e35925840fed10a5df97151c6ef5e1d4321"
+          "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a5/Spring_-_Blender_Open_Movie.webm",
+          "bytes": 5400142,
+          "md5": "cec2c2a46b2ff899603a33dab50484a3",
+          "sha256": "a36cbb8be4c7cf25f5b51347bb4153ec63d359edeebabd5c0655a098add165fd"
         }
       ]
     },
@@ -844,7 +844,7 @@
       ]
     }
   ],
-  "totalBytes": 15190386,
+  "totalBytes": 28188241,
   "notes": [
     "All assets are downloaded locally; the app does not depend on the live Poly Haven API.",
     "The source dimensions field is millimetres per the official API schema.",

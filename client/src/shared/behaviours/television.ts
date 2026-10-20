@@ -22,7 +22,7 @@ export function releasePlayback(id: string, video: HTMLVideoElement) {
   }));
 }
 export function mediaSource(source: string | null): string | null {
-  if (!source || source === 'asset:waterfall')
+  if (!source || source === 'asset:spring' || source === 'asset:waterfall')
     return '/media/tv-demo.mp4';
   if (/^https?:\/\//i.test(source)) return source;
   return null;

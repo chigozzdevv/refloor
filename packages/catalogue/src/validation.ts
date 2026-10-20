@@ -55,6 +55,7 @@ export function validateBuildingAssets(building: Building) {
     if (
       television?.state.source &&
       television.state.source !== 'asset:waterfall' &&
+      television.state.source !== 'asset:spring' &&
       !/^https?:\/\//i.test(television.state.source)
     )
       throw new Error('This project refers to an unavailable video asset.');

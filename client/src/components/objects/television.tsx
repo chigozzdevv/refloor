@@ -27,7 +27,7 @@ export function TelevisionScreen({ object }: { object: SceneObject }) {
     video.crossOrigin = 'anonymous';
     video.loop = true;
     video.playsInline = true;
-    video.preload = 'metadata';
+    video.preload = 'auto';
     video.muted = true;
     video.src = url;
     const screen = new VideoTexture(video);
