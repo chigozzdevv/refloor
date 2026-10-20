@@ -133,7 +133,7 @@ function computeNavigation(
     };
   });
   const estimate = axes.reduce((sum, axis) => sum + axis.xs.length * axis.zs.length, 0);
-  if (estimate > compiled.options.maxNodes || estimate * compiled.colliders.length > 25_000_000)
+  if (estimate * compiled.colliders.length > 25_000_000)
     fail(
       'NAVIGATION_LIMIT',
       compiled.building.id,
@@ -148,6 +148,12 @@ function computeNavigation(
       for (const [xi, x] of xs.entries()) {
         const point = { floorId: floor.id, position: { x, y: floor.elevation, z } };
         if (!isWalkable(compiled, point, doorPolicy)) continue;
+        if (navigation.nodes.length >= compiled.options.maxNodes)
+          fail(
+            'NAVIGATION_LIMIT',
+            compiled.building.id,
+            'Building exceeds the navigation node budget',
+          );
         const index = navigation.nodes.length;
         navigation.nodes.push({ ...point, edges: [] });
         grid.set(`${xi}:${zi}`, index);
