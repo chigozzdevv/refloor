@@ -15,7 +15,7 @@ export type PlannedRoom = {
   footprint: Footprint;
 };
 export type HouseLayout = {
-  family: 'central-hall' | 'side-gallery';
+  family: 'central-hall' | 'side-gallery' | 'living-hub';
   width: number;
   depth: number;
   hallX: number;
@@ -33,11 +33,21 @@ export async function solveLayout(requirements: HouseRequirements): Promise<Hous
   solver.add(depth.ge(90), depth.le(240));
   if (requirements.depth !== null) solver.add(depth.eq(Math.round(requirements.depth * 10)));
   const family = requirements.circulation?.family ?? 'central-hall';
-  const hallWidth = requirements.storeys === 2 ? 5.4 : 1.8;
+  const hub =
+    family === 'living-hub'
+      ? requirements.rooms.find((room) => room.uses.includes('living'))!
+      : null;
+  const hallWidth = hub ? (hub.uses.length > 1 ? 8.8 : 6) : requirements.storeys === 2 ? 5.4 : 1.8;
   const largestProgramme = Math.max(...requirements.rooms.map((room) => room.uses.length));
   const publicWide =
     family === 'central-hall' && requirements.circulation?.balance === 'public-wide';
-  const typicalRoomWidth = largestProgramme === 3 ? 5.8 : largestProgramme === 2 ? 5.2 : 4.2;
+  const typicalRoomWidth = hub
+    ? 4.6
+    : largestProgramme === 3
+      ? 5.8
+      : largestProgramme === 2
+        ? 5.2
+        : 4.2;
   const wingWidth =
     family === 'side-gallery'
       ? largestProgramme * 4.2
@@ -51,7 +61,7 @@ export async function solveLayout(requirements: HouseRequirements): Promise<Hous
   const availableWidth = Math.round((width - hallWidth) * 10) / 10;
   const narrowWidth = Math.max(4.2, Math.floor((availableWidth / 3) * 10 + 1e-6) / 10);
   const hallX =
-    family === 'central-hall'
+    family !== 'side-gallery'
       ? publicWide
         ? publicSide === 0
           ? Math.round((availableWidth - narrowWidth) * 10) / 10
@@ -62,7 +72,14 @@ export async function solveLayout(requirements: HouseRequirements): Promise<Hous
         : availableWidth;
   const leftWidth = hallX,
     rightWidth = Math.round((availableWidth - hallX) * 1e6) / 1e6;
-  const variables = requirements.rooms.map((requirement, index) => {
+  if (hub && Math.min(leftWidth, rightWidth) < 4.2) {
+    solver.release();
+    throw new GenerationFailure(
+      'This footprint is too narrow for a furnished parlor with rooms opening directly from both sides. Increase the width.',
+    );
+  }
+  const variables = requirements.rooms.flatMap((requirement, index) => {
+    if (requirement === hub) return [];
     const side = Int.const(`side_${index}`),
       start = Int.const(`start_${index}`),
       size = Int.const(`depth_${index}`),
@@ -75,11 +92,11 @@ export async function solveLayout(requirements: HouseRequirements): Promise<Hous
     if (family === 'side-gallery') solver.add(side.eq(galleryLeft ? 1 : 0));
     if (publicWide && requirement.uses.includes('living')) solver.add(side.eq(publicSide));
     if (requirement.side !== null) solver.add(side.eq(requirement.side === 'left' ? 0 : 1));
-    return { requirement, index, side, start, size, minimum };
+    return [{ requirement, index, side, start, size, minimum }];
   });
   for (let floor = 0; floor < requirements.storeys; floor++) {
     const rooms = variables.filter((room) => room.requirement.floor === floor);
-    for (const side of family === 'central-hall' ? [0, 1] : [galleryLeft ? 1 : 0])
+    for (const side of family !== 'side-gallery' ? [0, 1] : [galleryLeft ? 1 : 0])
       solver.add(
         rooms
           .reduce<Arith<'house'>>(
@@ -130,17 +147,29 @@ export async function solveLayout(requirements: HouseRequirements): Promise<Hous
     hallX,
     hallWidth,
     stairPosition: requirements.circulation?.stairPosition ?? 'front',
-    rooms: variables.map((room) => ({
-      index: room.index,
-      requirement: room.requirement,
-      side: value(room.side),
-      footprint: {
-        x: value(room.side) === 0 ? 0 : hallX + hallWidth,
-        z: value(room.start) / 10,
-        width: value(room.side) === 0 ? leftWidth : rightWidth,
-        depth: value(room.size) / 10,
-      },
-    })),
+    rooms: [
+      ...variables.map((room) => ({
+        index: room.index,
+        requirement: room.requirement,
+        side: value(room.side),
+        footprint: {
+          x: value(room.side) === 0 ? 0 : hallX + hallWidth,
+          z: value(room.start) / 10,
+          width: value(room.side) === 0 ? leftWidth : rightWidth,
+          depth: value(room.size) / 10,
+        },
+      })),
+      ...(hub
+        ? [
+            {
+              index: requirements.rooms.indexOf(hub),
+              requirement: hub,
+              side: -1,
+              footprint: { x: hallX, z: 0, width: hallWidth, depth: value(depth) / 10 },
+            },
+          ]
+        : []),
+    ],
   };
   solver.release();
   return layout;

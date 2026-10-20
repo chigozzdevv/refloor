@@ -87,7 +87,8 @@ export function assembleHouse(
       south.openings.push({
         id: `${floorId}/entrance`,
         kind: 'door',
-        offset: hallX + hallWidth - 1.4,
+        offset:
+          layout.family === 'living-hub' ? hallX + hallWidth / 2 - 0.55 : hallX + hallWidth - 1.4,
         width: 1.1,
         height: 2.25,
         hinge: 'end',
@@ -163,10 +164,13 @@ export function assembleHouse(
         floor.rooms.push(room);
       }
     }
+    const hub =
+      layout.family === 'living-hub' ? layout.rooms.find((room) => room.side === -1) : undefined;
     floor.rooms.push({
-      id: `${floorId}/hall`,
-      name: level === 0 ? 'Entrance hall' : 'Landing',
-      kind: 'corridor',
+      id: hub ? `${floorId}/room-${hub.index}` : `${floorId}/hall`,
+      name: hub?.requirement.name ?? (level === 0 ? 'Entrance hall' : 'Landing'),
+      kind: hub ? 'living' : 'corridor',
+      ...(hub ? { uses: hub.requirement.uses } : {}),
       footprint: { x: hallX, z: 0, width: hallWidth, depth },
       wallIds: [
         south,
@@ -181,11 +185,23 @@ export function assembleHouse(
       id: `${floorId}/hall-window`,
       kind: 'window',
       offset: hallX + 0.2,
-      width: Math.min(1.6, hallWidth - 0.4),
+      width: hub ? Math.min(2.8, hallWidth - 0.4) : Math.min(1.6, hallWidth - 0.4),
       height: 1.5,
       sill: 0.85,
       material: structuredClone(finishes.glass),
     });
+    if (hub) {
+      for (const fraction of [0.2, 0.8])
+        south.openings.push({
+          id: `${floorId}/parlor-window-${fraction}`,
+          kind: 'window',
+          offset: hallX + hallWidth * fraction - 0.9,
+          width: 1.8,
+          height: 1.7,
+          sill: 0.75,
+          material: structuredClone(finishes.glass),
+        });
+    }
     if (layout.family === 'side-gallery') {
       const outer = hallX === 0 ? west : east;
       for (let z = 1.2; z + 1.6 < depth - 0.6; z += 3.2)

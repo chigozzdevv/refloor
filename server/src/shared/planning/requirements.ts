@@ -11,7 +11,7 @@ export const roomUseSchema = z.enum([
 ]);
 const colorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 export const circulationSchema = z.strictObject({
-  family: z.enum(['central-hall', 'side-gallery']),
+  family: z.enum(['central-hall', 'side-gallery', 'living-hub']),
   gallerySide: z.enum(['left', 'right']),
   stairPosition: z.enum(['front', 'rear']),
   balance: z.enum(['balanced', 'public-wide']).nullish(),
@@ -21,6 +21,7 @@ export const designSchema = z.strictObject({
   joinery: z.enum(['oak', 'walnut']),
   hardware: z.enum(['black', 'brass']),
   glazing: z.enum(['standard', 'generous']).nullish(),
+  audio: z.enum(['television', 'stereo']).nullish(),
   exterior: z.strictObject({
     finish: z.enum(['plaster', 'brick', 'marble']),
     color: colorSchema,
@@ -68,7 +69,10 @@ export const houseResponseSchema = z.strictObject({
         .extend({ balance: z.enum(['balanced', 'public-wide']).nullable() })
         .nullable(),
       design: designSchema
-        .extend({ glazing: z.enum(['standard', 'generous']).nullable() })
+        .extend({
+          glazing: z.enum(['standard', 'generous']).nullable(),
+          audio: z.enum(['television', 'stereo']).nullable(),
+        })
         .nullable(),
     })
     .nullable(),
@@ -90,9 +94,7 @@ export function validateRequirements(input: unknown): HouseRequirements {
   for (let floor = 0; floor < requirements.storeys; floor++) {
     const rooms = requirements.rooms.filter((room) => room.floor === floor);
     if (rooms.length < 2 || rooms.length > 8)
-      throw new GenerationFailure(
-        'Each floor currently supports two to eight rooms connected to a circulation hall.',
-      );
+      throw new GenerationFailure('Each floor currently supports two to eight rooms.');
   }
   if (requirements.rooms.some((room) => room.floor >= requirements.storeys))
     throw new GenerationFailure(
@@ -124,6 +126,19 @@ export function validateRequirements(input: unknown): HouseRequirements {
     if (requirements.rooms.some((room) => room.side !== null && room.side !== occupiedSide))
       throw new GenerationFailure(
         'A side gallery has rooms on its opposite side. Use a central hall for rooms on both sides.',
+      );
+  }
+  if (requirements.circulation?.family === 'living-hub') {
+    if (requirements.storeys !== 1)
+      throw new GenerationFailure('Direct parlor connections currently support bungalows.');
+    const living = requirements.rooms.find((room) => room.uses.includes('living'))!;
+    if (requirements.rooms.length < 3 || living.uses.includes('kitchen'))
+      throw new GenerationFailure(
+        'A living-hub bungalow needs at least two enclosed rooms and a separate kitchen when requested. The parlor can include dining.',
+      );
+    if (living.side !== null)
+      throw new GenerationFailure(
+        'The living hub is central; assign sides to its adjoining rooms.',
       );
   }
   return requirements;

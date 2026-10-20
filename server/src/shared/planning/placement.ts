@@ -86,6 +86,16 @@ export function furnishLayout(
         add('coffee-table', 'coffee-table', centre, at(2), turn);
         add('television', 'television', centre, at(0.18), front ? 0 : Math.PI, 1.05);
         add('sideboard', 'cabinet', centre, at(0.4), front ? 0 : Math.PI);
+        if (design?.audio === 'stereo') {
+          for (const [index, side] of [-1, 1].entries())
+            add(
+              `speaker-${index + 1}`,
+              'speaker',
+              centre + side * 1.25,
+              at(0.35),
+              front ? 0 : Math.PI,
+            );
+        }
         if (design && fp.width >= 5.2) {
           // Keep a continuous walkway around the seating and opening storage.
           const offset = Math.min(2.1, fp.width / 2 - 1.32);
@@ -144,10 +154,16 @@ export function furnishLayout(
       add(
         'plant',
         'plant',
-        (planned.side === 0) !== entrySidePlant ? fp.x + 0.5 : fp.x + fp.width - 0.5,
-        zones.length > 1 && zones[0]?.use === 'living' && zones[0].facing === 'front'
-          ? fp.z + 0.55
-          : fp.z + fp.depth - 0.55,
+        planned.side === -1
+          ? fp.x + 1
+          : (planned.side === 0) !== entrySidePlant
+            ? fp.x + 0.5
+            : fp.x + fp.width - 0.5,
+        planned.side === -1
+          ? fp.z + 1.8
+          : zones.length > 1 && zones[0]?.use === 'living' && zones[0].facing === 'front'
+            ? fp.z + 0.55
+            : fp.z + fp.depth - 0.55,
       );
     }
   }

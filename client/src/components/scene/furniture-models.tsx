@@ -6,6 +6,7 @@ import { finishes, lightOutput, lightTuning } from '@refloor/catalogue';
 import { useSurface } from '@/shared/scene/asset-loader';
 import { useProject } from '@/shared/scene/scene-store';
 import { TelevisionScreen } from '@/components/objects/television';
+import { Speaker } from '@/components/objects/speaker';
 import { RoomFixtures } from '@/components/scene/room-fixtures';
 import { Cupboard } from '@/components/objects/cupboard';
 import { Floodlight } from '@/components/objects/floodlight';
@@ -118,5 +119,6 @@ export function FurnitureModels({
   if (renderer === 'wall-light') return <WallLight object={object} />;
   if (renderer === 'outdoor-planter') return <OutdoorPlanter object={object} />;
   if (renderer === 'television') return <Television object={object} />;
+  if (renderer === 'speaker') return <Speaker object={object} />;
   return <RoomFixtures object={object} renderer={renderer} />;
 }

@@ -9,6 +9,7 @@ export type FurnitureRenderer =
   | 'coffee-table'
   | 'bed'
   | 'television'
+  | 'speaker'
   | 'pendant'
   | 'floodlight'
   | 'wall-light'
@@ -40,6 +41,17 @@ export type CatalogueEntry = ObjectAsset & {
 
 export const catalogue: CatalogueEntry[] = [
   ...roomEssentials,
+  {
+    assetId: 'catalogue/speaker',
+    label: 'Floor speaker',
+    kind: 'decor',
+    dimensions: { width: 0.24, height: 0.9, depth: 0.28 },
+    materials: { body: finishes.walnutVeneer, frame: finishes.black },
+    behaviours: [],
+    renderer: 'speaker',
+    description:
+      'A passive floor speaker for the room’s television audio. Control sound and volume through the television; the cabinet can be moved or refinished independently.',
+  },
   {
     assetId: 'catalogue/floodlight',
     label: 'Exterior floodlight',
