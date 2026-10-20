@@ -15,7 +15,7 @@ import { compoundRoute } from '@/shared/navigation/compound-route';
 export type Destination = {
   id: string;
   label: string;
-  kind: 'room' | 'door' | 'stairs';
+  kind: 'room' | 'door' | 'stairs' | 'waypoint';
   caption?: string;
   anchor: Point3;
   target: NavigationPoint;

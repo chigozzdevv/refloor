@@ -123,6 +123,7 @@ export function NavigationMarkers() {
     const links = continuing.length ? continuing : tourPortals(compiled, player, all);
     camera.updateMatrixWorld();
     const candidates = (continuing.length ? continuing : all)
+      .map((destination) => links.find((link) => link.id === destination.id) ?? destination)
       .filter((destination) => {
         if (
           destination.kind === 'door' ||

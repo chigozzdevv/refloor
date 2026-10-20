@@ -34,17 +34,51 @@ export function tourPortals(
 ) {
   const floor = compiled.building.floors.find((value) => value.id === player.floorId);
   const room = floor?.rooms.find((value) => contains(value.footprint, player.position));
-  const links = stops.filter((stop) => {
-    if (stop.floorId !== player.floorId || !stop.approach) return false;
-    if (Math.abs(stop.approach.position.y - player.position.y) > 0.22) return false;
-    if (room && stop.kind === 'door' && stop.roomId !== room.id) return false;
+  const links = stops.flatMap((stop): Destination[] => {
+    if (stop.floorId !== player.floorId || !stop.approach) return [];
+    if (Math.abs(stop.approach.position.y - player.position.y) > 0.22) return [];
+    if (room && stop.kind === 'door' && stop.roomId !== room.id) return [];
     if (room && stop.kind === 'stairs' && !contains(room.footprint, stop.approach.position))
-      return false;
+      return [];
     const path = destinationRoute(compiled, player, stop.approach, 'current');
-    return (
-      path !== null && path.stairIds.length === 0 && (stop.kind !== 'stairs' || path.length <= 2)
-    );
+    if (!path || path.stairIds.length) return [];
+    if (stop.kind === 'stairs' && path.length > 2)
+      return [
+        {
+          ...stop,
+          kind: 'waypoint',
+          label: 'Walk to stairs',
+          caption: 'Stairs',
+          anchor: { ...stop.approach.position, y: stop.approach.position.y + 0.055 },
+          target: stop.approach,
+          ...(room ? { roomId: room.id } : {}),
+          lookAt: { ...stop.anchor, y: stop.anchor.y + 1.1 },
+        },
+      ];
+    return [stop];
   });
+  const entry = entryPose(compiled);
+  if (
+    room &&
+    entry.floorId === player.floorId &&
+    contains(room.footprint, entry.inside) &&
+    Math.hypot(player.position.x - entry.inside.x, player.position.z - entry.inside.z) > 0.8
+  ) {
+    const target = { floorId: entry.floorId, position: entry.inside },
+      route = destinationRoute(compiled, player, target, 'current');
+    if (route && !route.stairIds.length)
+      links.push({
+        id: `entrance:${entry.doorId}`,
+        kind: 'waypoint',
+        label: 'Walk to entrance',
+        caption: 'Entrance',
+        floorId: entry.floorId,
+        roomId: room.id,
+        anchor: { ...entry.inside, y: entry.inside.y + 0.055 },
+        target,
+        lookAt: entry.target,
+      });
+  }
   return links.sort((a, b) => a.id.localeCompare(b.id));
 }
 
@@ -57,6 +91,9 @@ export function navigationCues(
 ): PortalCue[] {
   const floor = compiled.building.floors.find((value) => value.id === player.floorId),
     room = floor?.rooms.find((value) => contains(value.footprint, player.position)),
+    waypoints = links
+      .filter((link) => link.kind === 'waypoint')
+      .map((destination) => ({ destination, label: destination.label })),
     stairs = links
       .filter(
         (link, index) =>
@@ -89,6 +126,7 @@ export function navigationCues(
         label: destination.caption ?? destination.label,
       })),
       ...stairs,
+      ...waypoints,
     ];
   const doors = destinations(compiled).filter((destination) => destination.kind === 'door'),
     exits = doorLinks
@@ -112,6 +150,7 @@ export function navigationCues(
       );
   return [
     ...stairs,
+    ...waypoints,
     ...exits.map(({ destination }, index) => ({
       destination,
       label:

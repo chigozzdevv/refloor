@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, DoorOpen } from 'lucide-react';
+import { ArrowDown, ArrowUp, DoorOpen, Footprints } from 'lucide-react';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 import { useProject } from '@/shared/scene/scene-store';
 import { useExperience } from '@/shared/scene/experience-store';
@@ -25,7 +25,9 @@ export function PortalDots() {
             ? destination.direction === 'down'
               ? ArrowDown
               : ArrowUp
-            : DoorOpen;
+            : destination.kind === 'waypoint'
+              ? Footprints
+              : DoorOpen;
         return (
           <button
             key={destination.id}

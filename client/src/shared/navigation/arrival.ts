@@ -3,6 +3,7 @@ import { contains } from '@refloor/engine/math';
 import { destinationRoute, destinations, nearbyRoute } from '@/shared/navigation/destinations';
 import { clearView } from '@/shared/navigation/viewpoints';
 import { entryPose } from '@/shared/navigation/entry';
+import { tourPortals } from '@/shared/navigation/portals';
 
 export type ArrivalView = {
   point: Point3;
@@ -18,9 +19,40 @@ export function arrivalView(
 ): ArrivalView | null {
   const floor = compiled.building.floors.find((value) => value.id === target.floorId);
   const room = floor?.rooms.find((value) => contains(value.footprint, target.position));
-  if (!floor || !room) return null;
+  if (!floor) return null;
   const from = { ...target.position, y: target.position.y + 1.62 };
+  if (!room) {
+    const exterior = compiled.building.objects
+      .filter((object) => object.floorId === floor.id && object.placement === 'exterior')
+      .map((object) => ({
+        object,
+        point: {
+          x: object.position.x,
+          y: floor.elevation + object.position.y + object.dimensions.height * 0.65,
+          z: object.position.z,
+        },
+        distance: Math.hypot(object.position.x - from.x, object.position.z - from.z),
+      }))
+      .filter(
+        (value) =>
+          value.distance > 0.65 &&
+          value.distance < 10 &&
+          clearView(compiled, from, value.point, value.object.id),
+      )
+      .sort(
+        (a, b) =>
+          Number(a.object.kind === 'light') - Number(b.object.kind === 'light') ||
+          Math.round(a.distance * 10) - Math.round(b.distance * 10) ||
+          a.object.id.localeCompare(b.object.id),
+      )[0];
+    if (exterior) return { point: exterior.point, entityId: exterior.object.id, kind: 'object' };
+    const entry = entryPose(compiled);
+    return entry.floorId === floor.id && clearView(compiled, from, entry.target, entry.doorId)
+      ? { point: entry.target, entityId: entry.doorId, kind: 'door' }
+      : null;
+  }
   const transit = room.kind === 'corridor' || room.kind === 'stairwell';
+  const links = tourPortals(compiled, target, destinations(compiled));
   const candidates: (ArrivalView & { score: number })[] = [];
   const add = (view: ArrivalView, priority: number, ignoreId?: string) => {
     const distance = Math.hypot(view.point.x - from.x, view.point.z - from.z);
@@ -42,6 +74,18 @@ export function arrivalView(
       score: priority + distance * 0.12 - (preferredDistance < 0.75 ? 6 : 0),
     });
   };
+  const entry = entryPose(compiled);
+  if (
+    preferred &&
+    entry.floorId === target.floorId &&
+    Math.hypot(target.position.x - entry.inside.x, target.position.z - entry.inside.z) < 0.5 &&
+    Math.hypot(
+      preferred.x - entry.target.x,
+      preferred.y - entry.target.y,
+      preferred.z - entry.target.z,
+    ) < 0.1
+  )
+    add({ point: entry.target, entityId: entry.doorId, kind: 'door' }, 0, entry.doorId);
   for (const stop of destinations(compiled)) {
     if (stop.floorId !== floor.id) continue;
     if (
@@ -57,11 +101,12 @@ export function arrivalView(
           entityId: stop.doorId!,
           kind: 'door',
         },
-        transit ? 0 : 8,
+        transit ? (Math.hypot(stop.anchor.x - from.x, stop.anchor.z - from.z) < 3.35 ? 0 : 14) : 8,
         stop.doorId,
       );
     if (
       stop.kind === 'stairs' &&
+      !links.some((link) => link.id === stop.id && link.kind === 'waypoint') &&
       stop.approach &&
       contains(room.footprint, stop.approach.position) &&
       nearbyRoute(
@@ -77,6 +122,17 @@ export function arrivalView(
         stop.stairId,
       );
   }
+  if (transit)
+    for (const waypoint of links)
+      if (waypoint.kind === 'waypoint')
+        add(
+          {
+            point: { ...waypoint.anchor, y: floor.elevation + 1.1 },
+            entityId: `approach:${waypoint.id}`,
+            kind: 'route',
+          },
+          2,
+        );
   for (const object of compiled.building.objects.filter(
     (value) => value.roomId === room.id && value.kind !== 'light',
   ))
