@@ -44,6 +44,7 @@ Reloading or returning opens the current house directly, restoring its camera, f
 position, lighting and overview target. Older drafts without a saved view open at the entrance.
 Reloading an active generation resumes its saved job rather than submitting another request.
 New house opens the prompt without moving the player; Back to your house restores the prior view.
+New prompts start with an editable brick-bungalow description; pending requests keep their own text.
 Before generation or a starting house replaces the current draft, its latest contents are saved
 to MongoDB. A failed save keeps the current house open and prevents replacement.
 The API key stays on the server. Responses use Structured Outputs with storage disabled and
@@ -193,10 +194,14 @@ ceiling and tabletop supports, object dimensions, windows, doorways, stairs and 
 The library uses the same placement and initially selects the occupied room. Chat also controls
 televisions, lights, doors and supported household fixtures. Accepted edits
 update collision geometry and support undo/redo (also Cmd/Ctrl+Z and Shift+Cmd/Ctrl+Z).
+Chat stays busy through the committed scene frame, refreshed shadows and affected finite
+animations. Running water, flames and video do not keep a completed command loading.
 TV controls play the included clip or a compatible direct video URL on the 3D screen;
 power, mute and volume update the actual media player. Light controls update fixture
 emission, intensity, colour and cached local shadows in high quality mode.
 Cookers have four named burners with individual on/off, shared 0–100% heat and visible flames.
+Tap and shower commands identify the component: “open the tap” starts water, while “open the oven”
+opens the oven door on the same kitchen unit.
 Lighting a named burner while the cooker is powered off selects only that burner. Starting
 the whole cooker reuses its configured selection, or front-left when the selection is empty. Sink taps and showers have 0–100% flow, 10–60 °C temperature
 state and visible streams. Whole-device starts preserve usable settings; zero heat/flow
