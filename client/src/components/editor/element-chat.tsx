@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import { ArrowUp, Lightbulb, LoaderCircle, X } from 'lucide-react';
+import { ArrowUp, History, Lightbulb, LoaderCircle, X } from 'lucide-react';
 import type { ChatTarget } from '@refloor/scene/chat';
 import { useLanguageEdit } from '@/shared/editor/use-language-edit';
 
@@ -15,11 +15,16 @@ export function ElementChat({
   close?: () => void;
 }) {
   const [message, setMessage] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(
     target.kind === 'wall' && target.side === 'exterior',
   );
   const input = useRef<HTMLTextAreaElement>(null);
-  const { send, busy, reply } = useLanguageEdit(target);
+  const conversation = useRef<HTMLDivElement>(null);
+  const { send, busy, reply, history } = useLanguageEdit(target);
+  useLayoutEffect(() => {
+    if (conversation.current) conversation.current.scrollTop = conversation.current.scrollHeight;
+  }, [showHistory, history.length, reply]);
   useLayoutEffect(() => {
     if (input.current) {
       input.current.style.height = 'auto';
@@ -41,6 +46,18 @@ export function ElementChat({
       <div className="chat-heading">
         <span title={label}>{label}</span>
         <div className="chat-heading-actions">
+          {history.length > 0 && (
+            <button
+              className="icon-button"
+              type="button"
+              aria-label="Recent conversation"
+              aria-expanded={showHistory}
+              title="Recent conversation"
+              onClick={() => setShowHistory(!showHistory)}
+            >
+              <History size={14} />
+            </button>
+          )}
           {suggestions.length > 0 && (
             <button
               className="icon-button"
@@ -60,7 +77,24 @@ export function ElementChat({
           )}
         </div>
       </div>
-      {reply && (
+      {showHistory && (
+        <div
+          ref={conversation}
+          className="chat-conversation"
+          role="log"
+          aria-label="Recent conversation"
+        >
+          {history.map((turn) => (
+            <div className="chat-turn" key={turn.id}>
+              <p className="chat-user-message">{turn.message}</p>
+              <p className="chat-assistant-message" data-status={turn.status}>
+                {turn.reply}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+      {!showHistory && reply && (
         <p className="chat-reply" role="status">
           {reply}
         </p>

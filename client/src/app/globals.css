@@ -786,6 +786,39 @@ select option {
   overflow-wrap: anywhere;
   font-size: 11px;
 }
+.chat-conversation {
+  max-height: min(260px, 32dvh);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 6px 0;
+  scrollbar-width: thin;
+}
+.chat-turn {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.chat-turn p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.chat-user-message {
+  justify-self: end;
+  max-width: 92%;
+  padding: 8px 11px;
+  border-radius: 12px 12px 3px 12px;
+  background: var(--field);
+  border: 1px solid var(--line);
+}
+.chat-assistant-message {
+  padding: 2px 4px;
+  color: var(--muted);
+}
+.chat-assistant-message[data-status='rejected'] {
+  color: #e6ad98;
+}
 .saved-list-heading {
   display: flex;
   justify-content: space-between;

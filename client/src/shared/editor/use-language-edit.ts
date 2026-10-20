@@ -9,6 +9,15 @@ import { editingError } from '@/shared/editor/errors';
 import { targetIdentity } from '@/shared/editor/identity';
 
 export function useLanguageEdit(target: ChatTarget) {
+  const turns = useProject((state) => state.memory.turns);
+  const history = turns
+    .filter(
+      (turn) =>
+        turn.target.kind === target.kind &&
+        turn.target.id === target.id &&
+        turn.target.side === target.side,
+    )
+    .slice(-8);
   const busy = useProject((state) => state.chatPending !== null),
     lastTurn = useProject((state) =>
       state.memory.turns.findLast(
@@ -81,5 +90,5 @@ export function useLanguageEdit(target: ChatTarget) {
       );
     }
   };
-  return { busy, reply: busy ? null : (lastTurn?.reply ?? null), send };
+  return { busy, reply: busy ? null : (lastTurn?.reply ?? null), history, send };
 }
