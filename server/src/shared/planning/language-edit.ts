@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { wallExteriorSide } from '@refloor/scene/wall-exterior';
 import { sceneEventSchema, ruleConditionSchema } from '@refloor/scene/rules';
+import { poweredBehaviourKindSchema, isPoweredBehaviour } from '@refloor/scene/behaviour';
 import {
   assetFromCatalogue,
   catalogue,
@@ -14,6 +15,11 @@ import { applyCommands } from '@refloor/scene';
 import type { Building, Material, SceneCommand, SceneAction } from '@refloor/scene';
 import type { ChatTarget, LanguageEditRequest } from '@refloor/scene/chat';
 import { scopedEditMemory } from '@refloor/scene/edit-memory';
+import {
+  householdCapabilities,
+  householdCommands,
+  targetCapabilitySchema,
+} from '@refloor/server/shared/planning/household-edit';
 import { restoreElement } from '@refloor/server/shared/planning/restore-element';
 import {
   objectMaterial,
@@ -39,6 +45,19 @@ import {
   partitionMoveCommand,
 } from '@refloor/server/shared/planning/structural-edit';
 
+const languagePowerSchema = ruleConditionSchema.options[1].extend({
+  behaviour: poweredBehaviourKindSchema.nullable().default(null),
+});
+const languageConditionSchema = z.discriminatedUnion('kind', [
+  ruleConditionSchema.options[0],
+  languagePowerSchema,
+  ruleConditionSchema.options[2],
+]);
+const languageEventSchema = z.discriminatedUnion('kind', [
+  ...languageConditionSchema.options,
+  sceneEventSchema.options[3],
+  sceneEventSchema.options[4],
+]);
 const vector = z.strictObject({ x: z.number(), y: z.number(), z: z.number() });
 export const languageActionSchema = z.strictObject({
   action: z.enum([
@@ -58,11 +77,16 @@ export const languageActionSchema = z.strictObject({
     'intensity',
     'light-color',
     'reset-light',
+    'cooker-heat',
+    'cooker-burner',
+    'water-flow',
+    'water-temperature',
     'restore',
     'open',
     'source',
   ]),
   targetId: z.string(),
+  targetCapability: targetCapabilitySchema.nullable().default(null),
   surface: z.enum(['body', 'frame', 'top', 'walls', 'floors', 'exterior', 'roof']).nullable(),
   vector: vector.nullable(),
   relative: z.boolean().nullable(),
@@ -83,8 +107,8 @@ export const languagePlanSchema = z.strictObject({
         id: z.string().nullable(),
         label: z.string().max(120),
         enabled: z.boolean(),
-        trigger: sceneEventSchema.nullable(),
-        conditions: z.array(ruleConditionSchema).max(8),
+        trigger: languageEventSchema.nullable(),
+        conditions: z.array(languageConditionSchema).max(8),
         actions: z.array(languageActionSchema).max(12),
       }),
     )
@@ -156,7 +180,8 @@ export function languageContext(input: LanguageEditRequest) {
     })),
     supportedEvents: [
       'door opens/closes',
-      'device powers on/off',
+      'device powers on/off (specify behaviour for compound fixtures)',
+      'appliance or cabinet opens/closes',
       'enter a room',
       'click an object',
     ],
@@ -188,15 +213,21 @@ export function languageContext(input: LanguageEditRequest) {
         roomId,
         materials: { ...getCatalogueEntry(assetId).materials, ...materials },
         behaviours,
+        capabilities: householdCapabilities({ behaviours, assetId }),
+        restorationDefaults: getCatalogueEntry(assetId).behaviours.filter((behaviour) =>
+          getCatalogueEntry(assetId).optionalBehaviours?.includes(behaviour.kind),
+        ),
       }),
     ),
     floors: input.building.floors.map((floor) => ({
       id: floor.id,
       elevation: floor.elevation,
       height: floor.height,
-      rooms: floor.rooms.map(({ id, name, footprint, floorMaterial }) => ({
+      rooms: floor.rooms.map(({ id, name, kind, uses, footprint, floorMaterial }) => ({
         id,
         name,
+        kind,
+        uses: uses ?? [kind],
         footprint,
         floorMaterial,
       })),
@@ -221,12 +252,14 @@ export function languageContext(input: LanguageEditRequest) {
           .map(({ id, state }) => ({ id, state })),
       })),
     })),
-    catalogue: catalogue.map(({ assetId, label, kind, dimensions }) => ({
+    catalogue: catalogue.map(({ assetId, label, kind, dimensions, behaviours }) => ({
       assetId,
       label,
       kind,
       dimensions,
       placement: placementProfile(assetId),
+      behaviours,
+      capabilities: householdCapabilities({ behaviours, assetId }),
     })),
     finishes: Object.keys(finishes),
   };
@@ -299,6 +332,7 @@ export function languageCommands(
           action.targetId,
           required(action.value),
           target.kind === 'wall' && target.side === 'exterior' ? 'exterior' : action.surface,
+          action.targetCapability,
         ),
       );
     } else if (action.action === 'color' || action.action === 'finish') {
@@ -444,21 +478,9 @@ export function languageCommands(
       commands.push({ type: 'remove-object', objectId: object.id });
     } else if (object) {
       const television = object.behaviours.some((item) => item.kind === 'television'),
-        light = object.behaviours.some((item) => item.kind === 'light');
-      if (action.action === 'power' && (television || light))
-        commands.push(
-          television
-            ? {
-                type: 'set-television',
-                objectId: object.id,
-                state: { powered: required(action.enabled) },
-              }
-            : {
-                type: 'set-light',
-                objectId: object.id,
-                state: { powered: required(action.enabled) },
-              },
-        );
+        light = object.behaviours.some((item) => item.kind === 'light'),
+        household = householdCommands(object, action, options.preserveRelative);
+      if (household) commands.push(...household);
       else if (action.action === 'mute' && television)
         commands.push({
           type: 'set-television',
@@ -540,7 +562,21 @@ export function languageCommands(
     if (automation.id && !existing) throw new Error('That saved action no longer exists.');
     if (automation.operation !== 'save' && !existing)
       throw new Error('That saved action no longer exists.');
-    const trigger = automation.trigger ?? existing?.trigger;
+    const normalizedEvent = (event: z.input<typeof languageEventSchema>) => {
+      if (event.kind !== 'power') return event;
+      const { behaviour, ...rest } = event;
+      if (
+        !behaviour &&
+        building.objects
+          .find((item) => item.id === event.objectId)
+          ?.behaviours.filter(isPoweredBehaviour).length !== 1
+      )
+        throw new Error('Choose the cooker or tap capability for that saved power event.');
+      return behaviour ? { ...rest, behaviour } : rest;
+    };
+    const trigger = automation.trigger
+      ? sceneEventSchema.parse(normalizedEvent(automation.trigger))
+      : existing?.trigger;
     if (!trigger) throw new Error('Choose what should trigger this action.');
     const selectedTrigger =
       target.kind === 'house' ||
@@ -576,7 +612,9 @@ export function languageCommands(
         label: automation.label,
         enabled: automation.enabled,
         trigger,
-        conditions: automation.conditions,
+        conditions: automation.conditions.map((condition) =>
+          ruleConditionSchema.parse(normalizedEvent(condition)),
+        ),
         actions: actions as SceneAction[],
       };
       rules = [...rules.filter((item) => item.id !== rule.id), rule];

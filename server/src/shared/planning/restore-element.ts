@@ -1,5 +1,7 @@
 import { getObjectAsset } from '@refloor/scene';
-import type { SceneCommand } from '@refloor/scene';
+import { isPoweredBehaviour } from '@refloor/scene/behaviour';
+import type { TargetCapability } from '@refloor/server/shared/planning/household-edit';
+import type { SceneCommand, SceneObject } from '@refloor/scene';
 import { commandTouches, snapshotFor } from '@refloor/scene/edit-memory';
 import type { ElementSnapshot } from '@refloor/scene/edit-memory';
 import type { LanguageEditRequest } from '@refloor/scene/chat';
@@ -9,6 +11,21 @@ import {
   objectMaterial,
   objectMaterialCommand,
 } from '@refloor/server/shared/planning/object-material';
+
+function effectiveOriginalObject(object: SceneObject): SceneObject {
+  const entry = getCatalogueEntry(object.assetId);
+  return {
+    ...object,
+    behaviours: [
+      ...object.behaviours,
+      ...entry.behaviours.filter(
+        (behaviour) =>
+          entry.optionalBehaviours?.includes(behaviour.kind) &&
+          !object.behaviours.some((current) => current.kind === behaviour.kind),
+      ),
+    ],
+  };
+}
 
 function beforeCommand(
   current: ElementSnapshot | null,
@@ -45,6 +62,29 @@ function beforeCommand(
       case 'set-light': {
         const light = value.behaviours.find((item) => item.kind === 'light');
         if (light) Object.assign(light.state, inverse.state);
+        break;
+      }
+      case 'add-object-behaviours':
+        value.behaviours.push(...structuredClone(inverse.behaviours));
+        break;
+      case 'remove-object-behaviours':
+        value.behaviours = value.behaviours.filter(
+          (behaviour) => !inverse.kinds.includes(behaviour.kind),
+        );
+        break;
+      case 'set-cooker': {
+        const cooker = value.behaviours.find((item) => item.kind === 'cooker');
+        if (cooker) Object.assign(cooker.state, inverse.state);
+        break;
+      }
+      case 'set-water': {
+        const water = value.behaviours.find((item) => item.kind === 'water');
+        if (water) Object.assign(water.state, inverse.state);
+        break;
+      }
+      case 'set-openable': {
+        const openable = value.behaviours.find((item) => item.kind === 'openable');
+        if (openable) Object.assign(openable.state, inverse.state);
         break;
       }
       case 'set-television': {
@@ -93,13 +133,30 @@ function propertyOf(
   snapshot: ElementSnapshot | null,
   property: string,
   surface: string | null,
+  capability: TargetCapability | null,
 ): unknown {
   if (!snapshot) return null;
   if (property === 'all') return snapshot.value;
   if (snapshot.kind === 'object') {
     const value = snapshot.value,
       light = value.behaviours.find((item) => item.kind === 'light')?.state,
-      television = value.behaviours.find((item) => item.kind === 'television')?.state;
+      television = value.behaviours.find((item) => item.kind === 'television')?.state,
+      cooker = value.behaviours.find((item) => item.kind === 'cooker')?.state,
+      water = value.behaviours.find((item) => item.kind === 'water')?.state,
+      openable = value.behaviours.find((item) => item.kind === 'openable')?.state;
+    const expectedCapability: Record<string, TargetCapability> = {
+      heat: 'cooker',
+      burners: 'cooker',
+      flow: 'water',
+      temperature: 'water',
+      open: 'openable',
+      volume: 'television',
+      source: 'television',
+      brightness: 'light',
+      'light-color': 'light',
+    };
+    if (capability && expectedCapability[property] && expectedCapability[property] !== capability)
+      throw new Error('The recorded property does not belong to that device capability.');
     switch (property) {
       case 'position':
         return { position: value.position, roomId: value.roomId };
@@ -111,8 +168,27 @@ function propertyOf(
         return surface ? objectMaterial(value, surface) : value.materials;
       case 'color':
         return objectMaterial(value, surface ?? 'body')?.color;
-      case 'power':
-        return light?.powered ?? television?.powered;
+      case 'power': {
+        const powered = value.behaviours.filter(isPoweredBehaviour),
+          device = capability
+            ? powered.find((item) => item.kind === capability)
+            : powered.length === 1
+              ? powered[0]
+              : null;
+        if (!capability && powered.length > 1)
+          throw new Error('Choose which device power to restore: the cooker or the tap.');
+        return device && 'powered' in device.state ? device.state.powered : undefined;
+      }
+      case 'heat':
+        return cooker?.heat;
+      case 'burners':
+        return cooker?.burners;
+      case 'flow':
+        return water?.flow;
+      case 'temperature':
+        return water?.temperature;
+      case 'open':
+        return openable?.open;
       case 'volume':
         return television?.volume;
       case 'brightness':
@@ -152,9 +228,10 @@ export function restoreElement(
   id: string,
   reference: string,
   surface: 'body' | 'frame' | 'top' | 'walls' | 'floors' | 'exterior' | 'roof' | null,
+  capability: TargetCapability | null = null,
 ): SceneCommand[] {
   const match =
-    /^(original|previous)\.(position|rotation|size|appearance|color|power|volume|brightness|light-color|source|open|all)$/.exec(
+    /^(original|previous)\.(position|rotation|size|appearance|color|power|volume|brightness|light-color|source|open|heat|burners|flow|temperature|all)$/.exec(
       reference,
     );
   if (!match) throw new Error('Choose an original or previous property to restore.');
@@ -170,7 +247,12 @@ export function restoreElement(
       ...(surface === 'exterior' ? { side: 'exterior' as const } : {}),
     },
     current = snapshotFor(input.building, target);
-  let saved: ElementSnapshot | null = match[1] === 'original' ? original : null;
+  let saved: ElementSnapshot | null =
+    match[1] === 'original'
+      ? original.kind === 'object'
+        ? { ...original, value: effectiveOriginalObject(original.value) }
+        : original
+      : null;
   if (match[1] === 'previous') {
     for (const transition of memory.transitions.toReversed()) {
       const { commands, inverseCommands } = transition.revision;
@@ -179,8 +261,8 @@ export function restoreElement(
       for (const inverse of inverseCommands)
         if (commandTouches(inverse, target)) before = beforeCommand(before, inverse);
       if (
-        JSON.stringify(propertyOf(before, property, surface)) !==
-        JSON.stringify(propertyOf(current, property, surface))
+        JSON.stringify(propertyOf(before, property, surface, capability)) !==
+        JSON.stringify(propertyOf(current, property, surface, capability))
       ) {
         saved = before;
         break;
@@ -188,8 +270,12 @@ export function restoreElement(
     }
   }
   if (!saved) throw new Error('There is no earlier recorded value for that property.');
-  if (propertyOf(saved, property, surface) === undefined)
-    throw new Error('This element does not support that property.');
+  if (propertyOf(saved, property, surface, capability) === undefined)
+    throw new Error(
+      match[1] === 'previous'
+        ? 'No earlier recorded value exists for that device property.'
+        : 'This element does not support that property.',
+    );
   if (saved.kind === 'object') {
     const object = saved.value;
     if (!current) {
@@ -241,13 +327,36 @@ export function restoreElement(
       });
     }
     const light = object.behaviours.find((item) => item.kind === 'light'),
-      television = object.behaviours.find((item) => item.kind === 'television');
+      television = object.behaviours.find((item) => item.kind === 'television'),
+      cooker = object.behaviours.find((item) => item.kind === 'cooker'),
+      water = object.behaviours.find((item) => item.kind === 'water'),
+      openable = object.behaviours.find((item) => item.kind === 'openable');
+    if (property === 'open' && openable)
+      return [{ type: 'set-openable', objectId: id, state: { open: openable.state.open } }];
+    if (cooker) {
+      if (property === 'heat')
+        return [{ type: 'set-cooker', objectId: id, state: { heat: cooker.state.heat } }];
+      if (property === 'burners')
+        return [{ type: 'set-cooker', objectId: id, state: { burners: cooker.state.burners } }];
+      if (property === 'power' && (!capability || capability === 'cooker'))
+        return [{ type: 'set-cooker', objectId: id, state: { powered: cooker.state.powered } }];
+    }
+    if (water) {
+      if (property === 'flow')
+        return [{ type: 'set-water', objectId: id, state: { flow: water.state.flow } }];
+      if (property === 'temperature')
+        return [
+          { type: 'set-water', objectId: id, state: { temperature: water.state.temperature } },
+        ];
+      if (property === 'power' && (!capability || capability === 'water'))
+        return [{ type: 'set-water', objectId: id, state: { powered: water.state.powered } }];
+    }
     if (light) {
       if (property === 'brightness')
         return [{ type: 'set-light', objectId: id, state: { intensity: light.state.intensity } }];
       if (property === 'light-color')
         return [{ type: 'set-light', objectId: id, state: { color: light.state.color } }];
-      if (property === 'power')
+      if (property === 'power' && (!capability || capability === 'light'))
         return [{ type: 'set-light', objectId: id, state: { powered: light.state.powered } }];
     }
     if (television) {
@@ -259,7 +368,7 @@ export function restoreElement(
         return [
           { type: 'set-television', objectId: id, state: { source: television.state.source } },
         ];
-      if (property === 'power')
+      if (property === 'power' && (!capability || capability === 'television'))
         return [
           { type: 'set-television', objectId: id, state: { powered: television.state.powered } },
         ];

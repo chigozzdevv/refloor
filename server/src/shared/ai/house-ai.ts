@@ -82,7 +82,7 @@ export class HouseAI {
       {
         model: this.model,
         store: false,
-        max_output_tokens: 2400,
+        max_output_tokens: 4800,
         reasoning: { effort: 'low' },
         input: [
           { role: 'system', content: editPrompt },
@@ -90,7 +90,7 @@ export class HouseAI {
         ],
         text: { format: zodTextFormat(languagePlanSchema, 'house_edit') },
       },
-      { timeout: 18000 },
+      { timeout: 25000 },
     );
     if (response.status !== 'completed' || !response.output_parsed)
       throw new Error('I could not finish that request. Try a shorter description.');
