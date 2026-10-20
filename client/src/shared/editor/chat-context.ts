@@ -2,6 +2,7 @@ import type { Building } from '@refloor/scene';
 import type { Selection } from '@/shared/editor/editor-store';
 import { targetIdentity } from '@/shared/editor/identity';
 import { siteSurfaceSlot } from '@refloor/scene/site-material';
+import { householdOpenableLabel } from '@refloor/catalogue';
 
 export function selectedContext(building: Building, selection: Selection) {
   if (!selection) return null;
@@ -44,7 +45,10 @@ export function selectedContext(building: Building, selection: Selection) {
       );
       if (object) {
         const tv = object.behaviours.find((value) => value.kind === 'television'),
-          light = object.behaviours.find((value) => value.kind === 'light');
+          light = object.behaviours.find((value) => value.kind === 'light'),
+          cooker = object.behaviours.find((value) => value.kind === 'cooker'),
+          water = object.behaviours.find((value) => value.kind === 'water'),
+          openable = object.behaviours.find((value) => value.kind === 'openable');
         return {
           ...identity,
           position: {
@@ -56,7 +60,22 @@ export function selectedContext(building: Building, selection: Selection) {
             ? [tv.state.powered ? 'Turn off' : 'Turn on', 'Move left 20 cm']
             : light
               ? [light.state.powered ? 'Turn off' : 'Turn on', 'Make it brighter']
-              : ['Move left 20 cm', 'Change the colour'],
+              : cooker
+                ? [
+                    cooker.state.powered ? 'Turn off the cooker' : 'Ignite the front left burner',
+                    water?.state.powered ? 'Turn off the tap' : 'Turn on the tap',
+                  ]
+                : water
+                  ? [
+                      water.state.powered ? 'Turn off the water' : 'Turn on the water',
+                      'Set the water to 35 degrees Celsius',
+                    ]
+                  : openable
+                    ? [
+                        `${openable.state.open ? 'Close' : 'Open'} the ${householdOpenableLabel(object.assetId) ?? 'storage'}`,
+                        'Change the colour',
+                      ]
+                    : ['Move left 20 cm', 'Change the colour'],
           object,
         };
       }

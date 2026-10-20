@@ -118,6 +118,25 @@ export function describeChange(building: Building, commands: SceneCommand[]) {
     case 'adjust-television-volume':
       label = `Update ${object?.label ?? 'television'}`;
       break;
+    case 'set-cooker':
+    case 'ignite-cooker':
+    case 'set-cooker-burner':
+    case 'adjust-cooker-heat':
+      label = `Adjust ${object?.label ?? 'cooker'} burners`;
+      break;
+    case 'set-water':
+    case 'start-water':
+    case 'adjust-water-flow':
+    case 'adjust-water-temperature':
+      label = `Adjust ${object?.label ?? 'water fixture'}`;
+      break;
+    case 'set-openable':
+      label = `${command.state.open ? 'Open' : 'Close'} ${object?.label ?? 'storage'}`;
+      break;
+    case 'add-object-behaviours':
+    case 'remove-object-behaviours':
+      label = `Update ${object?.label ?? 'item'} interactions`;
+      break;
   }
   return commands.length > 1 ? `${label} · ${commands.length} changes` : label;
 }

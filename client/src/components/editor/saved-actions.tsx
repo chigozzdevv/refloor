@@ -5,6 +5,7 @@ import { useProject } from '@/shared/scene/scene-store';
 import { targetIdentity } from '@/shared/editor/identity';
 import { useLanguageEdit } from '@/shared/editor/use-language-edit';
 import { savedActionCommands } from '@/shared/behaviours/saved-action';
+import { householdOpenableLabel } from '@refloor/catalogue';
 
 function eventLabel(building: Building, event: SceneEvent) {
   if (event.kind === 'room-enter')
@@ -12,9 +13,11 @@ function eventLabel(building: Building, event: SceneEvent) {
   if (event.kind === 'door')
     return `${targetIdentity(building, { kind: 'door', id: event.doorId })?.label ?? 'Door'} ${event.open ? 'opens' : 'closes'}`;
   const object = building.objects.find((value) => value.id === event.objectId);
+  if (event.kind === 'openable')
+    return `${object?.label ?? 'Item'} · ${event.open ? 'opens' : 'closes'}`;
   return event.kind === 'object-click'
     ? `Click ${object?.label ?? 'item'}`
-    : `${object?.label ?? 'Device'} turns ${event.powered ? 'on' : 'off'}`;
+    : `${object?.label ?? 'Device'}${event.behaviour ? ` · ${event.behaviour === 'water' ? 'water' : event.behaviour}` : ''} turns ${event.powered ? 'on' : 'off'}`;
 }
 function actionLabel(building: Building, action: SceneAction) {
   const label =
@@ -36,6 +39,32 @@ function actionLabel(building: Building, action: SceneAction) {
     return `${action.delta >= 0 ? 'Brighten' : 'Dim'} ${label} each time`;
   if (action.type === 'adjust-television-volume')
     return `${action.delta >= 0 ? 'Raise' : 'Lower'} ${label} volume ${Number((Math.abs(action.delta) * 100).toFixed(1))}% each time`;
+  if (action.type === 'set-openable') {
+    const object = building.objects.find((value) => value.id === action.objectId);
+    return `${action.state.open ? 'Open' : 'Close'} ${label} · ${householdOpenableLabel(object?.assetId ?? '') ?? 'storage'}`;
+  }
+  if (action.type === 'ignite-cooker') return `Ignite ${label} using its current burner settings`;
+  if (action.type === 'start-water') return `Turn on ${label} water using its current settings`;
+  if (action.type === 'set-cooker-burner')
+    return `${action.enabled ? 'Ignite' : 'Extinguish'} ${label} · ${['front left', 'front right', 'back left', 'back right'][action.burner]} burner`;
+  if (action.type === 'adjust-cooker-heat' || action.type === 'adjust-water-flow')
+    return `${action.delta >= 0 ? 'Increase' : 'Decrease'} ${label} ${action.type === 'adjust-cooker-heat' ? 'heat' : 'flow'} ${Math.round(Math.abs(action.delta) * 100)}% each time`;
+  if (action.type === 'adjust-water-temperature')
+    return `${action.delta >= 0 ? 'Warm' : 'Cool'} ${label} water by ${Math.abs(action.delta)}°C each time`;
+  if (action.type === 'set-cooker' || action.type === 'set-water') {
+    const values = Object.entries(action.state).map(([key, value]) =>
+      key === 'powered'
+        ? value
+          ? 'on'
+          : 'off'
+        : key === 'heat' || key === 'flow'
+          ? `${key} ${Math.round(Number(value) * 100)}%`
+          : key === 'temperature'
+            ? `${value}°C`
+            : `burners: ${(value as boolean[]).flatMap((on, index) => (on ? [['front left', 'front right', 'back left', 'back right'][index]] : [])).join(', ') || 'off'}`,
+    );
+    return `${label} · ${action.type === 'set-water' ? 'water' : 'cooker'}: ${values.join(', ')}`;
+  }
   if (action.type === 'set-light' || action.type === 'set-television') {
     const values = Object.entries(action.state).map(([key, value]) =>
       key === 'powered' ? (value ? 'on' : 'off') : `${key}: ${String(value)}`,

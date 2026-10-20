@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { createHouse } from '@refloor/catalogue/houses';
 import { finishes } from '@refloor/catalogue';
 import { compileBuilding } from '@refloor/engine';
-import { applyCommands, fingerprintBuilding, parseBuilding } from '@refloor/scene';
+import {
+  applyCommands,
+  fingerprintBuilding,
+  isPoweredBehaviour,
+  parseBuilding,
+} from '@refloor/scene';
 import type { SceneRule, SceneCommand } from '@refloor/scene';
 import { createEditMemory } from '@refloor/scene/edit-memory';
 import { editDocument, reverseDocument, restoreBefore, redoChange } from '@/shared/editor/document';
@@ -25,7 +30,8 @@ const edit = (building: unknown, commands: SceneCommand[]) =>
     commands,
   });
 const power = (building: ReturnType<typeof parseBuilding>, id: string) =>
-  building.objects.find((object) => object.id === id)!.behaviours[0]!.state.powered;
+  building.objects.find((object) => object.id === id)!.behaviours.find(isPoweredBehaviour)?.state
+    .powered;
 
 describe('universal saved scene actions', () => {
   it('exposes each relative click as an undoable effect without removing its saved rule', () => {
