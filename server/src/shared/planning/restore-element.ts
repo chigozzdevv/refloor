@@ -56,6 +56,23 @@ function beforeCommand(
   } else if (before.kind === 'wall' && inverse.type === 'set-wall-exterior-material') {
     if (inverse.material === null) delete before.value.exteriorMaterial;
     else before.value.exteriorMaterial = inverse.material;
+  } else if (before.kind === 'wall' && inverse.type === 'move-partition') {
+    const axis = before.value.start.x === before.value.end.x ? 'x' : 'z';
+    before.value.start[axis] = inverse.position;
+    before.value.end[axis] = inverse.position;
+  } else if ((before.kind === 'wall' || before.kind === 'door') && inverse.type === 'set-opening') {
+    const opening =
+      before.kind === 'wall'
+        ? before.value.openings.find((opening) => opening.id === inverse.openingId)
+        : before.value.id === inverse.openingId
+          ? before.value
+          : null;
+    if (opening) {
+      opening.offset = inverse.offset;
+      opening.width = inverse.width;
+      opening.height = inverse.height;
+      if (opening.kind === 'window' && inverse.sill !== null) opening.sill = inverse.sill;
+    }
   } else if (before.kind === 'roof' && inverse.type === 'set-roof-material')
     before.value.material = inverse.material;
   else if (before.kind === 'surface' && inverse.type === 'set-site-material')
@@ -104,9 +121,13 @@ function propertyOf(
     const material = snapshot.value.material ?? defaultSiteMaterial(snapshot.value.slot);
     if (property === 'appearance') return material;
     if (property === 'color') return material.color;
-  } else if (snapshot.kind === 'door')
-    return property === 'open' ? snapshot.value.state.open : undefined;
-  else {
+  } else if (snapshot.kind === 'door') {
+    if (property === 'open') return snapshot.value.state.open;
+    if (property === 'position') return snapshot.value.offset;
+    if (property === 'size') return { width: snapshot.value.width, height: snapshot.value.height };
+  } else {
+    if (snapshot.kind === 'wall' && property === 'position')
+      return { start: snapshot.value.start, end: snapshot.value.end };
     const material =
       snapshot.kind === 'wall'
         ? surface === 'exterior'
@@ -234,6 +255,35 @@ export function restoreElement(
           { type: 'set-television', objectId: id, state: { powered: television.state.powered } },
         ];
     }
+  } else if (saved.kind === 'wall' && property === 'position') {
+    const axis =
+      saved.value.start.x === saved.value.end.x
+        ? 'x'
+        : saved.value.start.z === saved.value.end.z
+          ? 'z'
+          : null;
+    if (!axis) throw new Error('Only straight axis-aligned partitions can restore their position.');
+    return [{ type: 'move-partition', wallId: id, position: saved.value.start[axis] }];
+  } else if (saved.kind === 'door' && ['position', 'size', 'all'].includes(property)) {
+    const wall = input.building.floors
+        .flatMap((floor) => floor.walls)
+        .find((wall) => wall.openings.some((opening) => opening.id === id)),
+      opening = wall?.openings.find((opening) => opening.id === id);
+    if (!wall || !opening || opening.kind !== 'door') throw new Error('This door is unavailable.');
+    const commands: SceneCommand[] = [
+      {
+        type: 'set-opening',
+        wallId: wall.id,
+        openingId: id,
+        offset: property === 'size' ? opening.offset : saved.value.offset,
+        width: property === 'position' ? opening.width : saved.value.width,
+        height: property === 'position' ? opening.height : saved.value.height,
+        sill: null,
+      },
+    ];
+    if (property === 'all')
+      commands.push({ type: 'set-door', doorId: id, open: saved.value.state.open });
+    return commands;
   } else if (saved.kind === 'surface') {
     const savedMaterial = saved.value.material ?? defaultSiteMaterial(saved.value.slot),
       currentMaterial =

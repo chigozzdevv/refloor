@@ -26,12 +26,20 @@ import {
   siteSurfaceSlot,
   siteSurfaceSlotSchema,
 } from '@refloor/scene/site-material';
+import {
+  movementDelta,
+  openingCommand,
+  openingEditSchema,
+  partitionCapability,
+  partitionMoveCommand,
+} from '@refloor/server/shared/planning/structural-edit';
 
 const vector = z.strictObject({ x: z.number(), y: z.number(), z: z.number() });
 export const languageActionSchema = z.strictObject({
   action: z.enum([
     'add',
     'place',
+    'opening',
     'move',
     'rotate',
     'resize',
@@ -58,6 +66,7 @@ export const languageActionSchema = z.strictObject({
   enabled: z.boolean().nullable(),
   value: z.string().nullable(),
   placement: spatialPlacementSchema.nullable().default(null),
+  opening: openingEditSchema.nullable().default(null),
 });
 export const languagePlanSchema = z.strictObject({
   message: z.string().max(240),
@@ -193,6 +202,15 @@ export function languageContext(input: LanguageEditRequest) {
         material: wall.material,
         exteriorMaterial: wall.exteriorMaterial ?? wall.material,
         exterior: wallExteriorSide(floor, wall) !== null,
+        movablePartition: partitionCapability(input.building, wall),
+        openings: wall.openings.map((opening) => ({
+          id: opening.id,
+          kind: opening.kind,
+          offset: opening.offset,
+          width: opening.width,
+          height: opening.height,
+          sill: opening.kind === 'window' ? opening.sill : null,
+        })),
         doors: wall.openings
           .filter((opening) => opening.kind === 'door')
           .map(({ id, state }) => ({ id, state })),
@@ -254,7 +272,15 @@ export function languageCommands(
         .parse(required(action.value));
       return { ...base, color };
     };
-    if (action.action === 'add' || action.action === 'place') {
+    if (action.action === 'opening') {
+      if (options.preserveRelative)
+        throw new Error('Adjust openings directly; saved actions can control door state.');
+      commands.push(openingCommand(building, action.targetId, input.view, action));
+    } else if (wall && action.action === 'move') {
+      if (options.preserveRelative)
+        throw new Error('Adjust partitions directly; saved actions can change their finish.');
+      commands.push(partitionMoveCommand(wall, input.view, action));
+    } else if (action.action === 'add' || action.action === 'place') {
       if (options.preserveRelative)
         throw new Error(
           'Arrange or add furniture directly; saved actions can move existing items.',
@@ -353,18 +379,7 @@ export function languageCommands(
       commands.push({ type: 'set-door', doorId: door.id, open: required(action.enabled) });
     } else if (object && action.action === 'move') {
       const vector = required(action.vector);
-      const forwardLength = Math.hypot(input.view.x, input.view.z);
-      if (action.space === 'view' && (forwardLength < 0.5 || forwardLength > 1.5))
-        throw new Error('The viewing direction changed. Try again.');
-      const view = { x: input.view.x / forwardLength, z: input.view.z / forwardLength };
-      const delta =
-        action.space === 'view'
-          ? {
-              x: -view.z * vector.x + view.x * vector.z,
-              y: vector.y,
-              z: view.x * vector.x + view.z * vector.z,
-            }
-          : vector;
+      const delta = movementDelta(input.view, vector, action.space);
       const position =
         action.relative !== false
           ? {
