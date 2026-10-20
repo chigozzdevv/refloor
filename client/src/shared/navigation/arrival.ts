@@ -1,7 +1,12 @@
 import type { CompiledBuilding, NavigationPoint, Point3 } from '@refloor/engine';
 import { contains } from '@refloor/engine/math';
 import { destinationRoute, destinations, nearbyRoute } from '@/shared/navigation/destinations';
-import { clearView } from '@/shared/navigation/viewpoints';
+import {
+  clearView,
+  comfortableLookAt,
+  objectLookAt,
+  roomObjectPriority,
+} from '@/shared/navigation/viewpoints';
 import { entryPose } from '@/shared/navigation/entry';
 import { tourPortals } from '@/shared/navigation/portals';
 
@@ -72,7 +77,7 @@ export function arrivalView(
       : Infinity;
     candidates.push({
       ...view,
-      score: priority + distance * 0.12 - (preferredDistance < 0.75 ? 6 : 0),
+      score: priority + distance * 0.12 - (preferredDistance < 0.75 ? (transit ? 6 : 0.5) : 0),
     });
   };
   const entry = entryPose(compiled);
@@ -140,15 +145,11 @@ export function arrivalView(
   ))
     add(
       {
-        point: {
-          x: object.position.x,
-          y: floor.elevation + object.position.y + object.dimensions.height * 0.65,
-          z: object.position.z,
-        },
+        point: comfortableLookAt(from, objectLookAt(floor, object)),
         entityId: object.id,
         kind: 'object',
       },
-      transit ? 8 : ['television', 'bed', 'sofa', 'table'].includes(object.kind) ? 0 : 6,
+      transit ? 8 : roomObjectPriority(room, object),
       object.id,
     );
   if (!candidates.length) {

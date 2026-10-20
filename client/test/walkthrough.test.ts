@@ -17,7 +17,7 @@ beforeAll(initializePhysics);
 const houses = [
   createHouse({ id: 'tour-garden', name: 'Garden', storeys: 1 }),
   createHouse({ id: 'tour-linden', name: 'Linden', storeys: 2 }),
-  ...['generated-bungalow', 'generated-two-storey'].map(
+  ...['generated-bungalow', 'generated-two-storey', 'generated-open-plan'].map(
     (name) =>
       JSON.parse(
         readFileSync(new URL(`fixtures/${name}.json`, import.meta.url), 'utf8'),
