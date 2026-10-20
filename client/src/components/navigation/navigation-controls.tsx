@@ -25,6 +25,7 @@ import {
   rememberSceneView,
   takeSceneView,
 } from '@/shared/scene/view';
+import { resizeOrbitCamera } from '@/shared/scene/orbit-framing';
 
 export function NavigationControls() {
   const { camera, gl, size } = useThree(),
@@ -40,7 +41,12 @@ export function NavigationControls() {
   const exteriorPosition = outside.position;
   const previous = useRef(mode),
     walkthrough = useRef(new Walkthrough()),
-    framing = useRef<{ mode: typeof mode; buildingId: string; epoch: number } | null>(null),
+    framing = useRef<{
+      mode: typeof mode;
+      buildingId: string;
+      epoch: number;
+      aspect: number;
+    } | null>(null),
     stairs = useRef(new StairWalker()),
     transition = useRef<number | null>(null),
     entry = entryPose(compiled);
@@ -76,7 +82,12 @@ export function NavigationControls() {
       walkthrough.current.doors.clear();
       walkthrough.current.doors.recover(compiled, useProject.getState().memory);
       previous.current = mode;
-      framing.current = { mode, buildingId: compiled.building.id, epoch };
+      framing.current = {
+        mode,
+        buildingId: compiled.building.id,
+        epoch,
+        aspect: size.width / size.height,
+      };
       return;
     }
     const framed = framing.current;
@@ -84,9 +95,26 @@ export function NavigationControls() {
       framed?.mode === mode &&
       framed.buildingId === compiled.building.id &&
       framed.epoch === epoch
-    )
+    ) {
+      const aspect = size.width / size.height;
+      if (
+        mode === 'orbit' &&
+        camera instanceof PerspectiveCamera &&
+        controls.current &&
+        Math.abs(framed.aspect - aspect) > 1e-6
+      ) {
+        resizeOrbitCamera(camera, controls.current.target, framed.aspect);
+        controls.current.update();
+      }
+      framed.aspect = aspect;
       return;
-    framing.current = { mode, buildingId: compiled.building.id, epoch };
+    }
+    framing.current = {
+      mode,
+      buildingId: compiled.building.id,
+      epoch,
+      aspect: size.width / size.height,
+    };
     camera.rotation.order = 'YXZ';
     if (mode !== 'walk') useNavigation.getState().stop();
     walkthrough.current.reset();
@@ -414,6 +442,7 @@ export function NavigationControls() {
           position: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
           rotation: { x: camera.rotation.x, y: camera.rotation.y, z: camera.rotation.z },
           fov: camera instanceof PerspectiveCamera ? camera.fov : 45,
+          ...(camera instanceof PerspectiveCamera ? { aspect: camera.aspect } : {}),
         },
         target:
           mode === 'orbit' && controls.current
@@ -432,7 +461,6 @@ export function NavigationControls() {
     <OrbitControls
       ref={controls}
       makeDefault
-      target={[outside.target.x, outside.target.y, outside.target.z]}
       enabled={stage === 'ready' && !interacting}
       minDistance={3}
       maxDistance={Math.max(35, outside.distance * 2)}

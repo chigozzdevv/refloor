@@ -17,6 +17,8 @@ import { useProject } from '@/shared/scene/scene-store';
 import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
 import { destinations } from '@/shared/navigation/destinations';
 import { encodeDraft, decodeDraft } from '@/shared/scene/draft-codec';
+import { orbitAspectScale, resizeOrbitCamera } from '@/shared/scene/orbit-framing';
+import { exteriorCamera } from '@/shared/scene/exterior';
 
 beforeAll(initializePhysics);
 const compiled = compileBuilding(
@@ -109,6 +111,58 @@ describe('returning to a house', () => {
       validateSceneView({ ...view(), camera: { ...view().camera, fov: Infinity } }, compiled),
     ).toBeNull();
     expect(validateSceneView({ ...view(), mode: 'orbit', target: null }, compiled)).toBeNull();
+  });
+
+  it('preserves overview direction, panned target and zoom ratio across viewport orientation changes', () => {
+    const landscape = 1329 / 723,
+      portrait = 390 / 844,
+      target = new Vector3(8.5, 3.2, 6.1),
+      camera = new PerspectiveCamera(45, landscape),
+      offset = new Vector3(22, 16, -17),
+      wideFit = exteriorCamera(compiled, landscape),
+      narrowFit = exteriorCamera(compiled, portrait);
+    camera.position.copy(target).add(offset);
+    const zoom = offset.length() / wideFit.distance;
+    camera.aspect = portrait;
+    resizeOrbitCamera(camera, target, landscape);
+    const resized = camera.position.clone().sub(target);
+    expect(resized.clone().normalize().distanceTo(offset.clone().normalize())).toBeLessThan(1e-10);
+    expect(resized.length() / narrowFit.distance).toBeCloseTo(zoom, 10);
+    camera.aspect = landscape;
+    resizeOrbitCamera(camera, target, portrait);
+    expect(camera.position.distanceTo(target.clone().add(offset))).toBeLessThan(1e-10);
+    expect(orbitAspectScale(landscape, landscape)).toBe(1);
+  });
+
+  it('adapts saved overview framing to the restoring viewport while leaving walking positions exact', () => {
+    const landscape = 1329 / 723,
+      portrait = 390 / 844,
+      snapshot = {
+        ...view(),
+        mode: 'orbit' as const,
+        camera: {
+          position: { x: 20, y: 15, z: -8 },
+          rotation: { x: 0, y: 0, z: 0 },
+          fov: 45,
+          aspect: landscape,
+        },
+        target: { x: 6, y: 2, z: 5 },
+      },
+      camera = new PerspectiveCamera(45, portrait),
+      orbit = new OrbitControls(camera),
+      sourceDistance = new Vector3(20, 15, -8).distanceTo(new Vector3(6, 2, 5));
+    try {
+      const restored = validateSceneView(JSON.parse(JSON.stringify(snapshot)), compiled)!;
+      applySceneView(restored, camera, orbit);
+      expect(camera.position.distanceTo(orbit.target)).toBeCloseTo(
+        sourceDistance * orbitAspectScale(landscape, portrait),
+        10,
+      );
+      applySceneView({ ...view(), camera: { ...view().camera, aspect: landscape } }, camera);
+      expect(camera.position.toArray()).toEqual(Object.values(view().camera.position));
+    } finally {
+      if (orbit.domElement) orbit.dispose();
+    }
   });
 
   it('returns from the new-house prompt without resetting the house or replaying its entrance', () => {
