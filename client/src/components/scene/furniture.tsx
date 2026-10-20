@@ -9,7 +9,7 @@ import { Select } from '@react-three/postprocessing';
 import { useProject } from '@/shared/scene/scene-store';
 import { FurnitureModels } from '@/components/scene/furniture-models';
 import { useSurface } from '@/shared/scene/asset-loader';
-import { sameMaterial } from '@/shared/scene/finish';
+import { scannedMaterial } from '@/shared/scene/scanned-material';
 import { isScenePointer, visibleGroupRaycast } from '@/shared/editor/picking';
 import { SelectionBounds } from '@/components/editor/selection-bounds';
 import { invalidateShadows } from '@/shared/scene/shadow-updates';
@@ -18,8 +18,7 @@ import { dispatchSceneEvent } from '@/shared/behaviours/events';
 function ScannedFurniture({ object, entry }: { object: SceneObject; entry: CatalogueEntry }) {
   const { scene } = useGLTF(entry.modelUrl!, false),
     finish = useSurface(object.materials.body!),
-    { width, height, depth } = object.dimensions,
-    changed = !sameMaterial(object.materials.body, entry.materials.body);
+    { width, height, depth } = object.dimensions;
   const model = useMemo(() => {
     const clone = scene.clone(true),
       container = new Group();
@@ -40,11 +39,12 @@ function ScannedFurniture({ object, entry }: { object: SceneObject; entry: Catal
       child.receiveShadow = true;
       const materials = (Array.isArray(child.material) ? child.material : [child.material]).map(
         (source) => {
-          const tint =
-            (!entry.tintMaterials || entry.tintMaterials.includes(source.name)) &&
-            (!entry.tintNodes || entry.tintNodes.includes(child.name));
-          const material = (
-            changed && tint ? finish.clone() : source.clone()
+          const material = scannedMaterial(
+            source,
+            child.name,
+            entry,
+            object.materials.body!,
+            finish,
           ) as MeshStandardMaterial;
           if (material.map) material.map.anisotropy = 8;
           return material;
@@ -53,7 +53,7 @@ function ScannedFurniture({ object, entry }: { object: SceneObject; entry: Catal
       child.material = Array.isArray(child.material) ? materials : materials[0]!;
     });
     return container;
-  }, [scene, width, height, depth, changed, entry, finish]);
+  }, [scene, width, height, depth, object.materials.body, entry, finish]);
   useLayoutEffect(invalidateShadows, [model]);
   useEffect(
     () => () =>
