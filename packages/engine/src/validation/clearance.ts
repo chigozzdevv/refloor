@@ -2,6 +2,7 @@ import { boxPolygon, boxesOverlap, polygonsOverlap, rectPolygon } from '@refloor
 import { colliderBounds } from '@refloor/engine/collision/bounds';
 import { checkDoorClearance } from '@refloor/engine/validation/door-clearance';
 import { checkStairClearance } from '@refloor/engine/validation/stair-clearance';
+import { checkOpenableClearance } from '@refloor/engine/validation/openable-clearance';
 import type { CompiledBuilding, EngineIssue } from '@refloor/engine/types';
 
 export function checkClearance(compiled: CompiledBuilding): EngineIssue[] {
@@ -59,5 +60,6 @@ export function checkClearance(compiled: CompiledBuilding): EngineIssue[] {
         message: 'Floor ceiling is too low for the walker',
       });
   issues.push(...checkStairClearance(compiled));
+  issues.push(...checkOpenableClearance(compiled));
   return issues;
 }

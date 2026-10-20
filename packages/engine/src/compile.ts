@@ -5,6 +5,7 @@ import { buildStaircase } from '@refloor/engine/geometry/staircase';
 import { buildRoof } from '@refloor/engine/geometry/roof';
 import { buildRailings } from '@refloor/engine/geometry/railings';
 import { objectBounds } from '@refloor/engine/collision/bounds';
+import { openableBounds } from '@refloor/engine/collision/openable';
 import { resolveOptions } from '@refloor/engine/options';
 import { fail } from '@refloor/engine/errors';
 import { epsilon } from '@refloor/engine/math';
@@ -78,6 +79,8 @@ export function compileBuilding(
     const collider = objectBounds(object, floor.elevation);
     compiled.instances.push({ object, collider });
     compiled.colliders.push(collider);
+    const openable = openableBounds(object, floor.elevation);
+    if (openable) compiled.colliders.push(openable);
   }
   return compiled;
 }
