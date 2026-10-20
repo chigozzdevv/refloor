@@ -46,6 +46,8 @@ function actionLabel(building: Building, action: SceneAction) {
     return `${targetIdentity(building, { kind: 'wall', id: action.wallId })?.label ?? 'Wall'} · ${action.type === 'set-wall-exterior-material' ? 'outside' : 'inside'} · ${action.type === 'set-wall-material' ? action.material.color : (action.material?.color ?? 'original finish')}`;
   if (action.type === 'set-object-material')
     return `${label} · ${action.slot} · ${action.material.color}`;
+  if (action.type === 'set-site-material')
+    return `${targetIdentity(building, { kind: 'surface', id: action.surfaceId })?.label ?? 'Exterior surface'} · ${action.material?.color ?? 'original finish'}`;
   if (action.type === 'set-roof-material') return `Roof · ${action.material.color}`;
   if (action.type === 'set-room-floor-material')
     return `${building.floors.flatMap((floor) => floor.rooms).find((room) => room.id === action.roomId)?.name ?? 'Room'} floor · ${action.material.color}`;

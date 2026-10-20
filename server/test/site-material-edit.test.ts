@@ -12,7 +12,6 @@ import {
   languageContext,
 } from '@refloor/server/shared/planning/language-edit';
 import type { LanguagePlan } from '@refloor/server/shared/planning/language-edit';
-import { restoreEditMemory } from '@/shared/editor/memory';
 import { validateMemory } from '@refloor/server/features/houses/house.validation';
 
 function input(): LanguageEditRequest {
@@ -106,17 +105,12 @@ describe('contextual exterior material editing', () => {
     expect(result.building.floors).toEqual(request.building.floors);
   });
 
-  it('migrates legacy memory with default original surface properties in browser and server', () => {
+  it('migrates legacy memory with default original surface properties in the server', () => {
     const request = input(),
       legacy = {
         ...request.context!,
         originals: request.context!.originals.filter((snapshot) => snapshot.kind !== 'surface'),
       };
-    expect(
-      restoreEditMemory(request.building, legacy).originals.filter(
-        (snapshot) => snapshot.kind === 'surface',
-      ),
-    ).toHaveLength(8);
     expect(
       validateMemory(request.building, legacy).originals.filter(
         (snapshot) => snapshot.kind === 'surface',

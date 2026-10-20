@@ -54,7 +54,10 @@ export const siteSurfaceLabels: Record<SiteSurfaceSlot, string> = {
   parapet: 'Roof parapet',
   'roof-trim': 'Roof trim',
 };
-type SiteAppearance = { id: string; siteMaterials?: z.infer<typeof siteMaterialsSchema> | undefined };
+type SiteAppearance = {
+  id: string;
+  siteMaterials?: z.infer<typeof siteMaterialsSchema> | undefined;
+};
 export function siteSurfaceId(building: Pick<SiteAppearance, 'id'>, slot: SiteSurfaceSlot) {
   const root =
     building.id.length > 96

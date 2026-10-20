@@ -4,6 +4,8 @@ import { createHouse } from '@refloor/catalogue/houses';
 import { siteSurfaceId } from '@refloor/scene/site-material';
 import { applyMetricUVs } from '@/shared/scene/metric-uv';
 import { selectedContext } from '@/shared/editor/chat-context';
+import { createEditMemory } from '@refloor/scene/edit-memory';
+import { restoreEditMemory } from '@/shared/editor/memory';
 
 describe('editable exterior surface presentation', () => {
   it('uses physical box dimensions for every face texture instead of stretching one map across each face', () => {
@@ -41,5 +43,18 @@ describe('editable exterior surface presentation', () => {
       object: null,
     });
     expect(context?.suggestions).toContain('Marble finish');
+  });
+  it('migrates a browser draft recorded before exterior surfaces were independently editable', () => {
+    const building = createHouse({ id: 'surface-migration', name: 'Migration', storeys: 1 }),
+      memory = createEditMemory(building),
+      legacy = {
+        ...memory,
+        originals: memory.originals.filter((snapshot) => snapshot.kind !== 'surface'),
+      };
+    expect(
+      restoreEditMemory(building, legacy).originals.filter(
+        (snapshot) => snapshot.kind === 'surface',
+      ),
+    ).toHaveLength(8);
   });
 });
