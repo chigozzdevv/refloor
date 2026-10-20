@@ -1,4 +1,4 @@
-import { Environment, SoftShadows } from '@react-three/drei';
+import { Environment } from '@react-three/drei';
 import {
   Bloom,
   EffectComposer,
@@ -101,9 +101,14 @@ export function Lighting() {
         shadow-camera-far={45}
         shadow-normalBias={0.025}
         shadow-bias={-0.00008}
+        shadow-radius={1.5}
       />
-      {settings.softShadows && <SoftShadows size={12} samples={12} focus={0.3} />}
-      <EffectComposer autoClear={false} multisampling={settings.multisampling}>
+      {/* Recreate owned GPU passes when the compositor changes multisampling. */}
+      <EffectComposer
+        key={settings.multisampling}
+        autoClear={false}
+        multisampling={settings.multisampling}
+      >
         <N8AO
           enabled={settings.ambientOcclusion}
           aoRadius={0.45}

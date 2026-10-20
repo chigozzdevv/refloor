@@ -20,7 +20,6 @@ describe('render target budget', () => {
       multisampling: 4,
       sunlightResolution: 2048,
       mirrorResolution: 512,
-      softShadows: true,
       landscapeQuality: 'high',
       ambientOcclusion: true,
       bloom: true,
@@ -45,7 +44,6 @@ describe('render target budget', () => {
         multisampling: 0,
         sunlightResolution: 1024,
         mirrorResolution: 256,
-        softShadows: false,
         landscapeQuality: 'balanced',
       });
       expect(width! * height! * settings.dpr ** 2).toBeLessThanOrEqual(1_200_000);
@@ -69,8 +67,8 @@ describe('render target budget', () => {
   it('reduces raster work before expensive effects and keeps every level bounded', () => {
     const settings = [0, 1, 2, 3].map((reduction) => renderBudget({ ...desktop, reduction }));
     expect(settings.map((value) => value.dpr)).toEqual([1.75, 1.48, 1.22, 1.05]);
-    expect(settings[1]!.softShadows).toBe(true);
-    expect(settings[2]!.softShadows).toBe(false);
+    expect(settings[1]!.sunlightResolution).toBe(2048);
+    expect(settings[2]!.sunlightResolution).toBe(1024);
     expect(settings[2]!.landscapeQuality).toBe('balanced');
     expect(settings[3]!.mirrorResolution).toBe(256);
     expect(settings[2]!.ambientOcclusion).toBe(true);

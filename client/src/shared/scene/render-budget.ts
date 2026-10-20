@@ -5,7 +5,6 @@ export type RenderBudget = {
   sunlightResolution: number;
   mirrorResolution: number;
   mirrorInterval: number;
-  softShadows: boolean;
   aoQuality: 'medium' | 'low';
   ambientOcclusion: boolean;
   bloom: boolean;
@@ -49,7 +48,6 @@ export function renderBudget(input: {
     sunlightResolution: constrained ? 1024 : 2048,
     mirrorResolution: constrained ? 256 : 512,
     mirrorInterval: constrained ? 1000 / 15 : 1000 / 30,
-    softShadows: !constrained,
     aoQuality: constrained ? 'low' : 'medium',
     ambientOcclusion: reduction < 3,
     bloom: reduction < 3,
