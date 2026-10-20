@@ -36,6 +36,8 @@ export function householdCapabilities(object: Pick<SceneObject, 'behaviours' | '
       case 'cooker':
         return {
           kind: behaviour.kind,
+          component: 'cooker burners',
+          names: ['cooker', 'gas cooker', 'stove', 'hob', 'burners'],
           actions: ['power', 'cooker-heat', 'cooker-burner', 'restore'],
           heat: { min: 0, max: 1 },
           burners: burnerNames,
@@ -43,7 +45,13 @@ export function householdCapabilities(object: Pick<SceneObject, 'behaviours' | '
       case 'water':
         return {
           kind: behaviour.kind,
+          component: object.assetId === 'catalogue/shower' ? 'shower' : 'basin tap',
+          names:
+            object.assetId === 'catalogue/shower'
+              ? ['shower', 'showerhead', 'water']
+              : ['tap', 'faucet', 'sink', 'basin', 'water'],
           actions: ['power', 'water-flow', 'water-temperature', 'restore'],
+          openMeans: 'power',
           flow: { min: 0, max: 1 },
           temperature: { min: 10, max: 60, unit: 'Celsius' },
         };
@@ -51,6 +59,7 @@ export function householdCapabilities(object: Pick<SceneObject, 'behaviours' | '
         return {
           kind: behaviour.kind,
           mechanism: householdOpenableLabel(object.assetId),
+          component: householdOpenableLabel(object.assetId),
           actions: ['open', 'restore'],
         };
       case 'light':
@@ -70,6 +79,14 @@ export function householdCommands(
   preserveRelative = false,
 ): SceneCommand[] | null {
   const objectId = object.id;
+  if (
+    action.action === 'open' &&
+    (action.targetCapability === 'water' ||
+      (!action.targetCapability &&
+        object.behaviours.some((behaviour) => behaviour.kind === 'water') &&
+        !object.behaviours.some((behaviour) => behaviour.kind === 'openable')))
+  )
+    action = { ...action, action: 'power', targetCapability: 'water' };
   const expectedCapability: Record<string, TargetCapability> = {
     mute: 'television',
     volume: 'television',

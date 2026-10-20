@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { catalogueBehaviourUpgrades, getCatalogueEntry } from '@refloor/catalogue';
+import {
+  assetFromCatalogue,
+  catalogueBehaviourUpgrades,
+  getCatalogueEntry,
+} from '@refloor/catalogue';
 import { createHouse } from '@refloor/catalogue/houses';
 import { applyCommands, undoRevision } from '@refloor/scene';
 import type { Building, SceneCommand } from '@refloor/scene';
@@ -63,6 +67,31 @@ const change = (state: ReturnType<typeof initial>, commands: SceneCommand[]) => 
     revision: result.revision,
   };
 };
+const withFixture = (assetId: string) => {
+  const state = initial();
+  if (fixture(state.building, assetId)) return state;
+  const kitchen = fixture(state.building),
+    room = state.building.floors
+      .find((floor) => floor.id === kitchen.floorId)!
+      .rooms.find((item) => item.id === kitchen.roomId)!;
+  return change(state, [
+    {
+      type: 'add-object',
+      object: {
+        ...assetFromCatalogue(assetId),
+        id: randomUUID(),
+        floorId: kitchen.floorId,
+        roomId: kitchen.roomId,
+        position: {
+          x: room.footprint.x + room.footprint.width / 2,
+          y: 0,
+          z: room.footprint.z + room.footprint.depth / 2,
+        },
+        rotation: 0,
+      },
+    },
+  ]);
+};
 const plan = (actions: LanguagePlan['actions']): LanguagePlan => ({
   message: 'Changed the fixtures.',
   actions,
@@ -82,21 +111,109 @@ describe('capability-based household language changes', () => {
       expect.arrayContaining([
         expect.objectContaining({
           kind: 'cooker',
+          component: 'cooker burners',
+          names: expect.arrayContaining(['stove', 'hob', 'burners']),
           heat: { min: 0, max: 1 },
           burners: ['front-left', 'front-right', 'back-left', 'back-right'],
         }),
         expect.objectContaining({
           kind: 'water',
+          component: 'basin tap',
+          names: expect.arrayContaining(['tap', 'faucet', 'sink']),
+          openMeans: 'power',
           flow: { min: 0, max: 1 },
           temperature: { min: 10, max: 60, unit: 'Celsius' },
         }),
-        expect.objectContaining({ kind: 'openable', actions: ['open', 'restore'] }),
+        expect.objectContaining({
+          kind: 'openable',
+          component: 'oven door',
+          actions: ['open', 'restore'],
+        }),
       ]),
     );
     expect(
       context.catalogue.find((item) => item.assetId === 'catalogue/kitchen-counter')?.behaviours,
     ).toHaveLength(3);
     expect(() => zodTextFormat(languagePlanSchema, 'house_edit')).not.toThrow();
+  });
+
+  it('identifies actual taps and showers separately from storage fronts', () => {
+    const context = languageContext(request(initial()));
+    expect(
+      context.catalogue.find((item) => item.assetId === 'catalogue/shower')?.capabilities,
+    ).toEqual([
+      expect.objectContaining({
+        kind: 'water',
+        component: 'shower',
+        names: ['shower', 'showerhead', 'water'],
+      }),
+    ]);
+    expect(
+      context.catalogue.find((item) => item.assetId === 'catalogue/vanity')?.capabilities,
+    ).toEqual([
+      expect.objectContaining({ kind: 'water', component: 'basin tap' }),
+      expect.objectContaining({ kind: 'openable', component: 'drawers' }),
+    ]);
+  });
+
+  it.each(['catalogue/kitchen-counter', 'catalogue/vanity'])(
+    'opens and closes the tap on %s without opening its other fittings',
+    (assetId) => {
+      const state = withFixture(assetId),
+        object = fixture(state.building, assetId),
+        input = {
+          ...request(state),
+          target: { kind: 'object' as const, id: object.id },
+          message: 'Open the tap.',
+        };
+      const commands = languageCommands(
+        input,
+        plan([action(object.id, { action: 'open', targetCapability: 'water', enabled: true })]),
+      );
+      expect(commands).toEqual([{ type: 'start-water', objectId: object.id }]);
+      const started = change(state, commands),
+        running = started.building.objects.find((item) => item.id === object.id)!;
+      expect(running.behaviours).toContainEqual(
+        expect.objectContaining({
+          kind: 'water',
+          state: expect.objectContaining({ powered: true }),
+        }),
+      );
+      expect(running.behaviours.filter((item) => item.kind !== 'water')).toEqual(
+        object.behaviours.filter((item) => item.kind !== 'water'),
+      );
+      const closed = languageCommands(
+        { ...input, building: started.building, message: 'Close the tap.' },
+        plan([action(object.id, { action: 'open', targetCapability: 'water', enabled: false })]),
+      );
+      expect(closed).toEqual([
+        { type: 'set-water', objectId: object.id, state: { powered: false } },
+      ]);
+      expect(
+        undoRevision(started.building, started.revision, {
+          id: randomUUID(),
+          at: new Date().toISOString(),
+        }).building.objects,
+      ).toEqual(state.building.objects);
+    },
+  );
+
+  it('opens a shower as water without fabricating a door capability', () => {
+    const state = withFixture('catalogue/shower'),
+      shower = fixture(state.building, 'catalogue/shower');
+    expect(
+      languageCommands(
+        request(state),
+        plan([action(shower.id, { action: 'open', enabled: true })]),
+      ),
+    ).toEqual([{ type: 'start-water', objectId: shower.id }]);
+    const fridge = fixture(state.building, 'catalogue/fridge');
+    expect(() =>
+      languageCommands(
+        request(state),
+        plan([action(fridge.id, { action: 'open', targetCapability: 'water', enabled: true })]),
+      ),
+    ).toThrow('does not support');
   });
 
   it('controls cooker and tap independently and rejects ambiguous compound power', () => {
