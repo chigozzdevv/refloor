@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import type { ThreeEvent } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
@@ -16,6 +16,7 @@ import { activateDoor, traverseDoor } from '@/shared/behaviours/door';
 import { hiddenExterior } from '@/shared/scene/visibility';
 import { isScenePointer, visibleGroupRaycast, visibleMeshRaycast } from '@/shared/editor/picking';
 import { invalidateShadows } from '@/shared/scene/shadow-updates';
+import { watchDoorDragCancellation } from '@/shared/behaviours/door-drag';
 
 export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
   const pivot = useRef<Group>(null),
@@ -23,7 +24,13 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
     levers = useRef<(Group | null)[]>([]),
     preview = useRef<number | null>(null),
     handleHovered = useRef(false),
-    drag = useRef<{ x: number; y: number; fraction: number } | null>(null);
+    drag = useRef<{
+      x: number;
+      y: number;
+      fraction: number;
+      pointerId: number;
+      target: Element;
+    } | null>(null);
   const handleMaterial = useMemo(
     () =>
       new MeshPhysicalMaterial({
@@ -37,11 +44,31 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
   );
   useEffect(() => () => handleMaterial.dispose(), [handleMaterial]);
   const camera = useThree((state) => state.camera),
+    canvas = useThree((state) => state.gl.domElement),
     mode = useProject((state) => state.mode),
     floorId = useProject((state) => state.floorId),
     selection = useProject((state) => state.selection),
     compiled = useProject((state) => state.compiled);
   const cutaway = useProject((state) => state.cutaway);
+  const cancelDrag = useCallback(() => {
+    const captured = drag.current;
+    if (!captured) return;
+    drag.current = null;
+    preview.current = null;
+    handleHovered.current = false;
+    useProject.getState().setInteracting(false);
+    document.body.style.cursor = '';
+    if (captured.target.hasPointerCapture(captured.pointerId))
+      captured.target.releasePointerCapture(captured.pointerId);
+  }, []);
+  useEffect(
+    () =>
+      watchDoorDragCancellation(
+        { canvas, window, document, hidden: () => document.hidden },
+        cancelDrag,
+      ),
+    [canvas, cancelDrag],
+  );
   const material = useSurface(part.material);
   const floor = compiled.building.floors.find((value) => value.id === portal.floorId),
     active = compiled.building.floors.find((value) => value.id === floorId),
@@ -96,7 +123,13 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
     event.stopPropagation();
     (event.target as Element).setPointerCapture(event.pointerId);
     motion.current.press();
-    drag.current = { x: event.clientX, y: event.clientY, fraction: motion.current.fraction };
+    drag.current = {
+      x: event.clientX,
+      y: event.clientY,
+      fraction: motion.current.fraction,
+      pointerId: event.pointerId,
+      target: event.target as Element,
+    };
     useProject.getState().setInteracting(true);
   };
   const move = (event: ThreeEvent<PointerEvent>) => {
@@ -114,10 +147,7 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
     event.stopPropagation();
     const distance = Math.hypot(event.clientX - drag.current.x, event.clientY - drag.current.y),
       open = distance < 5 ? !portal.open : (preview.current ?? motion.current.fraction) > 0.45;
-    (event.target as Element).releasePointerCapture(event.pointerId);
-    drag.current = null;
-    preview.current = null;
-    useProject.getState().setInteracting(false);
+    cancelDrag();
     if (mode !== 'orbit' && (distance < 5 || open)) traverseDoor(portal.id);
     else activateDoor(portal.id, open);
   };
@@ -195,12 +225,7 @@ export function Door({ part, portal }: { part: MeshPart; portal: DoorPortal }) {
             onPointerDown={down}
             onPointerMove={move}
             onPointerUp={up}
-            onPointerCancel={() => {
-              drag.current = null;
-              preview.current = null;
-              handleHovered.current = false;
-              useProject.getState().setInteracting(false);
-            }}
+            onPointerCancel={cancelDrag}
             onClick={(event) => event.stopPropagation()}
             onPointerOver={(event) => {
               event.stopPropagation();
