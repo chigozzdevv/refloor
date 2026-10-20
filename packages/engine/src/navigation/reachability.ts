@@ -2,6 +2,11 @@ import { contains, rotate } from '@refloor/engine/math';
 import { nearestNode, reachableNodes } from '@refloor/engine/navigation/connectivity';
 import type { EngineIssue, Navigation, NavigationPoint } from '@refloor/engine/types';
 import { exteriorInteractionAccess } from '@refloor/engine/navigation/exterior';
+import {
+  wallInteractionPositions,
+  interactionVisible,
+  openableInteractionPositions,
+} from '@refloor/engine/navigation/interaction';
 
 export function entrancePoints(navigation: Navigation): NavigationPoint[] {
   const { compiled } = navigation,
@@ -76,7 +81,32 @@ export function checkReachability(navigation: Navigation): EngineIssue[] {
     const object = instance.object,
       floor = compiled.building.floors.find((value) => value.id === object.floorId);
     if (!floor) continue;
-    const margin = compiled.options.radius + compiled.options.clearance + 0.15;
+    const overhead =
+      object.placement !== 'exterior' &&
+      object.kind === 'light' &&
+      object.position.y > compiled.options.headroom;
+    if (overhead) {
+      const accessible = (navigation.byFloor.get(floor.id) ?? []).some((index) => {
+        const node = navigation.nodes[index];
+        return (
+          node &&
+          reached.has(index) &&
+          Math.hypot(node.position.x - object.position.x, node.position.z - object.position.z) <=
+            1.5 &&
+          interactionVisible(compiled, object, node.position)
+        );
+      });
+      if (!accessible)
+        issues.push({
+          code: 'UNREACHABLE_OBJECT',
+          entityId: object.id,
+          message: 'Object has no reachable interaction position',
+        });
+      continue;
+    }
+    const margin = compiled.options.radius + compiled.options.clearance + 0.15,
+      wallMounted =
+        object.kind === 'television' || (object.kind === 'decor' && object.position.y > 0.8);
     const positions =
       object.kind === 'light' && object.position.y > compiled.options.headroom
         ? [
@@ -88,11 +118,8 @@ export function checkReachability(navigation: Navigation): EngineIssue[] {
               })),
             ),
           ]
-        : object.kind === 'television' || (object.kind === 'decor' && object.position.y > 0.8)
-          ? [margin, margin + 0.5, margin + 1].map((distance) => ({
-              x: 0,
-              z: object.dimensions.depth / 2 + distance,
-            }))
+        : wallMounted
+          ? wallInteractionPositions(object, margin)
           : [
               { x: 0, z: object.dimensions.depth / 2 + margin },
               { x: object.dimensions.width / 2 + margin, z: 0 },
@@ -104,6 +131,7 @@ export function checkReachability(navigation: Navigation): EngineIssue[] {
                   z: z * (object.dimensions.depth / 2 + margin / Math.SQRT2),
                 })),
               ),
+              ...openableInteractionPositions(object, margin),
             ];
     const accessible = positions.some((local) => {
       const delta = rotate(local, object.rotation),
@@ -117,7 +145,11 @@ export function checkReachability(navigation: Navigation): EngineIssue[] {
         };
       if (object.placement === 'exterior') return exteriorAccess?.(point.position) ?? false;
       const index = nearestNode(navigation, point);
-      return index !== null && reached.has(index);
+      return (
+        index !== null &&
+        reached.has(index) &&
+        (!wallMounted || interactionVisible(compiled, object, point.position))
+      );
     });
     if (!accessible)
       issues.push({
