@@ -53,7 +53,19 @@ function ScannedFurniture({ object, entry }: { object: SceneObject; entry: Catal
       child.material = Array.isArray(child.material) ? materials : materials[0]!;
     });
     return container;
-  }, [scene, width, height, depth, object.materials.body, entry, finish]);
+  }, [
+    scene,
+    width,
+    height,
+    depth,
+    object.materials.body?.color,
+    object.materials.body?.textureId,
+    object.materials.body?.roughness,
+    object.materials.body?.metalness,
+    object.materials.body?.opacity,
+    entry,
+    finish,
+  ]);
   useLayoutEffect(invalidateShadows, [model]);
   useEffect(
     () => () =>
