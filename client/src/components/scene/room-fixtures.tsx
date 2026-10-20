@@ -4,6 +4,7 @@ import type { SceneObject } from '@refloor/scene';
 import type { FurnitureRenderer } from '@refloor/catalogue';
 import { finishes } from '@refloor/catalogue';
 import { useSurface } from '@/shared/scene/asset-loader';
+import { Mirror } from '@/components/scene/mirror';
 
 type Vec3 = [number, number, number];
 function Solid({
@@ -487,11 +488,7 @@ export function RoomFixtures({
       return (
         <>
           <Solid size={[w, h, d]} at={[0, h / 2, 0]} material={frame} />
-          <Solid
-            size={[w - 0.045, h - 0.045, 0.012]}
-            at={[0, h / 2, d / 2 + 0.005]}
-            material={body}
-          />
+          <Mirror object={object} surface={body} />
         </>
       );
     default:
