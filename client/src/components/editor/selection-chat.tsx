@@ -2,10 +2,9 @@ import { useRef } from 'react';
 import { Html } from '@react-three/drei';
 import { Vector3 } from 'three';
 import { ElementChat } from '@/components/editor/element-chat';
-import { EnableSound } from '@/components/objects/enable-sound';
 import { useProject } from '@/shared/scene/scene-store';
 import { selectedContext } from '@/shared/editor/chat-context';
-import { usePlayback, playMedia } from '@/shared/behaviours/television';
+import { usePlayback } from '@/shared/behaviours/television';
 
 export function SelectionChat() {
   const card = useRef<HTMLDivElement>(null);
@@ -63,22 +62,13 @@ export function SelectionChat() {
           }}
           label={context.label}
           suggestions={context.suggestions}
+          status={
+            playback?.status === 'failed' || playback?.status === 'blocked'
+              ? playback.message
+              : null
+          }
           close={() => select(null)}
         />
-        {context.object?.kind === 'television' &&
-          context.object.behaviours.some(
-            (item) => item.kind === 'television' && item.state.powered,
-          ) && (
-            <div className="chat-media">
-              <EnableSound object={context.object} />
-              {playback?.status === 'blocked' && (
-                <button className="tool-button" onClick={() => playMedia(selection.id)}>
-                  Play video
-                </button>
-              )}
-              {playback?.status === 'failed' && <span>Video could not load.</span>}
-            </div>
-          )}
       </div>
     </Html>
   );

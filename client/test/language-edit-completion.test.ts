@@ -5,6 +5,7 @@ import { useProject } from '@/shared/scene/scene-store';
 import { editApi } from '@/shared/refloor/edits';
 import { changedMechanisms, sendLanguageEdit } from '@/shared/editor/use-language-edit';
 import { scenePresentation } from '@/shared/scene/presentation';
+import { setPlayback, usePlayback } from '@/shared/behaviours/television';
 
 const initial = useProject.getState();
 const usage = {
@@ -26,6 +27,7 @@ afterEach(() => {
   scenePresentation.fail(new Error('Test ended.'));
   useProject.setState(initial, true);
   vi.restoreAllMocks();
+  usePlayback.setState({ players: {} });
 });
 
 function response(openDoor = false) {
@@ -51,6 +53,45 @@ function response(openDoor = false) {
 }
 
 describe('chat action completion', () => {
+  it('applies a selected device command without a network round trip and waits for actual video playback', async () => {
+    const api = vi.spyOn(editApi, 'interpret'),
+      tv = useProject
+        .getState()
+        .compiled.building.objects.find((object) => object.kind === 'television')!;
+    setPlayback(tv.id, { status: 'loading', message: null });
+    const pending = sendLanguageEdit({ kind: 'object', id: tv.id }, 'Turn on');
+    const state = useProject.getState();
+    expect(api).not.toHaveBeenCalled();
+    expect(state.past).toHaveLength(1);
+    scenePresentation.commit(state.compiled);
+    scenePresentation.frame(state.compiled);
+    await Promise.resolve();
+    expect(useProject.getState().chatPending).not.toBeNull();
+    setPlayback(tv.id, { status: 'playing', message: null });
+    expect(await pending).toBe(true);
+    expect(useProject.getState().chatPending).toBeNull();
+    useProject.getState().undo();
+    expect(
+      useProject
+        .getState()
+        .compiled.building.objects.find((object) => object.id === tv.id)!
+        .behaviours.find((value) => value.kind === 'television')!.state.powered,
+    ).toBe(false);
+  });
+
+  it('reports a blocked player without claiming playback or leaving chat pending', async () => {
+    const tv = useProject
+      .getState()
+      .compiled.building.objects.find((object) => object.kind === 'television')!;
+    setPlayback(tv.id, { status: 'blocked', message: 'Send “turn on” to allow playback.' });
+    const pending = sendLanguageEdit({ kind: 'object', id: tv.id }, 'Turn on');
+    const state = useProject.getState();
+    scenePresentation.commit(state.compiled);
+    scenePresentation.frame(state.compiled);
+    expect(await pending).toBe(true);
+    expect(useProject.getState().chatPending).toBeNull();
+    expect(useProject.getState().memory.turns.at(-1)?.reply).toContain('allow playback');
+  });
   it('keeps the spinner active after the response and state edit until the scene is drawn', async () => {
     const before = useProject.getState().compiled,
       target = response(true),

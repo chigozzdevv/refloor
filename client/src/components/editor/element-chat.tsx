@@ -7,18 +7,18 @@ export function ElementChat({
   target,
   label,
   suggestions,
+  status,
   close,
 }: {
   target: ChatTarget;
   label: string;
   suggestions: string[];
+  status?: string | null;
   close?: () => void;
 }) {
   const [message, setMessage] = useState('');
   const [showHistory, setShowHistory] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(
-    target.kind === 'wall' && target.side === 'exterior',
-  );
+  const [showSuggestions, setShowSuggestions] = useState(true);
   const input = useRef<HTMLTextAreaElement>(null);
   const conversation = useRef<HTMLDivElement>(null);
   const { send, busy, reply, history } = useLanguageEdit(target);
@@ -98,6 +98,11 @@ export function ElementChat({
       {!showHistory && reply && (
         <p className="chat-reply" role="status">
           {reply}
+        </p>
+      )}
+      {status && (
+        <p className="chat-reply" role="status">
+          {status}
         </p>
       )}
       <form

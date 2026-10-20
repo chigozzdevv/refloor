@@ -9,6 +9,8 @@ import { editingError } from '@/shared/editor/errors';
 import { targetIdentity } from '@/shared/editor/identity';
 import { scenePresentation } from '@/shared/scene/presentation';
 import type { CompiledBuilding } from '@refloor/engine';
+import { deviceCommands } from '@refloor/catalogue/device-commands';
+import { prepareMediaCommand, waitForPlayback } from '@/shared/behaviours/television';
 
 export function changedMechanisms(before: CompiledBuilding, after: CompiledBuilding) {
   const affected = new Set<string>();
@@ -28,6 +30,7 @@ async function presentEdit(
   compiled: CompiledBuilding,
   epoch: number,
   affected: ReadonlySet<string>,
+  media: string[],
 ) {
   const controller = new AbortController(),
     unsubscribe = useProject.subscribe((state) => {
@@ -36,6 +39,7 @@ async function presentEdit(
   try {
     if (useProject.getState().projectEpoch !== epoch) controller.abort();
     await scenePresentation.waitFor(compiled, controller.signal, affected);
+    await waitForPlayback(media, controller.signal);
   } finally {
     unsubscribe();
   }
@@ -55,15 +59,18 @@ export async function sendLanguageEdit(target: ChatTarget, message: string) {
     baseRevision: before.compiled.building.revision,
   };
   try {
-    const result = await editApi.interpret({
-      requestId,
-      target,
-      message: text,
-      building: before.compiled.building,
-      context: scopedEditMemory(before.memory, target),
-      view: { ...walkInput.view },
-      player: before.mode === 'walk' ? (physicsSession.current?.player ?? null) : null,
-    });
+    const direct = deviceCommands(before.compiled.building, target, text);
+    const result = direct
+      ? { ...direct, baseRevision: base.baseRevision }
+      : await editApi.interpret({
+          requestId,
+          target,
+          message: text,
+          building: before.compiled.building,
+          context: scopedEditMemory(before.memory, target),
+          view: { ...walkInput.view },
+          player: before.mode === 'walk' ? (physicsSession.current?.player ?? null) : null,
+        });
     const current = useProject.getState();
     if (
       current.projectEpoch !== before.projectEpoch ||
@@ -81,6 +88,11 @@ export async function sendLanguageEdit(target: ChatTarget, message: string) {
       })
     )
       throw new Error(useProject.getState().notice ?? 'That change could not be applied.');
+    if (direct)
+      prepareMediaCommand(
+        useProject.getState().past.at(-1)?.revision.commands ?? [],
+        useProject.getState().compiled.building,
+      );
     turn = {
       ...base,
       reply: (result.message || 'Done.').slice(0, 1000),
@@ -89,7 +101,29 @@ export async function sendLanguageEdit(target: ChatTarget, message: string) {
     };
     if (result.commands.length) {
       const applied = useProject.getState().compiled;
-      await presentEdit(applied, before.projectEpoch, changedMechanisms(current.compiled, applied));
+      const media = applied.building.objects
+        .filter((object) => {
+          const state = object.behaviours.find((value) => value.kind === 'television')?.state,
+            previous = current.compiled.building.objects
+              .find((value) => value.id === object.id)
+              ?.behaviours.find((value) => value.kind === 'television')?.state;
+          return (
+            state?.powered &&
+            (!previous?.powered ||
+              state.source !== previous.source ||
+              state.muted !== previous.muted ||
+              direct?.commands.some(
+                (command) => command.type === 'set-television' && command.objectId === object.id,
+              ))
+          );
+        })
+        .map((object) => object.id);
+      await presentEdit(
+        applied,
+        before.projectEpoch,
+        changedMechanisms(current.compiled, applied),
+        media,
+      );
     }
     return true;
   } catch (error) {

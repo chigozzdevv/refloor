@@ -57,7 +57,11 @@ export function selectedContext(building: Building, selection: Selection) {
             z: object.position.z,
           },
           suggestions: tv
-            ? [tv.state.powered ? 'Turn off' : 'Turn on', 'Move left 20 cm']
+            ? [
+                tv.state.powered ? 'Turn off' : 'Turn on',
+                tv.state.muted ? 'Unmute the TV' : 'Mute the TV',
+                'Set volume to 35%',
+              ]
             : light
               ? [light.state.powered ? 'Turn off' : 'Turn on', 'Make it brighter']
               : cooker

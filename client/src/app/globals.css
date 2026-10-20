@@ -308,14 +308,6 @@ textarea:focus-visible,
   max-height: 70px;
   overflow: auto;
 }
-.chat-media {
-  padding: 0 12px 10px;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  font-size: 10px;
-  color: var(--muted);
-}
 .tool-button {
   display: inline-flex;
   gap: 5px;
