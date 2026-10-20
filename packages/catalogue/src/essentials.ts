@@ -1,6 +1,7 @@
 import type { CatalogueEntry, FurnitureRenderer } from '@refloor/catalogue/furniture';
 import type { ObjectAsset } from '@refloor/scene';
 import { finish, finishes } from '@refloor/catalogue/materials';
+import { householdBehaviours } from '@refloor/catalogue/household';
 
 const entry = (
   name: string,
@@ -22,7 +23,8 @@ const entry = (
     ...(['kitchen', 'island', 'vanity'].includes(renderer) ? { top: finishes.marbleSlab } : {}),
   },
   ...(['kitchen', 'island', 'vanity'].includes(renderer) ? { optionalMaterials: ['top'] } : {}),
-  behaviours: [],
+  behaviours: householdBehaviours(`catalogue/${name}`),
+  optionalBehaviours: householdBehaviours(`catalogue/${name}`).map((behaviour) => behaviour.kind),
   renderer,
   description: label,
 });

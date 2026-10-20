@@ -13,6 +13,8 @@ export {
 } from '@refloor/catalogue/furniture';
 export type { CatalogueEntry, FurnitureRenderer } from '@refloor/catalogue/furniture';
 export { validateBuildingAssets } from '@refloor/catalogue/validation';
+export { catalogueBehaviourUpgrades } from '@refloor/catalogue/behaviour-upgrades';
+export { householdOpenableLabel } from '@refloor/catalogue/household';
 export { lightTuning, lightOutput, validateCommandTuning } from '@refloor/catalogue/tuning';
 export { placementProfile } from '@refloor/catalogue/placement-profile';
 export type { PlacementProfile, MountingSurface } from '@refloor/catalogue/placement-profile';

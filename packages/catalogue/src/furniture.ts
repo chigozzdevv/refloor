@@ -1,6 +1,7 @@
-import type { ObjectAsset, SceneObject } from '@refloor/scene';
+import type { Behaviour, ObjectAsset, SceneObject } from '@refloor/scene';
 import { finish, finishes } from '@refloor/catalogue/materials';
 import { roomEssentials } from '@refloor/catalogue/essentials';
+import { householdBehaviours } from '@refloor/catalogue/household';
 
 export type FurnitureRenderer =
   | 'sofa'
@@ -34,6 +35,7 @@ export type CatalogueEntry = ObjectAsset & {
   tintMaterials?: string[];
   tintNodes?: string[];
   optionalMaterials?: string[];
+  optionalBehaviours?: Behaviour['kind'][];
 };
 
 export const catalogue: CatalogueEntry[] = [
@@ -146,7 +148,8 @@ export const catalogue: CatalogueEntry[] = [
     kind: 'storage',
     dimensions: { width: 1.6, height: 0.7, depth: 0.42 },
     materials: { body: finishes.oakVeneer, frame: finishes.black },
-    behaviours: [],
+    behaviours: householdBehaviours('catalogue/cabinet'),
+    optionalBehaviours: ['openable'],
     renderer: 'cabinet',
     description: 'Warm timber, fine shadow gaps.',
   },

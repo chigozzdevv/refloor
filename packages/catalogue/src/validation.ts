@@ -38,14 +38,14 @@ export function validateBuildingAssets(building: Building) {
       Object.keys(entry.materials).some(
         (slot) => !object.materials[slot] && !entry.optionalMaterials?.includes(slot),
       ) ||
-      object.behaviours
-        .map((value) => value.kind)
-        .sort()
-        .join(',') !==
-        entry.behaviours
-          .map((value) => value.kind)
-          .sort()
-          .join(',')
+      object.behaviours.some(
+        (behaviour) => !entry.behaviours.some((value) => value.kind === behaviour.kind),
+      ) ||
+      entry.behaviours.some(
+        (behaviour) =>
+          !object.behaviours.some((value) => value.kind === behaviour.kind) &&
+          !entry.optionalBehaviours?.includes(behaviour.kind),
+      )
     )
       throw new Error(`This project uses an incompatible object definition: ${object.label}`);
     const television = object.behaviours.find((value) => value.kind === 'television');

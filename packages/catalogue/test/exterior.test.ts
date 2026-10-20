@@ -141,7 +141,9 @@ describe('editable exterior furnishings', () => {
         ...metadata('light-on'),
         expectedRevision: building.revision,
         commands: [{ type: 'set-light', objectId: light.id, state: { powered: true } }],
-      }).building.objects.find((object) => object.id === light.id)?.behaviours[0]?.state.powered,
+      })
+        .building.objects.find((object) => object.id === light.id)
+        ?.behaviours.find((behaviour) => behaviour.kind === 'light')?.state.powered,
     ).toBe(true);
   });
 });
