@@ -7,6 +7,7 @@ import type { SceneRule, SceneCommand } from '@refloor/scene';
 import { createEditMemory } from '@refloor/scene/edit-memory';
 import { editDocument, reverseDocument } from '@/shared/editor/document';
 import { encodeProject, readProjectFile } from '@/shared/scene/files';
+import { savedActionCommands } from '@/shared/behaviours/saved-action';
 
 const initial = () => {
   const compiled = compileBuilding(
@@ -25,6 +26,47 @@ const power = (building: ReturnType<typeof parseBuilding>, id: string) =>
   building.objects.find((object) => object.id === id)!.behaviours[0]!.state.powered;
 
 describe('universal saved scene actions', () => {
+  it('tests a selected rule with its conditions and records an undoable user change', () => {
+    const state = initial(),
+      building = state.compiled.building,
+      light = building.objects.find((object) => object.kind === 'light' && !object.placement)!;
+    const rule: SceneRule = {
+      id: 'test-lighting',
+      label: 'Warm welcome',
+      enabled: true,
+      trigger: { kind: 'room-enter', roomId: light.roomId },
+      conditions: [{ kind: 'door', doorId: 'ground/entrance', open: false }],
+      actions: [{ type: 'set-light', objectId: light.id, state: { intensity: 1 } }],
+    };
+    const configured = editDocument(state, [{ type: 'set-rules', rules: [rule] }]),
+      commands = savedActionCommands(configured.compiled.building, rule.id),
+      tested = editDocument(configured, commands, undefined, { label: `Test ${rule.label}` });
+    expect(tested.past.at(-1)?.source).toBe('manual');
+    expect(
+      tested.compiled.building.objects.find((object) => object.id === light.id)?.behaviours[0]
+        ?.state,
+    ).toMatchObject({ intensity: 1 });
+    expect(fingerprintBuilding(reverseDocument(tested, 'undo').compiled.building)).toBe(
+      fingerprintBuilding(configured.compiled.building),
+    );
+    commands.length = 0;
+    expect(rule.actions).toHaveLength(1);
+    expect(() => savedActionCommands(building, 'missing')).toThrow('no longer available');
+    expect(() =>
+      savedActionCommands({ ...building, rules: [{ ...rule, enabled: false }] }, rule.id),
+    ).toThrow('Enable');
+    expect(() =>
+      savedActionCommands(
+        {
+          ...building,
+          rules: [
+            { ...rule, conditions: [{ kind: 'door', doorId: 'ground/entrance', open: true }] },
+          ],
+        },
+        rule.id,
+      ),
+    ).toThrow('conditions');
+  });
   it('runs a multi-device door rule atomically, and round-trips through undo, redo and export', () => {
     const state = initial(),
       building = state.compiled.building;

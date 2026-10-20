@@ -819,6 +819,32 @@ select option {
 .chat-assistant-message[data-status='rejected'] {
   color: #e6ad98;
 }
+.saved-action-editor {
+  display: grid;
+  gap: 8px;
+  padding: 10px 0;
+}
+.saved-action-editor label {
+  color: var(--muted);
+  font-size: 11px;
+}
+.saved-action-editor textarea {
+  width: 100%;
+  padding: 9px 11px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--field);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+}
+.saved-action-editor-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
 .saved-list-heading {
   display: flex;
   justify-content: space-between;
