@@ -1,6 +1,7 @@
 import type { EditTarget } from '@refloor/scene/edit-memory';
 import type { Building, SceneCommand, SceneRevision } from '@refloor/scene';
 import { targetIdentity } from '@/shared/editor/identity';
+import type { PropertyGuard } from '@refloor/scene/properties';
 
 export function describeTarget(building: Building, commands: SceneCommand[]) {
   const targets = commands.map((command) => {
@@ -31,6 +32,7 @@ export function describeTarget(building: Building, commands: SceneCommand[]) {
 }
 
 export type EditDetails = {
+  guards?: PropertyGuard[];
   id?: string;
   at?: string;
   chat?: {

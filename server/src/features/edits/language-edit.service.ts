@@ -6,6 +6,7 @@ import { HouseAI } from '@refloor/server/shared/ai/house-ai';
 import { chatTargetExists, languageCommands } from '@refloor/server/shared/planning/language-edit';
 import { validateAssets, validateTuning } from '@refloor/server/features/houses/house.validation';
 import { ApiError } from '@refloor/server/shared/http/errors';
+import { languageReadGuards } from '@refloor/server/shared/planning/edit-dependencies';
 
 export class LanguageEditService {
   private readonly ai: HouseAI | null;
@@ -43,9 +44,10 @@ export class LanguageEditService {
             : 'This request could not be understood.',
       );
     }
-    let commands;
+    let commands, guards;
     try {
       commands = languageCommands(input, result.plan);
+      guards = languageReadGuards(input, result.plan, commands);
     } catch (error) {
       throw new ApiError(
         422,
@@ -73,6 +75,7 @@ export class LanguageEditService {
       baseRevision: input.building.revision,
       message: result.plan.message,
       commands,
+      guards,
       usage: result.usage,
     };
   }

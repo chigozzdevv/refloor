@@ -101,6 +101,7 @@ export const languageActionSchema = z.strictObject({
 });
 export const languagePlanSchema = z.strictObject({
   message: z.string().max(240),
+  references: z.array(z.string()).max(40).default([]),
   actions: z.array(languageActionSchema).max(20),
   automations: z
     .array(

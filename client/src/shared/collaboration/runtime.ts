@@ -15,7 +15,7 @@ import {
 } from '@refloor/scene/collaboration';
 import type { SharedEdit, SharedState } from '@refloor/scene/collaboration';
 import { createEditMemory, fingerprintEditMemory } from '@refloor/scene/edit-memory';
-import { propertiesMatch } from '@refloor/scene/properties';
+import { propertiesMatch, propertyKey } from '@refloor/scene/properties';
 import { compileBuilding } from '@refloor/engine';
 import { canSwingAroundPlayers } from '@refloor/engine/validation/shared-players';
 import { useProject } from '@/shared/scene/scene-store';
@@ -273,7 +273,14 @@ export function startCollaboration(projectId: string) {
         id,
         at,
         commands,
-        guards: createEditGuards(before, commands),
+        guards: [
+          ...new Map(
+            [...createEditGuards(before, commands), ...(details?.guards ?? [])].map((guard) => [
+              propertyKey(guard.path),
+              guard,
+            ]),
+          ).values(),
+        ],
         label: details?.label ?? 'Edit space',
         source: details?.source ?? 'manual',
         ...(details?.chat

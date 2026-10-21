@@ -14,6 +14,8 @@ import { scenePresentation } from '@/shared/scene/presentation';
 import type { CompiledBuilding } from '@refloor/engine';
 import { deviceCommands } from '@refloor/catalogue/device-commands';
 import { prepareMediaCommand, waitForPlayback } from '@/shared/behaviours/television';
+import { createEditGuards } from '@refloor/scene/edit-guards';
+import { propertiesMatch } from '@refloor/scene/properties';
 
 function conversation(memory: EditMemory, target: EditTarget) {
   const self = useCollaboration.getState().state?.self;
@@ -95,11 +97,14 @@ export async function sendLanguageEdit(target: ChatTarget, message: string) {
           view: { ...walkInput.view },
           player: before.mode === 'walk' ? (physicsSession.current?.player ?? null) : null,
         });
+    const dependencies = () =>
+      ('guards' in result && result.guards) ||
+      (result.commands.length ? createEditGuards(planning.compiled.building, result.commands) : []);
     if (
       !direct &&
       before.remote?.shared &&
       useProject.getState().projectEpoch === before.projectEpoch &&
-      useProject.getState().compiled.building !== before.compiled.building
+      !propertiesMatch(useProject.getState().compiled.building, dependencies())
     ) {
       planning = useProject.getState();
       result = await editApi.interpret({
@@ -113,10 +118,13 @@ export async function sendLanguageEdit(target: ChatTarget, message: string) {
       });
     }
     const current = useProject.getState();
+    const guards = dependencies();
     if (
       current.projectEpoch !== before.projectEpoch ||
-      current.compiled.building !== planning.compiled.building ||
-      result.baseRevision !== current.compiled.building.revision
+      result.baseRevision !== planning.compiled.building.revision ||
+      (before.remote?.shared
+        ? !propertiesMatch(current.compiled.building, guards)
+        : current.compiled.building !== planning.compiled.building)
     )
       throw new Error('The space changed while I was working. Please try that again.');
     const identity = targetIdentity(planning.compiled.building, target);
@@ -128,6 +136,7 @@ export async function sendLanguageEdit(target: ChatTarget, message: string) {
         at: base.at,
         chat: { target, message: text, reply: (result.message || 'Done.').slice(0, 1000) },
         label: text,
+        guards,
         target: identity ? `${identity.label} · ${identity.location}` : undefined,
       })
     )
