@@ -48,7 +48,8 @@ export default defineConfig({
     ],
   },
   test: {
-    maxWorkers: 4,
+    // Solver and walking regressions run without competing WebAssembly workers.
+    maxWorkers: 1,
     testTimeout: 15000,
     include: [
       'packages/*/test/**/*.test.ts',
