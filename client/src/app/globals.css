@@ -2018,28 +2018,47 @@ select option {
   gap: 8px;
   align-items: center;
 }
-.shared-history-note {
-  color: #9fadb4;
-  font-size: 11px;
-  line-height: 1.6;
-  margin: 0 16px 16px;
+.shared-history {
+  padding: 0;
+  overflow: hidden;
+}
+.shared-history .panel-heading {
+  padding: 12px 12px 12px 16px;
+  margin: 0;
+  border-bottom: 1px solid var(--line);
+}
+.shared-history > .collaboration-error {
+  margin: 12px 16px 0;
+}
+.shared-history-messages {
+  padding: 16px;
+  max-height: min(55dvh, calc(100dvh - 180px));
+  overflow: auto;
+  overscroll-behavior: contain;
+  overflow-anchor: none;
 }
 .shared-history-list {
   list-style: none;
-  padding: 0 15px 15px;
+  padding: 0;
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  overflow: auto;
-  max-height: 55dvh;
+  align-items: flex-start;
+  gap: 18px;
+}
+.shared-history-list > li {
+  max-width: 94%;
+  min-width: 0;
+}
+.shared-history-list > li[data-own='true'] {
+  align-self: flex-end;
 }
 .shared-history-author {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 10px;
-  color: #b2bec5;
+  color: var(--muted);
   margin-bottom: 6px;
 }
 .shared-history-author > span {
@@ -2048,16 +2067,30 @@ select option {
   border-radius: 50%;
 }
 .shared-history-author time {
-  margin-left: auto;
+  margin-left: 4px;
   font-size: 9px;
   opacity: 0.6;
 }
+.shared-history-list > li[data-own='true'] .shared-history-author {
+  justify-content: flex-end;
+}
+.shared-history-message {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.shared-history-list > li[data-own='true'] .shared-history-message {
+  flex-direction: row-reverse;
+}
 .shared-history-bubble {
-  position: relative;
-  padding: 12px 34px 12px 13px;
-  background: #ffffff08;
-  border: 1px solid #ffffff12;
-  border-radius: 0 11px 11px 11px;
+  min-width: 0;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  border-radius: 3px 13px 13px;
+}
+.shared-history-list > li[data-own='true'] .shared-history-bubble {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border-radius: 13px 3px 13px 13px;
 }
 .shared-history-bubble p {
   margin: 0;
@@ -2067,21 +2100,20 @@ select option {
 }
 .shared-history-bubble small {
   display: block;
-  font-size: 11px;
+  font-size: 10px;
   line-height: 1.5;
-  color: #9dadb7;
-  margin-top: 6px;
+  color: var(--muted);
+  margin-bottom: 3px;
 }
-.shared-history-bubble > button {
-  position: absolute;
-  right: 3px;
-  top: 5px;
+.shared-history-message > button {
+  color: var(--muted);
 }
 .shared-history-list li[data-reverted='true'] .shared-history-bubble {
-  border-style: dashed;
+  opacity: 0.55;
 }
-.shared-history-state {
-  color: #ddc495 !important;
+.shared-history-list li[data-reverted='true'] .shared-history-bubble p {
+  text-decoration: line-through;
+  text-decoration-color: var(--muted);
 }
 .shared-history-earlier {
   display: flex;
@@ -2089,9 +2121,9 @@ select option {
   gap: 6px;
   border: 0;
   background: none;
-  color: #b9c7cf;
-  margin: 0 15px 15px;
-  padding: 6px 0;
+  color: var(--muted);
+  margin: 0 auto 18px;
+  padding: 6px 12px;
   font-size: 11px;
   cursor: pointer;
 }
