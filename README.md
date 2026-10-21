@@ -146,8 +146,9 @@ separate from `pnpm check`. Engine tests instantiate Rapier and walk a capsule t
 the generated colliders, including entrance-to-upstairs routes, both stair types and
 rotated flights. This verifies the geometry in a headless physics world. The browser
 supports an animated entrance with a draggable handle, orbit and first-person views,
-and evening lighting by default. A globe icon opens house chat, view settings, furniture,
-files and room furnishing completion. History beside the globe provides labelled
+and evening lighting by default. The globe opens House with separate Chat and Tools tabs.
+Tools groups exploration, furniture, saved actions, project files and appearance. Switching
+tabs keeps the unsent house message, and hidden chat does not broadcast typing. History beside the globe provides labelled
 changes with their item and room, undo, redo and restoration before an earlier edit. Completing furnishings runs
 in a bounded browser worker, preserves the house layout, validates access and can be undone
 as one change. It upgrades legacy fittings and adds room essentials where clear space permits.
@@ -156,8 +157,11 @@ or statistics overlays. Clicking a door or its handle starts a complete trip thr
 Shift+click, right-click, or selecting it in overview opens door editing. Nearby appliance handles,
 burner controls and tap/shower handles operate their device in walk mode; the remaining
 item surfaces open editing. Clicking items, walls or floors opens a small chat anchored
-beside it with a speech-bubble tail and a selection outline. Recent conversation expands inside
-the bubble. Chat shows suggested text commands, which can be collapsed with the help icon. There are no separate playback or sound action buttons. Selecting one fills the composer for review before sending. Unambiguous selected-device commands such as “turn on”, “open the tap”, “unmute the TV” and “set volume to 35%” execute locally through the same validated transaction, history and saved-rule system. Other requests use GPT-6 Luna; the server validates commands and placement,
+beside it with a speech-bubble tail and a selection outline. Chat shows the latest exchange;
+its history icon expands earlier messages. New messages appear immediately with a pending
+indicator through scene completion, and rejected instructions return to the composer.
+Shared edits that have been undone carry an undo indicator. Suggested text commands can
+be collapsed with the help icon. There are no separate playback or sound action buttons. Selecting one fills the composer for review before sending. Unambiguous selected-device commands such as “turn on”, “open the tap”, “unmute the TV” and “set volume to 35%” execute locally through the same validated transaction, history and saved-rule system. Other requests use GPT-6 Luna; the server validates commands and placement,
 and the client checks that the scene has not changed before applying them. Item chat
 can only affect the selected entity; house chat can change finishes or devices across
 the current building. Drag or swipe to look around, then select a floor ring to travel
@@ -419,7 +423,8 @@ and never fetches remote video; the browser plays them directly.
 Use the people icon beside History to share the current house. Enter a display name and
 create a seven-day Editor or Viewer invitation. Invitations grant access to this house only;
 the owner can revoke links, change member permissions or remove access. Removed members
-can be reinstated from the same permissions list. Shared houses appear in Saved spaces.
+can be reinstated from the collapsed Removed access list in People. Owners switch between
+People and Invite tabs; invitation drafts remain available while switching tabs. Shared houses appear in Saved spaces.
 Each visitor keeps their own camera, walking position and selection.
 
 Selected furniture gets a coloured outline and a name pointer in other visitors’ views.
