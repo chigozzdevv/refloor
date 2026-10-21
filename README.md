@@ -57,7 +57,7 @@ Generation results use a dedicated worker channel, isolated from Node's dependen
 messages. Internal failures are logged on the server; job status exposes readable failure
 messages rather than raw schema diagnostics.
 
-Generation currently supports rectangular houses with one or two storeys, 14–20 m width,
+Generation supports rectangular houses with one or two storeys and L-shaped flat-roof bungalows, 14–20 m width,
 9–24 m depth in 0.1 m increments, two to eight rooms per floor and twelve rooms total.
 Unspecified width follows the programme and circulation; Z3 solves depth and room allocation.
 Choose a central hall with balanced wings or a wider public wing, or a daylit side gallery
@@ -66,6 +66,10 @@ the front or rear. Living-hub bungalows use a central living or living/dining ro
 The entrance follows the circulation layout. Two-storey homes reserve a
 shared stairwell, upper-floor opening and landing access. Living, dining and kitchen can
 share one open room in any combination; bedrooms, bathrooms and workspaces stay enclosed.
+L-shaped plans reserve a 2.8 m open rear-right corner. Its exterior walls, courtyard glazing,
+floor and roof cutout, parapets, map and collision checks use the same footprint. This shape
+supports central-hall and living-hub circulation; upstairs, side-gallery and gable combinations
+are rejected explicitly. Generated seating retains a clear aisle beside accent chairs.
 Room uses persist for zoned furnishing and completion of missing essentials. Public zones sit side by side when wide
 enough and follow one another in narrower rooms, without internal partitions. Windows
 follow room use; standard or generous glazing changes actual window sizes and counts in
@@ -91,10 +95,30 @@ Set `CLIENT_ORIGINS` to the exact frontend addresses for a deployment.
 `pnpm check` runs formatting, linting, type checking, compiled-package and domain tests.
 It also checks every shipped asset against the manifest's size and SHA-256 checksum,
 including the local buffer and texture dependencies referenced by furniture models.
+It also checks the production bundle: prompt JavaScript stays below 230 kB gzip, renderer
+modules remain deferred, and physics ships as separate JavaScript and WebAssembly assets.
 `pnpm build` emits packages and the production client to their `dist` directories.
 `pnpm test` builds the workspace and runs its tests. `pnpm preview` serves a completed
 production build locally. Development and standalone type checking build shared packages
 first, so a fresh checkout does not depend on existing build output.
+
+## Browser journeys
+
+`client/test/browser/journeys.ts` runs against the approved CUA tab API using normal controls.
+It imports generated house files, enters through the handle, visits rooms through the map,
+checks for usable next actions, operates the refrigerator through chat, uses stairs and returns
+outside. Separate helpers cover undo, redo and exporting the actual project for state assertions.
+
+After building, run `pnpm --filter @refloor/server browser:serve` and
+`REFLOOR_API_URL=http://127.0.0.1:4317 pnpm --filter @refloor/client preview --port 4318`.
+The API uses a random disposable MongoDB database, a separate session cookie and no AI provider.
+Stopping it removes only that test database. Compile the driver with
+`pnpm exec tsc --ignoreConfig client/test/browser/journeys.ts --outDir /tmp/refloor-browser --target ES2023 --module ESNext --skipLibCheck`,
+then import its emitted module in CUA, bind a tab at `http://127.0.0.1:4318/`, call `startHouse(tab)` once,
+and run `runHouseJourney(tab, absoluteFixturePath, parsedFixture, report)` for the generated
+L-shaped, open-plan and two-storey files in `client/test/fixtures`. The steps can also run separately.
+`pnpm --filter @refloor/server browser:fixtures` regenerates the validated L-shaped fixture.
+These browser journeys are separate from `pnpm check`; physical phone testing remains separate.
 
 ## Structure
 
@@ -287,6 +311,12 @@ Ground detail fades with distance to reduce shimmer.
 Paving switches between individual blocks and a filtered joint pattern according to projected size,
 with hysteresis to avoid flicker. Both representations share the same editable finish.
 
+First visits show a small rendered-house poster behind the prompt. The renderer and starter
+previews load only when needed; an existing open scene stays available behind a new prompt.
+Rapier uses a separately cached WebAssembly file rather than embedding base64 in JavaScript.
+Hidden documents pause continuous rendering. Procedural cooker grates and burner caps share
+two merged meshes; soft bedding has contoured pillows and stitched edges without extra draw calls.
+
 Rendering caps drawing-buffer size and adjusts resolution after sustained slow frames, with slower
 quality recovery. Native filtered PCF shadows remain active across viewport and quality changes.
 Compact viewports use smaller shadow/reflection targets and SMAA instead of
@@ -398,7 +428,7 @@ actual leaf positions. The browser must animate the same hinges and update its p
 
 ## Current limits
 
-The engine supports rectangular houses with aligned storeys, adjoining slabs, full-height
+The engine supports rectangular houses with aligned storeys and flat-roof courtyard cutouts, adjoining slabs, full-height
 exterior enclosure, straight or U-shaped stairs at multiples of 90 degrees, and a flat
 or gable roof. Unsupported storey offsets, insufficient stair dimensions, blocked routes
 and resource-budget overflows fail explicitly.
