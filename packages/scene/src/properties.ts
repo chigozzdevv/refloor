@@ -113,7 +113,7 @@ export function diffProperties(before: unknown, after: unknown): PropertyPatch[]
   const patches: PropertyPatch[] = [];
   function visit(a: unknown, b: unknown, path: PropertyPath, index?: number) {
     if (canonical(a) === canonical(b)) return;
-    if (Array.isArray(a) && Array.isArray(b)) {
+    if (Array.isArray(a) && Array.isArray(b) && !(path.length === 1 && path[0] === 'rules')) {
       const items = [...a, ...b] as unknown[];
       const key = (['id', 'kind'] as const).find(
         (candidate) =>

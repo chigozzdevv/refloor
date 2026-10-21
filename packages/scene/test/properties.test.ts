@@ -88,4 +88,12 @@ describe('selective shared properties', () => {
     );
     expect(replay.building.roof.material.color).toBe('#ffffff');
   });
+  it('records rule order because it determines the order of saved actions', () => {
+    const before = { rules: [{ id: 'a' }, { id: 'b' }] },
+      after = { rules: [{ id: 'b' }, { id: 'a' }] };
+    const patches = diffProperties(before, after);
+    expect(patches).toHaveLength(1);
+    for (const change of restorationChanges(after, patches)) writeProperty(after, change);
+    expect(after).toEqual(before);
+  });
 });
