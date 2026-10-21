@@ -104,21 +104,35 @@ first, so a fresh checkout does not depend on existing build output.
 
 ## Browser journeys
 
-`client/test/browser/journeys.ts` runs against the approved CUA tab API using normal controls.
-It imports generated house files, enters through the handle, visits rooms through the map,
-checks for usable next actions, operates the refrigerator through chat, uses stairs and returns
-outside. Separate helpers cover undo, redo and exporting the actual project for state assertions.
+Install the test browsers once with `pnpm exec playwright install chromium webkit`,
+then run `pnpm test:e2e`. The command builds the app, regenerates the three browser fixtures
+through the current planner, and starts an isolated MongoDB replica,
+test API and production preview. It uses no application credentials or AI provider, and stops
+and removes its own database after the run. Ports 4317 and 4318 must be free.
 
-After building, run `pnpm --filter @refloor/server browser:serve` and
-`REFLOOR_API_URL=http://127.0.0.1:4317 pnpm --filter @refloor/client preview --port 4318`.
-The API uses a random disposable MongoDB database, a separate session cookie and no AI provider.
-Stopping it removes only that test database. Compile the driver with
-`pnpm exec tsc --ignoreConfig client/test/browser/journeys.ts --outDir /tmp/refloor-browser --target ES2023 --module ESNext --skipLibCheck`,
-then import its emitted module in CUA, bind a tab at `http://127.0.0.1:4318/`, call `startHouse(tab)` once,
-and run `runHouseJourney(tab, absoluteFixturePath, parsedFixture, report)` for the generated
-L-shaped, open-plan and two-storey files in `client/test/fixtures`. The steps can also run separately.
-`pnpm --filter @refloor/server browser:fixtures` regenerates the validated L-shaped fixture.
-These browser journeys are separate from `pnpm check`; physical phone testing remains separate.
+The suite runs desktop Chromium and touch WebKit with an iPhone viewport. It verifies the
+lightweight first prompt, then imports the generated L-shaped, open-plan and two-storey fixtures,
+enters through the handle, visits every room, uses stairs and returns outside. Refrigerator chat
+edits are checked against the exported project after undo, redo and reload. Uncaught page errors
+fail the journey. Chromium uses modern headless mode with Metal on macOS and permits software
+WebGL elsewhere; these checks establish
+behavior rather than real-device frame rates or GPU performance.
+
+Failure traces and screenshots are saved under `.local/browser-results`; the HTML report is
+under `.local/browser-report`. These browser journeys are separate from `pnpm check`.
+Physical iPhone GPU, thermal and touch testing remains separate.
+
+`client/test/browser/journeys.ts` shares normal-control journeys between Playwright and CUA.
+For manual CUA checks, start `pnpm --filter @refloor/server browser:serve` and
+`REFLOOR_API_URL=http://127.0.0.1:4317 pnpm --filter @refloor/client preview --port 4318`,
+then compile the driver with
+`pnpm exec tsc --ignoreConfig client/test/browser/journeys.ts --outDir /tmp/refloor-browser --target ES2023 --module ESNext --skipLibCheck`.
+Import it in CUA, bind a tab at `http://127.0.0.1:4318/`, call `startHouse(tab)`, and run
+`runHouseJourney(tab, absoluteFixturePath, parsedFixture, report)`.
+`pnpm --filter @refloor/server browser:fixtures` regenerates all three browser fixtures from
+their explicit briefs under the current planner, including fixture-opening clearance validation.
+They live under `client/test/browser/fixtures`; older navigation regressions remain under
+`client/test/fixtures`.
 
 ## Structure
 
