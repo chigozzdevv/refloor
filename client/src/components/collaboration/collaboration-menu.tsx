@@ -1,7 +1,9 @@
 import { InvitationLinks } from '@/components/collaboration/invitation-links';
 import { collaborationBridge } from '@/shared/collaboration/bridge';
 import { useEffect, useRef, useState } from 'react';
-import { LoaderCircle, Users, X } from 'lucide-react';
+import { ChevronDown, LoaderCircle, Users, X } from 'lucide-react';
+import type { SharedMember } from '@refloor/scene/collaboration';
+import { PanelTabs } from '@/components/ui/panel-tabs';
 import { useCollaboration } from '@/shared/collaboration/store';
 import { collaborationApi } from '@/shared/collaboration/api';
 import { remoteShared } from '@/shared/collaboration/runtime';
@@ -19,6 +21,7 @@ export function CollaborationMenu({
 }) {
   const { state, status, peers, pending, error } = useCollaboration();
   const shared = useProject((project) => project.remote?.shared);
+  const [tab, setTab] = useState<'people' | 'invite'>('people');
   const [open, setOpen] = useState(false),
     [name, setName] = useState('');
   const [busy, setBusy] = useState(false),
@@ -52,6 +55,75 @@ export function CollaborationMenu({
   const activity = new Map(
     activePresence(peers).map((peer) => [peer.member.id, presencePhase(peer)]),
   );
+  const renderMembers = (members: SharedMember[]) => {
+    if (!state) return null;
+    return (
+      <ul className="collaboration-members">
+        {members.map((member) => (
+          <li key={member.id}>
+            <span className="collaboration-avatar" style={{ background: member.color }}>
+              {member.name.slice(0, 1).toUpperCase()}
+            </span>
+            <div>
+              <strong>
+                {member.name}
+                {member.id === state.self.id ? ' (you)' : ''}
+              </strong>
+              <small>
+                {member.active === false
+                  ? 'Access removed'
+                  : activity.has(member.id)
+                    ? activity.get(member.id) === 'applying'
+                      ? 'Applying a change…'
+                      : 'Typing…'
+                    : status === 'live' && (online.has(member.id) || member.id === state.self.id)
+                      ? 'Here now'
+                      : 'Offline'}
+              </small>
+            </div>
+            {state.self.role === 'owner' && member.role !== 'owner' ? (
+              <select
+                aria-label={`Access for ${member.name}`}
+                value={member.active === false ? 'removed' : member.role}
+                disabled={busy || status !== 'live'}
+                onChange={(event) =>
+                  run(async () => {
+                    const next = await collaborationApi.manage(
+                      state.project.id,
+                      member.id,
+                      event.target.value as 'editor' | 'viewer' | 'removed',
+                    );
+                    useCollaboration.setState({ state: next });
+                  })
+                }
+              >
+                <option value="editor">Editor</option>
+                <option value="viewer">Viewer</option>
+                <option value="removed">Remove</option>
+              </select>
+            ) : (
+              <small>{member.role}</small>
+            )}
+          </li>
+        ))}
+      </ul>
+    );
+  };
+  const removed = state?.members.filter((member) => member.active === false) ?? [];
+  const people = state && (
+    <>
+      {renderMembers(state.members.filter((member) => member.active !== false))}
+      {removed.length > 0 && (
+        <details className="collaboration-removed">
+          <summary>
+            Removed access <span>{removed.length}</span>
+            <ChevronDown size={14} />
+          </summary>
+          {renderMembers(removed)}
+        </details>
+      )}
+    </>
+  );
   return (
     <div className="collaboration-controls" ref={panel}>
       <button
@@ -70,7 +142,7 @@ export function CollaborationMenu({
       {open && (
         <section className="collaboration-menu" aria-label="Collaboration">
           <div className="panel-heading">
-            <span>Share this house</span>
+            <span>Collaboration</span>
             <button
               className="icon-button"
               aria-label="Close collaboration"
@@ -79,7 +151,11 @@ export function CollaborationMenu({
               <X size={17} />
             </button>
           </div>
-          {shared && status === 'denied' ? null : live ? (
+          {shared && status === 'denied' ? (
+            <p className="collaboration-error" role="status">
+              {failure ?? error ?? 'Access removed'}
+            </p>
+          ) : live ? (
             <>
               <div className="collaboration-sync" role="status">
                 <i data-status={status} />
@@ -91,60 +167,31 @@ export function CollaborationMenu({
                       ? 'Access removed'
                       : 'Reconnecting…'}
               </div>
-              <ul className="collaboration-members">
-                {state.members.map((member) => (
-                  <li key={member.id}>
-                    <span className="collaboration-avatar" style={{ background: member.color }}>
-                      {member.name.slice(0, 1).toUpperCase()}
-                    </span>
-                    <div>
-                      <strong>
-                        {member.name}
-                        {member.id === state.self.id ? ' (you)' : ''}
-                      </strong>
-                      <small>
-                        {member.active === false
-                          ? 'Access removed'
-                          : activity.has(member.id)
-                            ? activity.get(member.id) === 'applying'
-                              ? 'Applying a change…'
-                              : 'Typing…'
-                            : status === 'live' &&
-                                (online.has(member.id) || member.id === state.self.id)
-                              ? 'Here now'
-                              : 'Offline'}
-                      </small>
-                    </div>
-                    {state.self.role === 'owner' && member.role !== 'owner' ? (
-                      <select
-                        aria-label={`Access for ${member.name}`}
-                        value={member.active === false ? 'removed' : member.role}
-                        disabled={busy || status !== 'live'}
-                        onChange={(event) =>
-                          run(async () => {
-                            const next = await collaborationApi.manage(
-                              state.project.id,
-                              member.id,
-                              event.target.value as 'editor' | 'viewer' | 'removed',
-                            );
-                            useCollaboration.setState({ state: next });
-                          })
-                        }
-                      >
-                        <option value="editor">Editor</option>
-                        <option value="viewer">Viewer</option>
-                        <option value="removed">Remove</option>
-                      </select>
-                    ) : (
-                      <small>{member.role}</small>
-                    )}
-                  </li>
-                ))}
-              </ul>
-              {state.self.role === 'owner' && (
-                <InvitationLinks projectId={state.project.id} disabled={status !== 'live'} />
+              {state.self.role === 'owner' ? (
+                <PanelTabs
+                  label="Collaboration sections"
+                  tabs={
+                    [
+                      { value: 'people', label: 'People' },
+                      { value: 'invite', label: 'Invite' },
+                    ] as const
+                  }
+                  value={tab}
+                  onChange={setTab}
+                >
+                  <div hidden={tab !== 'people'}>{people}</div>
+                  <div hidden={tab !== 'invite'}>
+                    <InvitationLinks projectId={state.project.id} disabled={status !== 'live'} />
+                  </div>
+                </PanelTabs>
+              ) : (
+                people
               )}
             </>
+          ) : shared ? (
+            <div className="collaboration-sync" role="status">
+              <LoaderCircle size={14} className="spinning" /> Connecting…
+            </div>
           ) : (
             <form
               onSubmit={(event) => {
@@ -174,7 +221,6 @@ export function CollaborationMenu({
                 });
               }}
             >
-              <p>Explore and edit the same house, each with your own view.</p>
               <label>
                 Your name
                 <input
@@ -195,7 +241,7 @@ export function CollaborationMenu({
               </button>
             </form>
           )}
-          {(failure || (shared && error)) && (
+          {status !== 'denied' && (failure || (shared && error)) && (
             <p className="collaboration-error" role="alert">
               {failure ?? error}
             </p>

@@ -1,28 +1,11 @@
 import { CollaborationMenu } from '@/components/collaboration/collaboration-menu';
 import { useEffect, useRef, useState } from 'react';
-import {
-  Armchair,
-  Camera,
-  DoorOpen,
-  Footprints,
-  Globe2,
-  History,
-  LoaderCircle,
-  Moon,
-  Plus,
-  Rotate3D,
-  Sun,
-  WandSparkles,
-  X,
-} from 'lucide-react';
+import { Globe2, History } from 'lucide-react';
 import { useProject } from '@/shared/scene/scene-store';
-import { ProjectActions } from '@/components/editor/project-actions';
-import { ElementChat } from '@/components/editor/element-chat';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 import { EditHistory } from '@/components/editor/edit-history';
+import { HousePanel } from '@/components/editor/house-panel';
 import { useFurnishings } from '@/shared/editor/use-furnishings';
-import { SavedActions } from '@/components/editor/saved-actions';
-import { useCapture } from '@/shared/scene/capture';
 
 export function StudioHeader({
   openNewHome,
@@ -33,22 +16,10 @@ export function StudioHeader({
   openLibrary: () => void;
   minimal?: boolean;
 }) {
-  const {
-    compiled,
-    projectEpoch,
-    mode,
-    setMode,
-    enterHome,
-    lighting,
-    setLighting,
-    quality,
-    setQuality,
-    select,
-  } = useProject();
+  const { projectEpoch, select } = useProject();
   const [open, setOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const capturing = useCapture((state) => state.pending || state.capturing);
-  const { furnishing, complete } = useFurnishings();
+  const furnishings = useFurnishings();
   const panel = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const outside = (event: PointerEvent) => {
@@ -117,111 +88,13 @@ export function StudioHeader({
           </button>
           {historyOpen && <EditHistory close={() => setHistoryOpen(false)} />}
           {open && (
-            <section className="house-menu" aria-label="House controls menu">
-              <div className="panel-heading">
-                <span>House</span>
-                <button
-                  className="icon-button"
-                  aria-label="Close house controls"
-                  onClick={() => setOpen(false)}
-                >
-                  <X size={16} />
-                </button>
-              </div>
-              <ElementChat
-                key={projectEpoch}
-                target={{ kind: 'house', id: compiled.building.id }}
-                label="Whole house"
-                suggestions={['Cream walls throughout', 'Turn off all lights']}
-                close={() => setOpen(false)}
-              />
-              <div className="house-view-controls">
-                {(
-                  [
-                    ['walk', 'Walk', Footprints],
-                    ['orbit', 'Overview', Rotate3D],
-                    ['entry', 'Entrance', DoorOpen],
-                  ] as const
-                ).map(([value, label, Icon]) => (
-                  <button
-                    key={value}
-                    className={mode === value ? 'active' : ''}
-                    aria-label={value === 'orbit' ? 'House overview' : label}
-                    onClick={() => {
-                      if (value === 'orbit') useNavigation.getState().resetOverview();
-                      if (value === 'walk' && mode === 'entry') enterHome();
-                      else setMode(value);
-                      setOpen(false);
-                    }}
-                  >
-                    <Icon size={16} />
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <SavedActions key={`actions:${projectEpoch}`} />
-              <div className="house-actions">
-                <button
-                  disabled={capturing}
-                  onClick={() => {
-                    useCapture.getState().request();
-                    setOpen(false);
-                  }}
-                >
-                  <Camera size={16} />
-                  {capturing ? 'Saving view…' : 'Save current view'}
-                </button>
-                <button
-                  disabled={furnishing}
-                  onClick={() => {
-                    void complete();
-                  }}
-                >
-                  {furnishing ? (
-                    <LoaderCircle size={16} className="spinning" />
-                  ) : (
-                    <WandSparkles size={16} />
-                  )}
-                  {furnishing ? 'Furnishing…' : 'Complete furnishings'}
-                </button>
-                <button
-                  onClick={() => {
-                    if (mode === 'entry') setMode('orbit');
-                    openLibrary();
-                    setOpen(false);
-                  }}
-                >
-                  <Armchair size={16} />
-                  Furniture
-                </button>
-                <button
-                  onClick={() => {
-                    openNewHome();
-                    setOpen(false);
-                  }}
-                >
-                  <Plus size={16} />
-                  New house
-                </button>
-              </div>
-              <div className="house-utilities">
-                <ProjectActions />
-                <button
-                  className="icon-button"
-                  aria-label={lighting === 'evening' ? 'Switch to daylight' : 'Switch to night'}
-                  onClick={() => setLighting(lighting === 'evening' ? 'day' : 'evening')}
-                >
-                  {lighting === 'evening' ? <Sun size={17} /> : <Moon size={17} />}
-                </button>
-                <button
-                  className="quality-button"
-                  aria-label={`Render quality: ${quality}`}
-                  onClick={() => setQuality(quality === 'high' ? 'balanced' : 'high')}
-                >
-                  {quality === 'high' ? 'HD' : 'SD'}
-                </button>
-              </div>
-            </section>
+            <HousePanel
+              key={projectEpoch}
+              close={() => setOpen(false)}
+              openNewHome={openNewHome}
+              openLibrary={openLibrary}
+              {...furnishings}
+            />
           )}
         </div>
       )}

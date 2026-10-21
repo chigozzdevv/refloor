@@ -6,6 +6,7 @@ import { targetIdentity } from '@/shared/editor/identity';
 import { useLanguageEdit } from '@/shared/editor/use-language-edit';
 import { savedActionCommands } from '@/shared/behaviours/saved-action';
 import { householdOpenableLabel } from '@refloor/catalogue';
+import { useCollaboration } from '@/shared/collaboration/store';
 
 function eventLabel(building: Building, event: SceneEvent) {
   if (event.kind === 'room-enter')
@@ -89,6 +90,10 @@ function actionLabel(building: Building, action: SceneAction) {
   if (action.type === 'add-object') return `Add ${action.object.label}`;
 }
 export function SavedActions() {
+  const readonly = useCollaboration(
+    (state) =>
+      state.status !== 'idle' && (state.status !== 'live' || state.state?.self.role === 'viewer'),
+  );
   const [open, setOpen] = useState(false),
     [editing, setEditing] = useState<string | null>(null),
     [instruction, setInstruction] = useState('');
@@ -119,6 +124,7 @@ export function SavedActions() {
                   aria-checked={rule.enabled}
                   aria-label={`Enable ${rule.label}`}
                   className="action-switch"
+                  disabled={readonly || busy}
                   onClick={() =>
                     edit(
                       [
@@ -140,7 +146,7 @@ export function SavedActions() {
                   className="icon-button"
                   aria-label={`Test actions for ${rule.label}`}
                   title="Test actions · undo to restore"
-                  disabled={busy || !rule.enabled}
+                  disabled={readonly || busy || !rule.enabled}
                   onClick={() => {
                     try {
                       if (
@@ -161,7 +167,7 @@ export function SavedActions() {
                 <button
                   className="icon-button"
                   aria-label={`Edit ${rule.label}`}
-                  disabled={busy}
+                  disabled={readonly || busy}
                   onClick={() => {
                     setEditing(editing === rule.id ? null : rule.id);
                     setInstruction('');
@@ -172,7 +178,7 @@ export function SavedActions() {
                 <button
                   className="icon-button"
                   aria-label={`Remove ${rule.label}`}
-                  disabled={busy}
+                  disabled={readonly || busy}
                   onClick={() =>
                     edit(
                       [{ type: 'set-rules', rules: rules.filter((item) => item.id !== rule.id) }],
@@ -215,13 +221,13 @@ export function SavedActions() {
                     value={instruction}
                     onChange={(event) => setInstruction(event.target.value)}
                     placeholder="Also close the lounge door…"
-                    disabled={busy}
+                    disabled={readonly || busy}
                     onKeyDown={(event) => event.stopPropagation()}
                   />
                   <div className="saved-action-editor-buttons">
                     <button
                       className="button compact outline"
-                      disabled={busy || !instruction.trim()}
+                      disabled={readonly || busy || !instruction.trim()}
                     >
                       {busy ? (
                         <LoaderCircle size={13} className="spinning" />

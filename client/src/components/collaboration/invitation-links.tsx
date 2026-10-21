@@ -36,11 +36,16 @@ export function InvitationLinks({ projectId, disabled }: { projectId: string; di
       .finally(() => setBusy(false));
   };
   return (
-    <div>
+    <div className="invitation-panel">
+      <label className="invitation-access" htmlFor={`invite-access-${projectId}`}>
+        Link access
+      </label>
       <div className="collaboration-invite">
         <select
+          id={`invite-access-${projectId}`}
           aria-label="Invitation access"
           value={role}
+          disabled={busy || disabled}
           onChange={(event) => setRole(event.target.value as 'editor' | 'viewer')}
         >
           <option value="editor">Can edit</option>
@@ -80,7 +85,6 @@ export function InvitationLinks({ projectId, disabled }: { projectId: string; di
           >
             {copied ? <Check size={16} /> : <Copy size={16} />}
           </button>
-          <small>This link opens only this house.</small>
         </div>
       )}
       {items.length > 0 && (

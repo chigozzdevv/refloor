@@ -1,6 +1,6 @@
 import { useCollaboration } from '@/shared/collaboration/store';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ArrowUp, History, Lightbulb, LoaderCircle, X } from 'lucide-react';
+import { History, Lightbulb, LoaderCircle, Send, Undo2, X } from 'lucide-react';
 import type { ChatTarget } from '@refloor/scene/chat';
 import { useLanguageEdit } from '@/shared/editor/use-language-edit';
 
@@ -10,18 +10,22 @@ export function ElementChat({
   suggestions,
   status,
   close,
+  active = true,
 }: {
   target: ChatTarget;
   label: string;
   suggestions: string[];
   status?: string | null;
   close?: () => void;
+  active?: boolean;
 }) {
   const readonly = useCollaboration(
     (state) =>
       state.status !== 'idle' && (state.status !== 'live' || state.state?.self.role === 'viewer'),
   );
+  const activity = useCollaboration((state) => state.state?.activity);
   const [message, setMessage] = useState('');
+  const [pending, setPending] = useState<{ message: string; turnIds: string[] } | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const input = useRef<HTMLTextAreaElement>(null);
@@ -29,7 +33,7 @@ export function ElementChat({
   const { send, busy, reply, history } = useLanguageEdit(target);
   useLayoutEffect(() => {
     if (conversation.current) conversation.current.scrollTop = conversation.current.scrollHeight;
-  }, [showHistory, history.length, reply]);
+  }, [showHistory, history.length, reply, pending]);
   useLayoutEffect(() => {
     if (input.current) {
       input.current.style.height = 'auto';
@@ -38,20 +42,28 @@ export function ElementChat({
   }, [message]);
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (!readonly && !busy)
+      if (active && !readonly && !busy)
         useCollaboration.setState({ draft: message.trim() ? { target, text: message } : null });
     }, 120);
     return () => {
       clearTimeout(timer);
       useCollaboration.setState({ draft: null });
     };
-  }, [message, target.kind, target.id, target.side, readonly, busy]);
+  }, [message, target.kind, target.id, target.side, readonly, busy, active]);
   const submit = async (text: string) => {
     if (busy || readonly || !text.trim()) return;
     useCollaboration.setState({ draft: null });
     setShowSuggestions(false);
-    if (await send(text)) setMessage('');
+    setPending({ message: text.trim(), turnIds: history.map((turn) => turn.id) });
+    setMessage('');
+    try {
+      if (!(await send(text))) setMessage(text);
+    } finally {
+      setPending(null);
+    }
   };
+  const previous = pending ? history.filter((turn) => pending.turnIds.includes(turn.id)) : history;
+  const visibleHistory = showHistory ? previous : pending ? [] : previous.slice(-1);
   return (
     <section
       className="element-chat"
@@ -79,7 +91,7 @@ export function ElementChat({
             <button
               className="icon-button"
               type="button"
-              aria-label="Show suggestions"
+              aria-label={showSuggestions ? 'Hide suggestions' : 'Show suggestions'}
               aria-expanded={showSuggestions}
               title="Suggestions"
               onClick={() => setShowSuggestions(!showSuggestions)}
@@ -94,32 +106,57 @@ export function ElementChat({
           )}
         </div>
       </div>
-      {showHistory && (
+      {(visibleHistory.length > 0 || pending) && (
         <div
           ref={conversation}
           className="chat-conversation"
+          data-expanded={showHistory}
           role="log"
           aria-label="Recent conversation"
+          aria-live="polite"
         >
-          {history.map((turn) => (
-            <div className="chat-turn" key={turn.id}>
-              <p className="chat-user-message">
-                {turn.author && <small className="chat-author">{turn.author.name}</small>}
-                {turn.message}
-              </p>
-              <p className="chat-assistant-message" data-status={turn.status}>
-                {turn.reply}
-              </p>
+          {visibleHistory.map((turn) => {
+            const event = activity?.find((item) => item.id === turn.revisionId),
+              reverted = Boolean(event?.revertedBy),
+              attribution = event?.lastHistoryAction?.author.name,
+              undoLabel = attribution ? `Undone by ${attribution}` : 'Undone';
+            return (
+              <div className="chat-turn" key={turn.id} data-reverted={reverted}>
+                <p className="chat-user-message">
+                  {reverted && (
+                    <span
+                      className="chat-turn-state"
+                      title={undoLabel}
+                      role="img"
+                      aria-label={undoLabel}
+                    >
+                      <Undo2 size={13} />
+                    </span>
+                  )}
+                  {turn.author && <small className="chat-author">{turn.author.name}</small>}
+                  {turn.message}
+                </p>
+                {(!busy || showHistory) && (
+                  <p className="chat-assistant-message" data-status={turn.status}>
+                    {turn.reply}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+          {pending && (
+            <div className="chat-turn">
+              <p className="chat-user-message">{pending.message}</p>
+              <span className="typing-dots" role="status" aria-label="Applying change">
+                <i />
+                <i />
+                <i />
+              </span>
             </div>
-          ))}
+          )}
         </div>
       )}
-      {!showHistory && reply && (
-        <p className="chat-reply" role="status">
-          {reply}
-        </p>
-      )}
-      {status && (
+      {status && status !== reply && (
         <p className="chat-reply" role="status">
           {status}
         </p>
@@ -142,7 +179,7 @@ export function ElementChat({
           disabled={busy || readonly}
           autoComplete="off"
           onKeyDown={(event) => {
-            event.stopPropagation();
+            if (event.key !== 'Escape' || close) event.stopPropagation();
             if (event.key === 'Escape') close?.();
             if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
               event.preventDefault();
@@ -155,7 +192,7 @@ export function ElementChat({
           aria-label="Send request"
           disabled={busy || readonly || !message.trim()}
         >
-          {busy ? <LoaderCircle size={16} className="spinning" /> : <ArrowUp size={16} />}
+          {busy ? <LoaderCircle size={16} className="spinning" /> : <Send size={15} />}
         </button>
       </form>
       {showSuggestions && (

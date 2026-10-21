@@ -20,7 +20,7 @@ export function SelectionChat() {
         const point = new Vector3().setFromMatrixPosition(object.matrixWorld).project(camera);
         const x = ((point.x + 1) * size.width) / 2,
           y = ((1 - point.y) * size.height) / 2;
-        const width = card.current?.offsetWidth ?? 252,
+        const width = card.current?.offsetWidth ?? Math.min(280, size.width - 24),
           height = card.current?.offsetHeight ?? 160;
         const left = Math.max(12, Math.min(size.width - width - 12, x + 18)),
           top = Math.max(

@@ -12,7 +12,7 @@ import { SavedSpaces } from '@/components/editor/saved-spaces';
 import { useSavedProjects } from '@/shared/scene/scene-sync';
 import { ProjectRecovery } from '@/components/editor/project-recovery';
 
-export function ProjectActions() {
+export function ProjectActions({ labeled = false }: { labeled?: boolean }) {
   const [open, setOpen] = useState(false),
     [busy, setBusy] = useState(false),
     input = useRef<HTMLInputElement>(null),
@@ -35,13 +35,14 @@ export function ProjectActions() {
   return (
     <div className="project-actions" ref={panel}>
       <button
-        className="project-button"
+        className={labeled ? 'project-button-labeled' : 'project-button'}
         title="Project files"
         aria-label="Project files"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
       >
         <FolderOpen size={17} />
+        {labeled && 'Project files'}
       </button>
       <input
         ref={input}
