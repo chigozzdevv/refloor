@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { MathUtils, PerspectiveCamera, Vector3 } from 'three';
 import { createHouse } from '@refloor/catalogue/houses';
 import { compileBuilding, isPlayerPositionValid } from '@refloor/engine';
@@ -10,10 +10,9 @@ import type { Building } from '@refloor/scene';
 import { destinationRoute, destinations } from '@/shared/navigation/destinations';
 import { arrivalView } from '@/shared/navigation/arrival';
 import { tourPortals } from '@/shared/navigation/portals';
-import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
+import { CharacterWorld } from '@/shared/navigation/physics-world';
 import { Walkthrough } from '@/shared/navigation/walkthrough';
 
-beforeAll(initializePhysics);
 const houses = [
   createHouse({ id: 'tour-garden', name: 'Garden', storeys: 1 }),
   createHouse({ id: 'tour-linden', name: 'Linden', storeys: 2 }),

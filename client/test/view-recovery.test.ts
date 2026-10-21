@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { PerspectiveCamera, Vector3 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createHouse } from '@refloor/catalogue/houses';
@@ -14,13 +14,12 @@ import {
 import type { SceneView } from '@/shared/scene/view';
 import { initialExperience, useExperience } from '@/shared/scene/experience-store';
 import { useProject } from '@/shared/scene/scene-store';
-import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
+import { CharacterWorld } from '@/shared/navigation/physics-world';
 import { destinations } from '@/shared/navigation/destinations';
 import { encodeDraft, decodeDraft } from '@/shared/scene/draft-codec';
 import { orbitAspectScale, resizeOrbitCamera } from '@/shared/scene/orbit-framing';
 import { exteriorCamera } from '@/shared/scene/exterior';
 
-beforeAll(initializePhysics);
 const compiled = compileBuilding(
   createHouse({ id: 'returning-home', name: 'Returning home', storeys: 2 }),
 );

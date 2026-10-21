@@ -9,5 +9,5 @@ export default defineConfig({
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   server: { proxy: { '/api': { target: apiTarget, ws: true } } },
   preview: { proxy: { '/api': { target: apiTarget, ws: true } } },
-  build: { chunkSizeWarningLimit: 1800 },
+  build: { manifest: true, chunkSizeWarningLimit: 1200 },
 });

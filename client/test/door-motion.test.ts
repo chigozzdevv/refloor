@@ -1,13 +1,11 @@
-import { beforeAll, expect, it } from 'vitest';
+import { expect, it } from 'vitest';
 import { createHouse } from '@refloor/catalogue/houses';
 import { applyCommands } from '@refloor/scene';
 import { compileBuilding } from '@refloor/engine';
 import { DoorMotion } from '@/shared/behaviours/door-motion';
 import { destinations } from '@/shared/navigation/destinations';
-import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
+import { CharacterWorld } from '@/shared/navigation/physics-world';
 import { Walkthrough } from '@/shared/navigation/walkthrough';
-
-beforeAll(initializePhysics);
 
 it('presses the handle before swinging and opens completely within 0.34 seconds', () => {
   const motion = new DoorMotion(false);

@@ -1,15 +1,10 @@
-import RAPIER from '@dimforge/rapier3d-compat';
+import RAPIER from '@dimforge/rapier3d';
 import type { CompiledBuilding, Point3, NavigationPoint } from '@refloor/engine';
 import { distanceToBox, rotate } from '@refloor/engine/math';
 import { entryPose } from '@/shared/navigation/entry';
 import { exteriorLayout } from '@/shared/scene/exterior';
 import { openableBounds } from '@refloor/engine/collision/openable';
 import { fixtureReservations } from '@/shared/behaviours/fixture-motion';
-
-let initialized: Promise<void> | undefined;
-export function initializePhysics(): Promise<void> {
-  return (initialized ??= RAPIER.init());
-}
 
 export class CharacterWorld {
   readonly world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });

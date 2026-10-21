@@ -22,8 +22,7 @@ export function PhysicsRuntime() {
       last.current ??
       (view?.buildingId === compiled.building.id ? view.player?.position : undefined);
     void import('@/shared/navigation/physics-world')
-      .then(async ({ CharacterWorld, initializePhysics }) => {
-        await initializePhysics();
+      .then(({ CharacterWorld }) => {
         if (cancelled) return;
         owned = new CharacterWorld(compiled, position);
         physicsSession.current = owned;

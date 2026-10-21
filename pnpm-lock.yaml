@@ -133,7 +133,7 @@ importers:
 
   client:
     dependencies:
-      '@dimforge/rapier3d-compat':
+      '@dimforge/rapier3d':
         specifier: 0.21.0
         version: 0.21.0
       '@react-three/drei':
@@ -179,6 +179,9 @@ importers:
         specifier: 5.0.15
         version: 5.0.15(@types/react@19.3.0)(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))
     devDependencies:
+      '@dimforge/rapier3d-compat':
+        specifier: 0.21.0
+        version: 0.21.0
       '@types/react':
         specifier: 19.3.0
         version: 19.3.0
@@ -289,6 +292,9 @@ packages:
 
   '@dimforge/rapier3d-compat@0.21.0':
     resolution: {integrity: sha512-tCl1HPGwOhn5aCQbgqWbOH+Nx/5fnr3IPAnzQuR7zIhC/raqi2yxC6LhvZqjdI2El5hQgY5RDAwDrAjAi2FdPA==}
+
+  '@dimforge/rapier3d@0.21.0':
+    resolution: {integrity: sha512-wpyT3jc6otNV5LPTomj7A85VTI2QKZl/vCnhFwuOSMWoopZqxCgWLt/jCQUUugcIQmLI/pD5aAuswtUc5owo+w==}
 
   '@esbuild/aix-ppc64@0.28.2':
     resolution: {integrity: sha512-XExcO+dvLKvVtNTibSTBej1NCAbaGhWn9Ww1ZPx80qsahhPFe/8jgWP0IchNe0F3HwkU7n8ejhH8bjonqht8mQ==}
@@ -2108,6 +2114,8 @@ snapshots:
   '@dimforge/rapier3d-compat@0.12.0': {}
 
   '@dimforge/rapier3d-compat@0.21.0': {}
+
+  '@dimforge/rapier3d@0.21.0': {}
 
   '@esbuild/aix-ppc64@0.28.2':
     optional: true

@@ -1,15 +1,13 @@
 import { readFileSync } from 'node:fs';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createHouse } from '@refloor/catalogue/houses';
 import { compileBuilding } from '@refloor/engine';
 import type { Building } from '@refloor/scene';
 import { arrivalView } from '@/shared/navigation/arrival';
 import { destinations } from '@/shared/navigation/destinations';
-import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
+import { CharacterWorld } from '@/shared/navigation/physics-world';
 import { clearView } from '@/shared/navigation/viewpoints';
 import { Walkthrough } from '@/shared/navigation/walkthrough';
-
-beforeAll(initializePhysics);
 
 describe('onward views after stair travel', () => {
   it.each([

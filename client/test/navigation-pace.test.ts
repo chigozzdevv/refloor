@@ -1,11 +1,9 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createHouse } from '@refloor/catalogue/houses';
 import { compileBuilding } from '@refloor/engine';
 import { createJourney, stepJourney } from '@/shared/navigation/journey';
 import { journeyPace, navigationPace } from '@/shared/navigation/pacing';
-import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
-
-beforeAll(initializePhysics);
+import { CharacterWorld } from '@/shared/navigation/physics-world';
 
 function emptyHouse() {
   const building = createHouse({ id: 'walking-pace', name: 'Walking pace', storeys: 1 });

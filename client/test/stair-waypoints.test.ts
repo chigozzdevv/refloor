@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createHouse } from '@refloor/catalogue/houses';
 import { compileBuilding } from '@refloor/engine';
 import { contains } from '@refloor/engine/math';
@@ -8,10 +8,8 @@ import { arrivalView } from '@/shared/navigation/arrival';
 import { destinationRoute, destinations } from '@/shared/navigation/destinations';
 import { entryPose } from '@/shared/navigation/entry';
 import { navigationCues, tourPortals } from '@/shared/navigation/portals';
-import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
+import { CharacterWorld } from '@/shared/navigation/physics-world';
 import { Walkthrough } from '@/shared/navigation/walkthrough';
-
-beforeAll(initializePhysics);
 
 const generated = JSON.parse(
   readFileSync(new URL('fixtures/generated-two-storey.json', import.meta.url), 'utf8'),

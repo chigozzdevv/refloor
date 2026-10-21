@@ -1,13 +1,12 @@
 import { readFileSync } from 'node:fs';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { Building } from '@refloor/scene';
 import { compileBuilding } from '@refloor/engine';
 import { createHouse } from '@refloor/catalogue/houses';
-import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
+import { CharacterWorld } from '@/shared/navigation/physics-world';
 import { StairWalker, stairAssist } from '@/shared/navigation/stair-assist';
 import { navigationPace } from '@/shared/navigation/pacing';
 
-beforeAll(initializePhysics);
 const houses = [
   createHouse({ id: 'stair-release', name: 'Linden', storeys: 2 }),
   JSON.parse(

@@ -1,15 +1,13 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createHouse } from '@refloor/catalogue/houses';
 import { applyCommands } from '@refloor/scene';
 import { createEditMemory, recordTransition } from '@refloor/scene/edit-memory';
 import { compileBuilding } from '@refloor/engine';
 import { contains } from '@refloor/engine/math';
 import { destinations, navigationFor } from '@/shared/navigation/destinations';
-import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
+import { CharacterWorld } from '@/shared/navigation/physics-world';
 import { TourDoors } from '@/shared/navigation/tour-doors';
 import { planDoor } from '@/shared/navigation/floor-plan';
-
-beforeAll(initializePhysics);
 
 describe('navigation details', () => {
   it('closes a tour-opened door only after crossing and clearing its real swing', () => {

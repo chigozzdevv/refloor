@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createHouse } from '@refloor/catalogue/houses';
@@ -16,12 +16,11 @@ import { destinationRoute } from '@/shared/navigation/destinations';
 import { entryPose } from '@/shared/navigation/entry';
 import { mapDestination } from '@/shared/navigation/map-route';
 import { useNavigation } from '@/shared/navigation/navigation-store';
-import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
+import { CharacterWorld } from '@/shared/navigation/physics-world';
 import { physicsSession } from '@/shared/navigation/physics-session';
 import { Walkthrough } from '@/shared/navigation/walkthrough';
 import { useProject } from '@/shared/scene/scene-store';
 
-beforeAll(initializePhysics);
 const houses = [
   createHouse({ id: 'map-garden', name: 'Garden', storeys: 1 }),
   createHouse({ id: 'map-linden', name: 'Linden', storeys: 2 }),

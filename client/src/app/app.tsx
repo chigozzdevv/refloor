@@ -1,11 +1,9 @@
 import { CollaborationRuntime } from '@/components/collaboration/collaboration-runtime';
-import { useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { ErrorBoundary } from '@/app/error-boundary';
 import { StudioRoutes } from '@/app/routes';
-import { World } from '@/components/scene/world';
 import { StudioHeader } from '@/components/ui/studio-header';
 import { Notice } from '@/components/ui/notice';
-import { HouseOptions } from '@/components/entrance/house-options';
 import { HouseMap } from '@/components/navigation/house-map';
 import { useProject } from '@/shared/scene/scene-store';
 import { useCommandShortcuts } from '@/shared/editor/use-command';
@@ -13,17 +11,36 @@ import { HousePrompt } from '@/components/entrance/house-prompt';
 import { useExperience } from '@/shared/scene/experience-store';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 
+const World = lazy(() =>
+  import('@/components/scene/world').then((module) => ({ default: module.World })),
+);
+const HouseOptions = lazy(() =>
+  import('@/components/entrance/house-options').then((module) => ({
+    default: module.HouseOptions,
+  })),
+);
+
 export function App() {
   const { sceneReady, mode, lighting, saved } = useProject();
   const { stage, compose, resume, reveal, skip } = useExperience();
   const [newHome, setNewHome] = useState(false),
     [libraryOpen, setLibraryOpen] = useState(false);
+  const [worldStarted, setWorldStarted] = useState(stage !== 'prompt');
+  useEffect(() => {
+    if (stage !== 'prompt') setWorldStarted(true);
+  }, [stage]);
   useCommandShortcuts();
   return (
     <ErrorBoundary>
       <main className={`studio ${mode}-mode ${lighting}-lighting ${stage}-stage`}>
         <div className="viewport">
-          <World />
+          {worldStarted || stage !== 'prompt' ? (
+            <Suspense fallback={null}>
+              <World />
+            </Suspense>
+          ) : (
+            <img className="prompt-poster" src="/images/house-poster.jpg" alt="" />
+          )}
         </div>
         {!sceneReady && stage !== 'prompt' && (
           <div className="loading-overlay">
@@ -72,14 +89,18 @@ export function App() {
             <StudioRoutes libraryOpen={libraryOpen} closeLibrary={() => setLibraryOpen(false)} />
           </>
         )}
-        <HouseOptions
-          open={newHome}
-          close={() => setNewHome(false)}
-          created={() => {
-            setNewHome(false);
-            reveal();
-          }}
-        />
+        {newHome && (
+          <Suspense fallback={null}>
+            <HouseOptions
+              open={newHome}
+              close={() => setNewHome(false)}
+              created={() => {
+                setNewHome(false);
+                reveal();
+              }}
+            />
+          </Suspense>
+        )}
       </main>
     </ErrorBoundary>
   );

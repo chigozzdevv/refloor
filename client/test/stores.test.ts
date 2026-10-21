@@ -1,14 +1,12 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { fingerprintBuilding } from '@refloor/scene';
 import { compileBuilding } from '@refloor/engine';
 import { useProject } from '@/shared/scene/scene-store';
 import { createHouse } from '@refloor/catalogue/houses';
-import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
+import { CharacterWorld } from '@/shared/navigation/physics-world';
 import { physicsSession } from '@/shared/navigation/physics-session';
 import { entryPose } from '@/shared/navigation/entry';
 import { selectedContext } from '@/shared/editor/chat-context';
-
-beforeAll(initializePhysics);
 
 describe('scene and editor state integration', () => {
   it('closes a saved open entrance before showing it and opens only on entry action', () => {

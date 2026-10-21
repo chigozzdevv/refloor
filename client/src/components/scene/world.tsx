@@ -1,5 +1,5 @@
 import { SpatialPresence } from '@/components/collaboration/spatial-presence';
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { NoToneMapping, PCFShadowMap, SRGBColorSpace } from 'three';
 import { Selection } from '@react-three/postprocessing';
@@ -48,12 +48,18 @@ export function World() {
   const epoch = useProject((state) => state.projectEpoch),
     select = useProject((state) => state.select);
   const stage = useExperience((state) => state.stage);
+  const [visible, setVisible] = useState(!document.hidden);
+  useEffect(() => {
+    const update = () => setVisible(!document.hidden);
+    document.addEventListener('visibilitychange', update);
+    return () => document.removeEventListener('visibilitychange', update);
+  }, []);
   const dpr = useRenderSettings((state) => state.dpr);
   useEffect(() => () => scenePresentation.fail(new Error('The scene renderer was closed.')), []);
   return (
     <Canvas
       style={{ overflow: 'clip' }}
-      frameloop={stage === 'prompt' ? 'demand' : 'always'}
+      frameloop={stage === 'prompt' || !visible ? 'demand' : 'always'}
       shadows
       camera={{ fov: 45, near: 0.08, far: 200, position: [16, 12, -8] }}
       dpr={dpr}

@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createHouse } from '@refloor/catalogue/houses';
 import type { Building } from '@refloor/scene';
 import { applyCommands } from '@refloor/scene';
 import { compileBuilding } from '@refloor/engine';
 import { entryPose } from '@/shared/navigation/entry';
-import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
+import { CharacterWorld } from '@/shared/navigation/physics-world';
 import { compoundTiles, exteriorLayout, exteriorNormal } from '@/shared/scene/exterior';
 
 const houses = [
@@ -19,7 +19,6 @@ const houses = [
   ),
 ];
 
-beforeAll(initializePhysics);
 describe('exterior doorway threshold', () => {
   it.each(houses)(
     'keeps facade trim out of the doorway and off the timber plane in $name',

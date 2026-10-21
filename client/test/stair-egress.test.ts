@@ -1,13 +1,11 @@
 import { readFileSync } from 'node:fs';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createHouse } from '@refloor/catalogue/houses';
 import { compileBuilding } from '@refloor/engine';
 import type { Building } from '@refloor/scene';
 import { destinationRoute, destinations, smoothRoute } from '@/shared/navigation/destinations';
 import { createJourney, stepJourney } from '@/shared/navigation/journey';
-import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
-
-beforeAll(initializePhysics);
+import { CharacterWorld } from '@/shared/navigation/physics-world';
 
 const houses = [
   createHouse({ id: 'landing-linden', name: 'Linden', storeys: 2 }),

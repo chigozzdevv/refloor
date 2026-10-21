@@ -1,14 +1,13 @@
 import { readFileSync } from 'node:fs';
-import { beforeAll, expect, it } from 'vitest';
+import { expect, it } from 'vitest';
 import type { Building } from '@refloor/scene';
 import { applyCommands } from '@refloor/scene';
 import { compileBuilding } from '@refloor/engine';
-import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
+import { CharacterWorld } from '@/shared/navigation/physics-world';
 import { destinations, smoothRoute } from '@/shared/navigation/destinations';
 import { createJourney, stepJourney } from '@/shared/navigation/journey';
 import { doorRoute } from '@/shared/navigation/door-route';
 import { MathUtils } from 'three';
-beforeAll(initializePhysics);
 it('walks every generated room and returns through real doors and stairs', () => {
   let compiled = compileBuilding(
     JSON.parse(

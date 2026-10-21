@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { beforeAll, expect, it } from 'vitest';
+import { expect, it } from 'vitest';
 import { createHouse } from '@refloor/catalogue/houses';
 import { applyCommands } from '@refloor/scene';
 import type { Building } from '@refloor/scene';
@@ -7,11 +7,10 @@ import { createEditMemory, recordTransition } from '@refloor/scene/edit-memory';
 import { compileBuilding } from '@refloor/engine';
 import { DoorMotion } from '@/shared/behaviours/door-motion';
 import { destinations } from '@/shared/navigation/destinations';
-import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
+import { CharacterWorld } from '@/shared/navigation/physics-world';
 import { Walkthrough } from '@/shared/navigation/walkthrough';
 import { arrivalView } from '@/shared/navigation/arrival';
 
-beforeAll(initializePhysics);
 const houses = [
   createHouse({ id: 'door-garden', name: 'Garden', storeys: 1 }),
   createHouse({ id: 'door-linden', name: 'Linden', storeys: 2 }),

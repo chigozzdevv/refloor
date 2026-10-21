@@ -842,9 +842,24 @@
           "sha256": "558161184c33276977beda4a4257ac78ca22544044fbc77234296e76a8d3c132"
         }
       ]
+    },
+    {
+      "id": "house-poster",
+      "name": "Refloor generated house poster",
+      "kind": "image",
+      "license": "CC0-1.0",
+      "source": "Rendered in Refloor from a generated bungalow; JPEG encoded for the blurred prompt background.",
+      "files": [
+        {
+          "role": "poster",
+          "path": "/images/house-poster.jpg",
+          "bytes": 118647,
+          "sha256": "4c0be811a4bd31c7fd74dee5d41d2173cb4bd21bb3eb7feefc7d84ec235fdfbd"
+        }
+      ]
     }
   ],
-  "totalBytes": 28188241,
+  "totalBytes": 28306888,
   "notes": [
     "All assets are downloaded locally; the app does not depend on the live Poly Haven API.",
     "The source dimensions field is millimetres per the official API schema.",

@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createHouse } from '@refloor/catalogue/houses';
 import { compileBuilding } from '@refloor/engine';
 import { contains } from '@refloor/engine/math';
@@ -8,14 +8,12 @@ import { traverseDoor } from '@/shared/behaviours/door';
 import { destinations } from '@/shared/navigation/destinations';
 import { entryPose } from '@/shared/navigation/entry';
 import { navigationCues, tourPortals } from '@/shared/navigation/portals';
-import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
+import { CharacterWorld } from '@/shared/navigation/physics-world';
 import { physicsSession } from '@/shared/navigation/physics-session';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 import { Walkthrough } from '@/shared/navigation/walkthrough';
 import { useProject } from '@/shared/scene/scene-store';
 import { arrivalView } from '@/shared/navigation/arrival';
-
-beforeAll(initializePhysics);
 
 describe('entrance approach', () => {
   it.each([1, 2] as const)(

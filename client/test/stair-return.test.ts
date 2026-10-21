@@ -1,11 +1,10 @@
 import { readFileSync } from 'node:fs';
-import { beforeAll, expect, it } from 'vitest';
+import { expect, it } from 'vitest';
 import type { Building } from '@refloor/scene';
 import { compileBuilding } from '@refloor/engine';
-import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
+import { CharacterWorld } from '@/shared/navigation/physics-world';
 import { destinations, destinationRoute, smoothRoute } from '@/shared/navigation/destinations';
 import { createJourney, stepJourney } from '@/shared/navigation/journey';
-beforeAll(initializePhysics);
 it('returns downstairs from the room-tour landing with a settled character', () => {
   const compiled = compileBuilding(
     JSON.parse(

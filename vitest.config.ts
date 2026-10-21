@@ -5,6 +5,10 @@ export default defineConfig({
   resolve: {
     alias: [
       {
+        find: /^@dimforge\/rapier3d$/,
+        replacement: fileURLToPath(new URL('./client/test/physics-module.ts', import.meta.url)),
+      },
+      {
         find: /^@refloor\/server\//,
         replacement: fileURLToPath(new URL('./server/src/', import.meta.url)),
       },

@@ -1,17 +1,15 @@
-import { beforeAll, expect, it } from 'vitest';
+import { expect, it } from 'vitest';
 import { createHouse } from '@refloor/catalogue/houses';
 import { compileBuilding } from '@refloor/engine';
 import { createEditMemory } from '@refloor/scene/edit-memory';
 import { saveDesign } from '@/shared/editor/design-checkpoints';
 import { editDocument } from '@/shared/editor/document';
-import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
+import { CharacterWorld } from '@/shared/navigation/physics-world';
 import { physicsSession } from '@/shared/navigation/physics-session';
 import { entryPose } from '@/shared/navigation/entry';
 import { useProject } from '@/shared/scene/scene-store';
 import { viewSession } from '@/shared/scene/view';
 import type { SceneView } from '@/shared/scene/view';
-
-beforeAll(initializePhysics);
 
 it('switches named designs without reframing the camera and restores the working undo history', () => {
   const compiled = compileBuilding(

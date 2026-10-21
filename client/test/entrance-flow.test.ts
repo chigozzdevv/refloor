@@ -1,17 +1,16 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createHouse } from '@refloor/catalogue/houses';
 import { compileBuilding, isPlayerPositionValid, validatePlacement } from '@refloor/engine';
 import { entryPose } from '@/shared/navigation/entry';
 import { destinations } from '@/shared/navigation/destinations';
 import { traverseDoor } from '@/shared/behaviours/door';
-import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
+import { CharacterWorld } from '@/shared/navigation/physics-world';
 import { physicsSession } from '@/shared/navigation/physics-session';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 import { useProject } from '@/shared/scene/scene-store';
 import { exteriorLayout, housePreviewCamera } from '@/shared/scene/exterior';
 import { PerspectiveCamera, Vector3 } from 'three';
 
-beforeAll(initializePhysics);
 describe('entrance and doorway flow', () => {
   it('fits the actual house and entrance paving into wide and narrow preview cards', () => {
     for (const storeys of [1, 2] as const)

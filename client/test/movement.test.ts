@@ -1,4 +1,4 @@
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { compileBuilding } from '@refloor/engine';
 import { createHouse } from '@refloor/catalogue/houses';
 import {
@@ -9,9 +9,8 @@ import {
   walkInput,
 } from '@/shared/navigation/input';
 import { advanceStairAssist, stairAssist } from '@/shared/navigation/stair-assist';
-import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
+import { CharacterWorld } from '@/shared/navigation/physics-world';
 
-beforeAll(initializePhysics);
 afterEach(resetWalkInput);
 
 describe('walk pad input', () => {

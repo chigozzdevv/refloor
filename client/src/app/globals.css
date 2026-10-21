@@ -75,6 +75,11 @@ textarea:focus-visible,
   position: absolute;
   inset: 0;
 }
+.prompt-poster {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 .topbar {
   position: absolute;
   inset: 24px 24px auto;

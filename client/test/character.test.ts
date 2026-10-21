@@ -1,14 +1,12 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createHouse } from '@refloor/catalogue/houses';
 import { applyCommands } from '@refloor/scene';
 import { buildNavigation, compileBuilding, findPath } from '@refloor/engine';
 import type { Point3 } from '@refloor/engine';
-import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
+import { CharacterWorld } from '@/shared/navigation/physics-world';
 import { entryPose } from '@/shared/navigation/entry';
 import { destinationRoute, destinations, smoothRoute } from '@/shared/navigation/destinations';
 import { createJourney, stepJourney } from '@/shared/navigation/journey';
-
-beforeAll(initializePhysics);
 
 function walk(world: CharacterWorld, points: Point3[]) {
   for (const point of points) {

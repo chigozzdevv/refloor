@@ -1,4 +1,4 @@
-import { beforeAll, expect, it } from 'vitest';
+import { expect, it } from 'vitest';
 import { createHouse } from '@refloor/catalogue/houses';
 import { compileBuilding, isPlayerPositionValid } from '@refloor/engine';
 import { createEditMemory } from '@refloor/scene/edit-memory';
@@ -7,10 +7,9 @@ import { editDocument } from '@/shared/editor/document';
 import { DoorMotion } from '@/shared/behaviours/door-motion';
 import { destinations, navigationFor } from '@/shared/navigation/destinations';
 import { doorRoute } from '@/shared/navigation/door-route';
-import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
+import { CharacterWorld } from '@/shared/navigation/physics-world';
 import { Walkthrough } from '@/shared/navigation/walkthrough';
 
-beforeAll(initializePhysics);
 it('steps out of tight wall clearance before opening through the real edit validator', () => {
   const initial = compileBuilding(
     createHouse({ id: 'tight-approach', name: 'Tight approach', storeys: 2 }),

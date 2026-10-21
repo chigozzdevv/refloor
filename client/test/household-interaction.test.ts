@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { BoxGeometry, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three';
 import { assetFromCatalogue } from '@refloor/catalogue';
 import { createHouse } from '@refloor/catalogue/houses';
@@ -11,9 +11,7 @@ import {
   FixtureRaycastBudget,
 } from '@/shared/behaviours/fixture';
 import { FixtureReservations, fixtureReservations } from '@/shared/behaviours/fixture-motion';
-import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
-
-beforeAll(initializePhysics);
+import { CharacterWorld } from '@/shared/navigation/physics-world';
 
 describe('household handle interactions', () => {
   it('operates kitchen burners and water independently and restores the exact document', () => {

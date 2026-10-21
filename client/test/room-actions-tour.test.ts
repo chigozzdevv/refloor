@@ -1,18 +1,17 @@
 import { readFileSync } from 'node:fs';
-import { beforeAll, expect, it } from 'vitest';
+import { expect, it } from 'vitest';
 import { MathUtils } from 'three';
 import { applyCommands } from '@refloor/scene';
 import type { Building, SceneCommand } from '@refloor/scene';
 import { compileBuilding } from '@refloor/engine';
 import { contains } from '@refloor/engine/math';
-import { CharacterWorld, initializePhysics } from '@/shared/navigation/physics-world';
+import { CharacterWorld } from '@/shared/navigation/physics-world';
 import { destinations, smoothRoute } from '@/shared/navigation/destinations';
 import { createJourney, stepJourney } from '@/shared/navigation/journey';
 import type { Journey } from '@/shared/navigation/journey';
 import { doorRoute } from '@/shared/navigation/door-route';
 import { TourDoors } from '@/shared/navigation/tour-doors';
 
-beforeAll(initializePhysics);
 it('finishes a generated room route when a room-entry action changes lighting mid-walk', () => {
   const building = JSON.parse(
     readFileSync(new URL('fixtures/generated-bungalow.json', import.meta.url), 'utf8'),

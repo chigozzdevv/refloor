@@ -14,12 +14,13 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "pnpm build && vitest run",
-    "check": "pnpm format:check && pnpm lint && pnpm check:assets && pnpm build && pnpm -r --if-present typecheck && vitest run",
+    "check": "pnpm format:check && pnpm lint && pnpm check:assets && pnpm build && pnpm check:bundles && pnpm -r --if-present typecheck && vitest run",
     "check:assets": "tsc -p scripts/tsconfig.json && node scripts/check-assets.ts",
     "build:packages": "pnpm -r --filter './packages/*' build",
     "preview": "pnpm --filter @refloor/client preview",
     "dev:server": "pnpm build:packages && pnpm --filter @refloor/server dev",
-    "db:dev": "pnpm --filter @refloor/server db:dev"
+    "db:dev": "pnpm --filter @refloor/server db:dev",
+    "check:bundles": "tsc -p scripts/tsconfig.json && node scripts/check-client-bundle.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

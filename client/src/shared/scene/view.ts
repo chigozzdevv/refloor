@@ -1,8 +1,7 @@
 import { z } from 'zod';
 import type { CompiledBuilding } from '@refloor/engine';
 import { isPlayerPositionValid } from '@refloor/engine';
-import { PerspectiveCamera } from 'three';
-import type { Camera, Vector3 } from 'three';
+import type { Camera, PerspectiveCamera, Vector3 } from 'three';
 import { resizeOrbitCamera } from '@/shared/scene/orbit-framing';
 
 export const viewKey = 'refloor.scene-view.v1';
@@ -57,11 +56,12 @@ export function applySceneView(
     view.camera.rotation.z,
     'YXZ',
   );
-  if (camera instanceof PerspectiveCamera) {
-    camera.fov = view.camera.fov;
+  if ('isPerspectiveCamera' in camera && camera.isPerspectiveCamera === true) {
+    const perspective = camera as PerspectiveCamera;
+    perspective.fov = view.camera.fov;
     if (view.mode === 'orbit' && view.target && view.camera.aspect !== undefined)
-      resizeOrbitCamera(camera, view.target, view.camera.aspect);
-    camera.updateProjectionMatrix();
+      resizeOrbitCamera(perspective, view.target, view.camera.aspect);
+    perspective.updateProjectionMatrix();
   }
   if (view.target && orbit) {
     orbit.target.set(view.target.x, view.target.y, view.target.z);
