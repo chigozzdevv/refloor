@@ -12,21 +12,31 @@ export function SelectionChat() {
   const context = selectedContext(compiled.building, selection);
   const playback = usePlayback((state) => (selection ? state.players[selection.id] : undefined));
   if (!context || !selection) return null;
+  const markOffscreen = (hidden: boolean) =>
+    card.current?.toggleAttribute('data-offscreen', hidden);
   return (
     <Html
       position={[context.position.x, context.position.y, context.position.z]}
       zIndexRange={[30, 20]}
+      onOcclude={markOffscreen}
       calculatePosition={(object, camera, size) => {
-        const point = new Vector3().setFromMatrixPosition(object.matrixWorld).project(camera);
+        const world = new Vector3().setFromMatrixPosition(object.matrixWorld),
+          behind = world.clone().applyMatrix4(camera.matrixWorldInverse).z >= 0,
+          point = behind ? world.set(0, 0, 0) : world.project(camera);
         const x = ((point.x + 1) * size.width) / 2,
           y = ((1 - point.y) * size.height) / 2;
         const width = card.current?.offsetWidth ?? Math.min(280, size.width - 24),
           height = card.current?.offsetHeight ?? 160;
-        const left = Math.max(12, Math.min(size.width - width - 12, x + 18)),
-          top = Math.max(
-            76,
-            Math.min(size.height - height - 18, size.width < 600 ? y - height - 18 : y - 30),
-          );
+        const left = behind
+            ? Math.max(12, (size.width - width) / 2)
+            : Math.max(12, Math.min(size.width - width - 12, x + 18)),
+          top = behind
+            ? Math.max(76, (size.height - height) / 2)
+            : Math.max(
+                76,
+                Math.min(size.height - height - 18, size.width < 600 ? y - height - 18 : y - 30),
+              );
+        markOffscreen(behind);
         if (card.current) {
           card.current.dataset.tail =
             y > top + height ? 'bottom' : y < top ? 'top' : x > left + width ? 'right' : 'left';

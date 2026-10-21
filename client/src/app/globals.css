@@ -1611,6 +1611,9 @@ select option {
   z-index: -1;
   pointer-events: none;
 }
+.selection-chat-wrap[data-offscreen]::after {
+  display: none;
+}
 .selection-chat-wrap[data-tail='bottom']::after {
   left: var(--tail-x, 24px);
   bottom: -7px;
