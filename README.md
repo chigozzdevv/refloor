@@ -8,7 +8,7 @@ Refloor generates editable 3D houses with GPT-6 Luna, validated geometry and wor
 then checks furniture placement, door clearance and stair access. The client renders
 parameter-based starting homes with physical materials, scanned furniture, HDR daylight,
 shadows and cutaway views. The Node API stores projects and reversible
-edit history in MongoDB. GPT-6 Luna interprets house descriptions; Z3 solves room layouts,
+edit history in MongoDB. Shared houses accept individual, guarded commands and broadcast accepted changes over Socket.IO. GPT-6 Luna interprets house descriptions; Z3 solves room layouts,
 and the engine validates the assembled building before it can be saved.
 
 ## Requirements
@@ -23,6 +23,8 @@ pnpm install --frozen-lockfile
 pnpm dev
 pnpm check
 ```
+
+The test runner uses one worker so solver and walking regressions keep their existing time limits without competing WebAssembly workloads.
 
 For the project API, copy `.env.example` to `.env`, then run `pnpm db:dev` and
 `pnpm dev:server` in separate terminals. The database command starts a real, single-node
@@ -412,6 +414,35 @@ playing, blocked autoplay and source failures. Media
 sources accept HTTP(S) URLs or `asset:` references. The API stores approved source references
 and never fetches remote video; the browser plays them directly.
 
+## Collaboration
+
+Use the people icon beside History to share the current house. Enter a display name and
+create a seven-day Editor or Viewer invitation. Invitations grant access to this house only;
+the owner can revoke links, change member permissions or remove access. Removed members
+can be reinstated from the same permissions list. Shared houses appear in Saved spaces.
+Each visitor keeps their own camera, walking position and selection.
+
+Selected furniture gets a coloured outline and a name pointer in other visitors’ views.
+Typing previews follow the selected item; the map shows other walkers on their current floor.
+Draft text is temporary and shared with the people currently in the house. Accepted edits
+have a durable, authored history bubble with the instruction, result and time.
+Viewers can explore and operate navigation doors; editing and rollback require Editor access.
+
+The server checks the properties each command read before applying it in a MongoDB
+transaction. Independent changes merge; a stale instruction affecting a changed property is
+rejected. The journal, scene, conversational context and version commit together. Request IDs
+make retries idempotent, and reconnecting reads the authoritative house and journal.
+Shared houses reject the older snapshot-save and whole-history undo endpoints.
+Pending commands remain in a browser outbox across reloads; new edits pause while disconnected.
+Leaving the house waits for pending edits. Shared history rolls back only the selected edit’s
+changed properties, preserves unrelated later changes and rejects conflicting restorations.
+Saved-action effects roll back together without firing the actions again.
+
+Door swings and placement edits check all live walkers. Presence expires after disconnects;
+it does not store a visitor’s camera or draft text in MongoDB. This implementation runs on one
+API process, with up to 24 simultaneous visitors per house. Multiple API processes would need
+a shared presence store and Socket.IO adapter before serving the same house.
+
 ## Project API
 
 `POST /api/sessions` creates or renews an HTTP-only browser-session cookie. Session
@@ -419,7 +450,7 @@ tokens are stored as hashes and expire after 30 days. Collection recovery keys r
 access to saved spaces across expired sessions, browsers and devices. Create and download
 a key from Project files → Collection recovery; creating another key invalidates the
 previous key. Keys grant access to the collection and are stored only as hashes on the server.
-Once a space is saved to the collection, later changes sync after a short idle delay.
+Private spaces sync snapshots after a short idle delay. Shared spaces sync accepted commands immediately.
 Connection errors and conflicting versions stop automatic writes until you retry or resolve them.
 Export project files for portable copies. Use HTTPS in production and configure exact
 `CLIENT_ORIGINS`. Project imports save the current draft before replacing it; a failed
@@ -435,7 +466,7 @@ preservation leaves the draft open.
 - `POST /api/edits/interpret`: interpret `{ requestId, building, target, message, view, player }`
   with GPT-6 Luna. Returns scoped, validated commands, their base revision and token usage. It
   does not write a project; the client applies the commands to its current draft and uses
-  the normal save flow. `target` contains an existing entity `kind` and `id`; `view` is the
+  the private save flow or shared command endpoint. `target` contains an existing entity `kind` and `id`; `view` is the
   horizontal camera direction used for relative movement. Requests require a session,
   use a short provider timeout without automatic retries, and are limited to twenty per
   IP per minute. Changes still pass the engine and player-clearance checks.
@@ -445,6 +476,16 @@ preservation leaves the draft open.
   with HTTP 202. Reuse the same request ID and description after a connection failure.
 - `GET /api/generations/:id`: session-private progress, error, model token usage and
   the saved `projectId` on completion. Open that project with the projects endpoint.
+- `POST /api/collaboration/projects/:id/enable`: enable sharing with a display name and expected project version.
+- `GET /api/collaboration/projects`: list houses this session can access through membership.
+- `GET /api/collaboration/projects/:id`: load the authoritative shared house, permissions and latest history.
+- `POST /api/collaboration/projects/:id/invites`: create a house-scoped Editor or Viewer link; append `/:inviteId/revoke` to revoke it.
+- `POST /api/collaboration/join`: join with an invitation token and display name.
+- `POST /api/collaboration/projects/:id/members`: change a member’s role or remove access.
+- `POST /api/collaboration/projects/:id/edits`: submit commands, property guards, request metadata and optional chat context.
+- `POST /api/collaboration/projects/:id/activity/:eventId`: roll back or restore one edit with a unique request ID.
+- `GET /api/collaboration/projects/:id/activity?before=…`: paginate older durable history.
+- `/api/live`: authenticated Socket.IO presence and committed-change notifications; the Vite proxy forwards WebSocket upgrades.
 - `GET /api/health`: database readiness.
 
 Snapshot saves compare document versions and preserve building identity. Typed edits
