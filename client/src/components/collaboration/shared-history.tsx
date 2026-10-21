@@ -1,3 +1,4 @@
+import { targetIdentity } from '@/shared/editor/identity';
 import { useState } from 'react';
 import { LoaderCircle, Redo2, Undo2, X } from 'lucide-react';
 import { useCollaboration } from '@/shared/collaboration/store';
@@ -35,35 +36,48 @@ export function SharedHistory({ close }: { close: () => void }) {
         <p className="history-empty">Accepted changes appear here for everyone in this house.</p>
       )}
       <ol className="shared-history-list">
-        {events.map((event) => (
-          <li key={event.id} data-reverted={Boolean(event.revertedBy)}>
-            <div className="shared-history-author">
-              <span style={{ background: event.author.color }} />
-              {event.author.name}
-              <time dateTime={event.at}>
-                {new Date(event.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </time>
-            </div>
-            <div className="shared-history-bubble">
-              <p>{event.message ?? event.label}</p>
-              {event.reply && <small>{event.reply}</small>}
-              {event.revertedBy && <small className="shared-history-state">Rolled back</small>}
-              {event.kind === 'edit' && event.undoable && state.self.role !== 'viewer' && (
-                <button
-                  className="icon-button"
-                  disabled={pending > 0 || status !== 'live'}
-                  aria-label={`${event.revertedBy ? 'Restore' : 'Roll back'} ${event.label}`}
-                  title={event.revertedBy ? 'Restore this change' : 'Roll back only this change'}
-                  onClick={() =>
-                    collaborationBridge.current?.rollback(event.id, Boolean(event.revertedBy))
-                  }
-                >
-                  {event.revertedBy ? <Redo2 size={15} /> : <Undo2 size={15} />}
-                </button>
-              )}
-            </div>
-          </li>
-        ))}
+        {events.map((event) => {
+          const target =
+            event.target ?? state.activity.find((item) => item.id === event.originalId)?.target;
+          const identity = target ? targetIdentity(state.project.building, target) : null;
+          return (
+            <li key={event.id} data-reverted={Boolean(event.revertedBy)}>
+              <div className="shared-history-author">
+                <span style={{ background: event.author.color }} />
+                {event.author.name}
+                <time dateTime={event.at}>
+                  {new Date(event.at).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </time>
+              </div>
+              <div className="shared-history-bubble">
+                {identity && (
+                  <small>
+                    {identity.label} · {identity.location}
+                  </small>
+                )}
+                <p>{event.message ?? event.label}</p>
+                {event.reply && <small>{event.reply}</small>}
+                {event.revertedBy && <small className="shared-history-state">Rolled back</small>}
+                {event.kind === 'edit' && event.undoable && state.self.role !== 'viewer' && (
+                  <button
+                    className="icon-button"
+                    disabled={pending > 0 || status !== 'live'}
+                    aria-label={`${event.revertedBy ? 'Restore' : 'Roll back'} ${event.label}`}
+                    title={event.revertedBy ? 'Restore this change' : 'Roll back only this change'}
+                    onClick={() =>
+                      collaborationBridge.current?.rollback(event.id, Boolean(event.revertedBy))
+                    }
+                  >
+                    {event.revertedBy ? <Redo2 size={15} /> : <Undo2 size={15} />}
+                  </button>
+                )}
+              </div>
+            </li>
+          );
+        })}
       </ol>
       {state.hasEarlier && (
         <button
