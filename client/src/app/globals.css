@@ -2131,6 +2131,7 @@ select option {
   display: flex;
   gap: 3px;
   align-items: flex-start;
+  width: max-content;
   max-width: 205px;
   pointer-events: none;
   filter: drop-shadow(0 2px 7px #0007);
