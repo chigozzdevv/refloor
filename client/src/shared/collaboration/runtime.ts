@@ -6,7 +6,11 @@ import type { NavigationPoint } from '@refloor/engine';
 import type { EditDetails } from '@/shared/editor/history';
 import type { Building } from '@refloor/scene';
 import { createEditGuards } from '@refloor/scene/edit-guards';
-import { sharedEditSchema, sharedPresenceSchema } from '@refloor/scene/collaboration';
+import {
+  isNavigationEdit,
+  sharedEditSchema,
+  sharedPresenceSchema,
+} from '@refloor/scene/collaboration';
 import type { SharedEdit, SharedState } from '@refloor/scene/collaboration';
 import { createEditMemory, fingerprintEditMemory } from '@refloor/scene/edit-memory';
 import { propertiesMatch } from '@refloor/scene/properties';
@@ -237,9 +241,7 @@ export function startCollaboration(projectId: string) {
       const state = useCollaboration.getState();
       if (!owns() || state.status !== 'live' || !canonical)
         throw new Error('Reconnect to the shared house before making a change.');
-      const navigation =
-        details?.source === 'navigation' &&
-        commands.every((command) => command.type === 'set-door' || command.type === 'emit-event');
+      const navigation = isNavigationEdit(commands, details?.source);
       if (canonical.self.role === 'viewer' && !navigation)
         throw new Error(
           'You have view access. Ask the owner for editor access to change the house.',

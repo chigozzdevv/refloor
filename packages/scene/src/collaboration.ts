@@ -4,6 +4,19 @@ import { editTargetSchema } from '@refloor/scene/edit-memory';
 import { playerSchema, projectSchema } from '@refloor/scene/contracts';
 import { coordinateSchema } from '@refloor/scene/primitives';
 import { propertyGuardSchema, propertyPatchSchema } from '@refloor/scene/properties';
+import type { SceneCommand } from '@refloor/scene/command';
+
+export function isNavigationEdit(commands: SceneCommand[], source?: string) {
+  return (
+    source === 'navigation' &&
+    commands.length > 0 &&
+    commands.every(
+      (command) =>
+        command.type === 'set-door' ||
+        (command.type === 'emit-event' && command.event.kind === 'room-enter'),
+    )
+  );
+}
 
 export const memberNameSchema = z.string().trim().min(1).max(40);
 export const memberRoleSchema = z.enum(['owner', 'editor', 'viewer']);

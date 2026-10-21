@@ -23,6 +23,8 @@ import type {
   MemberRecord,
 } from '@refloor/server/features/collaboration/collaboration.model';
 import { ApiError } from '@refloor/server/shared/http/errors';
+import { isNavigationEdit } from '@refloor/scene/collaboration';
+import { contains } from '@refloor/engine/math';
 import { fingerprint } from '@refloor/server/shared/database/fingerprint';
 import { houseSummary, houseDocument } from '@refloor/server/features/houses/house.presenter';
 import {
@@ -272,12 +274,7 @@ export class CollaborationService {
       replayed = false;
     const run = () =>
       this.repo.transaction(async (session) => {
-        const navigation =
-          'commands' in input &&
-          input.source === 'navigation' &&
-          input.commands.every(
-            (command) => command.type === 'set-door' || command.type === 'emit-event',
-          );
+        const navigation = 'commands' in input && isNavigationEdit(input.commands, input.source);
         const author = await this.access(ownerId, id, session, !navigation),
           record = await this.repo.projects.findOne({ _id: id, shared: true }, { session });
         if (!record) throw denied();
@@ -328,6 +325,25 @@ export class CollaborationService {
           validateTuning(record.building, commands);
         }
         const before = validateBuilding(record.building);
+        if (navigation && 'commands' in input)
+          for (const command of input.commands) {
+            if (command.type !== 'emit-event' || command.event.kind !== 'room-enter') continue;
+            const event = command.event;
+            const player = input.player;
+            const floor = record.building.floors.find((floor) => floor.id === player?.floorId);
+            const room = floor?.rooms.find((room) => room.id === event.roomId);
+            if (
+              !player ||
+              !room ||
+              !contains(room.footprint, player.position) ||
+              !isPlayerPositionValid(before, player)
+            )
+              throw new ApiError(
+                403,
+                'INVALID_NAVIGATION_EVENT',
+                'Enter this room before running its arrival actions.',
+              );
+          }
         const result = validatePlacement(
           record.building,
           {

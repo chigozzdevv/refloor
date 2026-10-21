@@ -6,6 +6,8 @@ import type { Socket } from 'socket.io-client';
 import { createHouse } from '@refloor/catalogue/houses';
 import { createEditGuards } from '@refloor/scene/edit-guards';
 import type { SceneCommand } from '@refloor/scene';
+import { buildNavigation, validateBuilding, isPlayerPositionValid } from '@refloor/engine';
+import { contains } from '@refloor/engine/math';
 import { sharedStateSchema, sharedReceiptSchema } from '@refloor/scene/collaboration';
 import type { SharedState } from '@refloor/scene/collaboration';
 import { createApp } from '@refloor/server/app';
@@ -13,6 +15,8 @@ import { createApp } from '@refloor/server/app';
 describe('durable house collaboration', () => {
   let replica: MongoMemoryReplSet, app: Awaited<ReturnType<typeof createApp>>, url: string;
   const sockets: Socket[] = [];
+  const addresses = new WeakMap<object, string>();
+  let nextAddress = 2;
   beforeAll(async () => {
     replica = await MongoMemoryReplSet.create({
       replSet: { count: 1, storageEngine: 'wiredTiger' },
@@ -36,12 +40,21 @@ describe('durable house collaboration', () => {
     await replica?.stop();
   }, 30000);
   async function browser() {
-    const response = await app.inject({ method: 'POST', url: '/api/sessions' });
-    return { refloor_session: response.cookies[0]!.value };
+    const remoteAddress = `127.0.0.${nextAddress++}`;
+    const response = await app.inject({ method: 'POST', url: '/api/sessions', remoteAddress });
+    const cookies = { refloor_session: response.cookies[0]!.value };
+    addresses.set(cookies, remoteAddress);
+    return cookies;
   }
   type Cookies = Awaited<ReturnType<typeof browser>>;
   const post = (cookies: Cookies, path: string, payload: unknown) =>
-    app.inject({ method: 'POST', url: path, cookies, payload: payload as object });
+    app.inject({
+      method: 'POST',
+      url: path,
+      cookies,
+      payload: payload as object,
+      remoteAddress: addresses.get(cookies) ?? '127.0.0.1',
+    });
   async function setup() {
     const owner = await browser(),
       editor = await browser(),
@@ -310,6 +323,82 @@ describe('durable house collaboration', () => {
     expect(shared.statusCode).toBe(200);
     expect(shared.json().items.map((project: { id: string }) => project.id)).toContain(id);
     expect((await app.inject({ url: base, cookies: stranger })).statusCode).toBe(403);
+  });
+  it('blocks forged Viewer action events while allowing genuine room arrival and door actions', async () => {
+    const { owner, viewer, base, state } = await setup();
+    const light = state.project.building.objects.find((object) =>
+      object.behaviours.some((value) => value.kind === 'light'),
+    )!;
+    const powered = light.behaviours.find((value) => value.kind === 'light')!.state.powered;
+    const room = state.project.building.floors[0]!.rooms[0]!;
+    const installed = sharedReceiptSchema.parse(
+      (
+        await post(
+          owner,
+          `${base}/edits`,
+          edit(state, [
+            {
+              type: 'set-rules',
+              rules: [
+                {
+                  id: 'click-light',
+                  label: 'Click light',
+                  enabled: true,
+                  trigger: { kind: 'object-click', objectId: light.id },
+                  conditions: [],
+                  actions: [
+                    { type: 'set-light', objectId: light.id, state: { powered: !powered } },
+                  ],
+                },
+                {
+                  id: 'arrival-light',
+                  label: 'Arrival light',
+                  enabled: true,
+                  trigger: { kind: 'room-enter', roomId: room.id },
+                  conditions: [],
+                  actions: [
+                    { type: 'set-light', objectId: light.id, state: { powered: !powered } },
+                  ],
+                },
+              ],
+            },
+          ]),
+        )
+      ).json(),
+    ).state;
+    for (const event of [
+      { kind: 'object-click' as const, objectId: light.id },
+      { kind: 'power' as const, objectId: light.id, powered: true },
+    ]) {
+      const response = await post(viewer, `${base}/edits`, {
+        ...edit(installed, [{ type: 'emit-event', event }]),
+        source: 'navigation',
+      });
+      expect(response.statusCode, response.body).toBe(403);
+    }
+    const arrival = {
+      ...edit(installed, [{ type: 'emit-event', event: { kind: 'room-enter', roomId: room.id } }]),
+      source: 'navigation',
+    };
+    expect((await post(viewer, `${base}/edits`, arrival)).statusCode).toBe(403);
+    const compiled = validateBuilding(installed.project.building);
+    const node = buildNavigation(compiled).nodes.find(
+      (node) =>
+        contains(room.footprint, node.position) &&
+        isPlayerPositionValid(compiled, { floorId: node.floorId, position: node.position }),
+    )!;
+    const response = await post(viewer, `${base}/edits`, {
+      ...arrival,
+      id: randomUUID(),
+      player: { floorId: node.floorId, position: node.position },
+    });
+    expect(response.statusCode, response.body).toBe(200);
+    const result = sharedReceiptSchema.parse(response.json());
+    expect(
+      result.state.project.building.objects
+        .find((object) => object.id === light.id)!
+        .behaviours.find((value) => value.kind === 'light')!.state.powered,
+    ).toBe(!powered);
   });
   it('rolls back saved action effects together without firing those actions again', async () => {
     const { owner, editor, base, state } = await setup();
