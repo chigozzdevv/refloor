@@ -1,3 +1,4 @@
+import { CollaborationMenu } from '@/components/collaboration/collaboration-menu';
 import { useEffect, useRef, useState } from 'react';
 import {
   Armchair,
@@ -76,6 +77,15 @@ export function StudioHeader({
       </a>
       {!minimal && (
         <div className="house-controls" ref={panel}>
+          <CollaborationMenu
+            onOpen={() => {
+              setHistoryOpen(false);
+              setOpen(false);
+              select(null);
+              useNavigation.getState().stop();
+              useNavigation.getState().setMapOpen(false);
+            }}
+          />
           <button
             className="house-toggle"
             aria-label="Edit history"

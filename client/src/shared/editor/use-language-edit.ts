@@ -1,3 +1,6 @@
+import { useCollaboration } from '@/shared/collaboration/store';
+import type { EditMemory, EditTarget } from '@refloor/scene/edit-memory';
+import { collaborationBridge } from '@/shared/collaboration/bridge';
 import type { ChatTarget } from '@refloor/scene/chat';
 import type { ChatTurn } from '@refloor/scene/edit-memory';
 import { scopedEditMemory } from '@refloor/scene/edit-memory';
@@ -12,6 +15,18 @@ import type { CompiledBuilding } from '@refloor/engine';
 import { deviceCommands } from '@refloor/catalogue/device-commands';
 import { prepareMediaCommand, waitForPlayback } from '@/shared/behaviours/television';
 
+function conversation(memory: EditMemory, target: EditTarget) {
+  const self = useCollaboration.getState().state?.self;
+  return scopedEditMemory(
+    self && useProject.getState().remote?.shared
+      ? {
+          ...memory,
+          turns: memory.turns.filter((turn) => !turn.author || turn.author.id === self.id),
+        }
+      : memory,
+    target,
+  );
+}
 export function changedMechanisms(before: CompiledBuilding, after: CompiledBuilding) {
   const affected = new Set<string>();
   for (const door of after.doors)
@@ -56,33 +71,62 @@ export async function sendLanguageEdit(target: ChatTarget, message: string) {
     at: new Date().toISOString(),
     target,
     message: text,
+    ...(before.remote?.shared && useCollaboration.getState().state
+      ? {
+          author: {
+            id: useCollaboration.getState().state!.self.id,
+            name: useCollaboration.getState().state!.self.name,
+          },
+        }
+      : {}),
     baseRevision: before.compiled.building.revision,
   };
   try {
     const direct = deviceCommands(before.compiled.building, target, text);
-    const result = direct
+    let planning = before;
+    let result = direct
       ? { ...direct, baseRevision: base.baseRevision }
       : await editApi.interpret({
           requestId,
           target,
           message: text,
           building: before.compiled.building,
-          context: scopedEditMemory(before.memory, target),
+          context: conversation(before.memory, target),
           view: { ...walkInput.view },
           player: before.mode === 'walk' ? (physicsSession.current?.player ?? null) : null,
         });
+    if (
+      !direct &&
+      before.remote?.shared &&
+      useProject.getState().projectEpoch === before.projectEpoch &&
+      useProject.getState().compiled.building !== before.compiled.building
+    ) {
+      planning = useProject.getState();
+      result = await editApi.interpret({
+        requestId,
+        target,
+        message: text,
+        building: planning.compiled.building,
+        context: conversation(planning.memory, target),
+        view: { ...walkInput.view },
+        player: planning.mode === 'walk' ? (physicsSession.current?.player ?? null) : null,
+      });
+    }
     const current = useProject.getState();
     if (
       current.projectEpoch !== before.projectEpoch ||
-      current.compiled.building !== before.compiled.building ||
+      current.compiled.building !== planning.compiled.building ||
       result.baseRevision !== current.compiled.building.revision
     )
       throw new Error('The space changed while I was working. Please try that again.');
-    const identity = targetIdentity(before.compiled.building, target);
+    const identity = targetIdentity(planning.compiled.building, target);
     if (
       result.commands.length &&
       !current.edit(result.commands, {
         source: 'chat',
+        id: requestId,
+        at: base.at,
+        chat: { target, message: text, reply: (result.message || 'Done.').slice(0, 1000) },
         label: text,
         target: identity ? `${identity.label} · ${identity.location}` : undefined,
       })
@@ -93,11 +137,14 @@ export async function sendLanguageEdit(target: ChatTarget, message: string) {
         useProject.getState().past.at(-1)?.revision.commands ?? [],
         useProject.getState().compiled.building,
       );
+    if (result.commands.length && current.remote?.shared)
+      await collaborationBridge.current!.wait(requestId);
     turn = {
       ...base,
+      baseRevision: planning.compiled.building.revision,
       reply: (result.message || 'Done.').slice(0, 1000),
       status: result.commands.length ? 'applied' : 'clarification',
-      revisionId: result.commands.length ? useProject.getState().past.at(-1)!.revision.id : null,
+      revisionId: result.commands.length ? requestId : null,
     };
     if (result.commands.length) {
       const applied = useProject.getState().compiled;

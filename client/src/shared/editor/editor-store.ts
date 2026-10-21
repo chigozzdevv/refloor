@@ -1,3 +1,4 @@
+import { collaborationBridge } from '@/shared/collaboration/bridge';
 import type { StateCreator } from 'zustand';
 import type { SceneCommand } from '@refloor/scene';
 import type { ProjectState } from '@/shared/scene/scene-store';
@@ -74,6 +75,13 @@ export const createEditorState: StateCreator<ProjectState, [], [], EditorState> 
   edit: (commands, details) => {
     const state = get();
     try {
+      if (collaborationBridge.preparing)
+        throw new Error('Let sharing finish setting up before editing this house.');
+      if (state.remote?.shared) {
+        if (!collaborationBridge.current)
+          throw new Error('Connect to the shared house before editing.');
+        collaborationBridge.current.assertEdit(commands, details);
+      }
       const next = editDocument(
         state,
         commands,
@@ -81,6 +89,23 @@ export const createEditorState: StateCreator<ProjectState, [], [], EditorState> 
         details,
       );
       checkDoorSwings(state.compiled, next.compiled, state.mode === 'walk');
+      if (state.remote?.shared) {
+        for (const door of next.compiled.doors)
+          if (
+            state.compiled.doors.find((value) => value.id === door.id)?.open !== door.open &&
+            !collaborationBridge.current!.canSwing(door.id, door.open)
+          )
+            throw new Error('Someone is in the doorway. Wait until they move clear.');
+        const revision = next.past.at(-1)!.revision;
+        collaborationBridge.current!.enqueue(
+          state.compiled.building,
+          commands,
+          revision.id,
+          revision.at,
+          state.mode === 'walk' ? physicsSession.current?.player : undefined,
+          { ...details, label: next.past.at(-1)!.label },
+        );
+      }
       set(next);
       const selected = get().selection;
       if (
@@ -95,10 +120,18 @@ export const createEditorState: StateCreator<ProjectState, [], [], EditorState> 
     }
   },
   undo: () => {
+    if (get().remote?.shared) {
+      collaborationBridge.current?.rollback();
+      return;
+    }
     const record = get().past.findLast(isUndoable);
     if (record) get().undoTo(record.revision.id);
   },
   undoTo: (id) => {
+    if (get().remote?.shared) {
+      collaborationBridge.current?.rollback(id);
+      return !!collaborationBridge.current;
+    }
     const state = get();
     try {
       const next = restoreBefore(
@@ -115,6 +148,10 @@ export const createEditorState: StateCreator<ProjectState, [], [], EditorState> 
     }
   },
   redo: () => {
+    if (get().remote?.shared) {
+      collaborationBridge.current?.rollback(undefined, true);
+      return;
+    }
     const state = get();
     try {
       const next = redoChange(

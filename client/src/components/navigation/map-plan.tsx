@@ -1,3 +1,4 @@
+import { useCollaboration } from '@/shared/collaboration/store';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CompiledBuilding, NavigationPoint } from '@refloor/engine';
 import { contains } from '@refloor/engine/math';
@@ -19,6 +20,7 @@ export function MapPlan({
   navigate?: (roomId: string) => void;
   compact?: boolean;
 }) {
+  const peers = useCollaboration((state) => state.peers);
   const canvas = useRef<SVGSVGElement>(null),
     [unitsPerPixel, setUnitsPerPixel] = useState(0.05);
   const floor = compiled.building.floors.find((value) => value.id === floorId),
@@ -203,6 +205,40 @@ export function MapPlan({
           <path className="plan-player-heading" d="M 0 -.55 L .12 -.34 H -.12 Z" />
         </g>
       )}
+      {peers
+        .filter((peer) => peer.player?.floorId === floorId)
+        .map((peer) => (
+          <g
+            key={peer.clientId}
+            className="plan-peer"
+            transform={`translate(${peer.player!.position.x} ${peer.player!.position.z})`}
+            pointerEvents="none"
+          >
+            <title>
+              {peer.member.name}
+              {peer.draft ? `: ${peer.draft}` : ''}
+            </title>
+            <circle
+              r={unitsPerPixel * (compact ? 4 : 5)}
+              fill={peer.member.color}
+              stroke="#ffffff"
+              strokeWidth={unitsPerPixel * 1.5}
+            />
+            {!compact && (
+              <text
+                x={unitsPerPixel * 8}
+                y={unitsPerPixel * 3}
+                fontSize={unitsPerPixel * 11}
+                fill="#24313b"
+                stroke="#ffffff"
+                strokeWidth={unitsPerPixel * 2.5}
+                paintOrder="stroke"
+              >
+                {peer.member.name}
+              </text>
+            )}
+          </g>
+        ))}
     </svg>
   );
 }

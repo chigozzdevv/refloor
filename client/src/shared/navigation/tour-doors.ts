@@ -1,3 +1,4 @@
+import { collaborationBridge } from '@/shared/collaboration/bridge';
 import type { CompiledBuilding, DoorPortal, NavigationPoint, Point3 } from '@refloor/engine';
 import { rotate } from '@refloor/engine/math';
 import type { SceneCommand } from '@refloor/scene';
@@ -89,7 +90,11 @@ export class TourDoors {
       }
       const passed =
         world.player.floorId !== door.floorId || pending.side * side(door, world.feet) < -0.2;
-      if ((!travelling || passed) && world.canSwingDoor(id, pending.original)) {
+      if (
+        (!travelling || passed) &&
+        world.canSwingDoor(id, pending.original) &&
+        (collaborationBridge.current?.canSwing(id, pending.original) ?? true)
+      ) {
         result.push({ type: 'set-door', doorId: id, open: pending.original });
         this.pending.delete(id);
       }

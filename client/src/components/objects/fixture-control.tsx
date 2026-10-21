@@ -1,3 +1,4 @@
+import { useCollaboration } from '@/shared/collaboration/store';
 import { useMemo, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { Html } from '@react-three/drei';
@@ -35,6 +36,10 @@ export function FixtureControl({
   position?: Vector3Tuple;
   children: ReactNode;
 }) {
+  const canEdit = useCollaboration(
+    (state) =>
+      state.status === 'idle' || (state.status === 'live' && state.state?.self.role !== 'viewer'),
+  );
   const camera = useThree((value) => value.camera),
     stage = useExperience((value) => value.stage),
     mode = useProject((value) => value.mode),
@@ -48,6 +53,7 @@ export function FixtureControl({
   const reachable = () => {
     const state = useProject.getState();
     if (
+      !canEdit ||
       !anchor.current ||
       !isVisible(anchor.current) ||
       state.interacting ||
@@ -115,6 +121,7 @@ export function FixtureControl({
     button.current.hidden = !visible;
   });
   if (
+    !canEdit ||
     !enabled ||
     stage !== 'ready' ||
     mode !== 'walk' ||

@@ -1,3 +1,4 @@
+import { CollaborationRuntime } from '@/components/collaboration/collaboration-runtime';
 import { useState } from 'react';
 import { ErrorBoundary } from '@/app/error-boundary';
 import { StudioRoutes } from '@/app/routes';
@@ -46,6 +47,7 @@ export function App() {
           openLibrary={() => setLibraryOpen(true)}
         />
         <Notice />
+        <CollaborationRuntime />
         {stage === 'prompt' && (
           <HousePrompt
             canResume={saved}

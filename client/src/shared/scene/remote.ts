@@ -4,6 +4,7 @@ import { idSchema } from '@refloor/scene/primitives';
 const linkKey = 'refloor.saved-project.v1';
 export const remoteLinkSchema = z.strictObject({
   id: z.uuid(),
+  shared: z.boolean().optional(),
   buildingId: idSchema,
   version: z.number().int().nonnegative(),
   savedFingerprint: z.string().regex(/^[a-f0-9]{64}$/),

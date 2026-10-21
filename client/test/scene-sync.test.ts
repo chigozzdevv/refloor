@@ -1,3 +1,4 @@
+import { collaborationApi } from '@/shared/collaboration/api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createHouse } from '@refloor/catalogue/houses';
 import { compileBuilding } from '@refloor/engine';
@@ -38,6 +39,7 @@ function deferred<T>() {
 
 beforeEach(() => {
   vi.useFakeTimers();
+  vi.spyOn(collaborationApi, 'list').mockResolvedValue({ items: [], nextCursor: null });
   const compiled = compileBuilding(structuredClone(original)),
     memory = createEditMemory(compiled.building);
   useProject.getState().loadProject(
@@ -188,5 +190,14 @@ describe('collection synchronization boundaries', () => {
     });
     await saving;
     expect(useProject.getState().remote?.id).toBe(oldId);
+  });
+  it('never snapshot-saves a shared house and waits for its command outbox before replacement', async () => {
+    const save = vi.spyOn(projectApi, 'save'),
+      current = useProject.getState();
+    useProject.setState({ remote: { ...current.remote!, shared: true } });
+    await useSavedProjects.getState().save();
+    await vi.advanceTimersByTimeAsync(2500);
+    expect(save).not.toHaveBeenCalled();
+    expect(await useSavedProjects.getState().preserve()).toBe(false);
   });
 });

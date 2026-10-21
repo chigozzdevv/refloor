@@ -1,4 +1,5 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useCollaboration } from '@/shared/collaboration/store';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ArrowUp, History, Lightbulb, LoaderCircle, X } from 'lucide-react';
 import type { ChatTarget } from '@refloor/scene/chat';
 import { useLanguageEdit } from '@/shared/editor/use-language-edit';
@@ -16,6 +17,10 @@ export function ElementChat({
   status?: string | null;
   close?: () => void;
 }) {
+  const readonly = useCollaboration(
+    (state) =>
+      state.status !== 'idle' && (state.status !== 'live' || state.state?.self.role === 'viewer'),
+  );
   const [message, setMessage] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
@@ -31,8 +36,19 @@ export function ElementChat({
       input.current.style.height = `${Math.min(96, input.current.scrollHeight)}px`;
     }
   }, [message]);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!readonly && !busy)
+        useCollaboration.setState({ draft: message.trim() ? { target, text: message } : null });
+    }, 120);
+    return () => {
+      clearTimeout(timer);
+      useCollaboration.setState({ draft: null });
+    };
+  }, [message, target.kind, target.id, target.side, readonly, busy]);
   const submit = async (text: string) => {
-    if (busy || !text.trim()) return;
+    if (busy || readonly || !text.trim()) return;
+    useCollaboration.setState({ draft: null });
     setShowSuggestions(false);
     if (await send(text)) setMessage('');
   };
@@ -87,7 +103,10 @@ export function ElementChat({
         >
           {history.map((turn) => (
             <div className="chat-turn" key={turn.id}>
-              <p className="chat-user-message">{turn.message}</p>
+              <p className="chat-user-message">
+                {turn.author && <small className="chat-author">{turn.author.name}</small>}
+                {turn.message}
+              </p>
               <p className="chat-assistant-message" data-status={turn.status}>
                 {turn.reply}
               </p>
@@ -116,11 +135,11 @@ export function ElementChat({
           ref={input}
           rows={1}
           aria-label={`Message ${label}`}
-          placeholder="Describe a change…"
+          placeholder={readonly ? 'View access' : 'Describe a change…'}
           value={message}
           onChange={(event) => setMessage(event.target.value)}
           maxLength={500}
-          disabled={busy}
+          disabled={busy || readonly}
           autoComplete="off"
           onKeyDown={(event) => {
             event.stopPropagation();
@@ -131,7 +150,11 @@ export function ElementChat({
             }
           }}
         />
-        <button className="chat-send" aria-label="Send request" disabled={busy || !message.trim()}>
+        <button
+          className="chat-send"
+          aria-label="Send request"
+          disabled={busy || readonly || !message.trim()}
+        >
           {busy ? <LoaderCircle size={16} className="spinning" /> : <ArrowUp size={16} />}
         </button>
       </form>
@@ -141,7 +164,7 @@ export function ElementChat({
             <button
               key={text}
               type="button"
-              disabled={busy}
+              disabled={busy || readonly}
               onClick={() => {
                 setMessage(text);
                 setShowSuggestions(false);

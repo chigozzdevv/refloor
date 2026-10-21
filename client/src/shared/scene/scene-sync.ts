@@ -1,3 +1,5 @@
+import { collaborationBridge } from '@/shared/collaboration/bridge';
+import { collaborationApi } from '@/shared/collaboration/api';
 import { create } from 'zustand';
 import { fingerprintBuilding } from '@refloor/scene';
 import type { Building } from '@refloor/scene';
@@ -57,7 +59,13 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
     const collection = get().collectionEpoch;
     set({ loading: true, listError: null });
     try {
-      const page = await projectApi.list(more ? (get().cursor ?? undefined) : undefined);
+      const [page, shared] = await Promise.all([
+        projectApi.list(more ? (get().cursor ?? undefined) : undefined),
+        collaborationApi.list(),
+      ]);
+      page.items = [
+        ...new Map([...page.items, ...shared.items].map((item) => [item.id, item])).values(),
+      ];
       if (get().collectionEpoch !== collection) return;
       set((state) => ({
         items: more
@@ -73,6 +81,10 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
   },
   save: async (asNew = false, quiet = false) => {
     if (get().saving || get().opening || get().recovering) return;
+    if (!asNew && useProject.getState().remote?.shared) {
+      await collaborationBridge.current?.flush();
+      return;
+    }
     const current = useProject.getState(),
       collection = get().collectionEpoch;
     if (
@@ -163,6 +175,7 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
       return false;
     }
     const state = useProject.getState();
+    if (state.remote?.shared) return (await collaborationBridge.current?.flush()) ?? false;
     if (
       !state.saved &&
       state.projectEpoch === 0 &&
@@ -190,7 +203,11 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
       collection = get().collectionEpoch;
     set({ opening: true, error: null });
     try {
-      const project = await projectApi.get(id);
+      const project = await projectApi.get(id).catch((error: unknown) => {
+        if (error instanceof ProjectApiError && error.code === 'PROJECT_NOT_FOUND')
+          return collaborationApi.state(id).then((state) => state.project);
+        throw error;
+      });
       if (get().collectionEpoch !== collection) return false;
       const compiled = parseProjectFile(JSON.stringify(project.building));
       const current = useProject.getState();
@@ -206,6 +223,7 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
         compiled,
         {
           id: project.id,
+          ...(project.shared ? { shared: true } : {}),
           buildingId: project.building.id,
           version: project.version,
           savedFingerprint: fingerprintBuilding(project.building),
@@ -285,6 +303,7 @@ function scheduleCloudSave() {
       saved = useSavedProjects.getState();
     if (
       !state.remote ||
+      state.remote.shared ||
       state.chatPending ||
       state.recovery ||
       saved.saving ||

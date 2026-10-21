@@ -23,7 +23,13 @@ export function editDocument(
   details?: EditDetails,
 ): DocumentState {
   validateCommandTuning(state.compiled.building, commands);
-  const request = { ...metadata(), expectedRevision: state.compiled.building.revision, commands };
+  const request = {
+    ...metadata(),
+    ...(details?.id ? { id: details.id } : {}),
+    ...(details?.at ? { at: details.at } : {}),
+    expectedRevision: state.compiled.building.revision,
+    commands,
+  };
   const result = validatePlacement(
     state.compiled.building,
     request,

@@ -26,7 +26,10 @@ export function SavedSpaces() {
   const digest = useMemo(() => fingerprintBuilding(compiled.building), [compiled.building]);
   const memoryDigest = useMemo(() => fingerprintEditMemory(memory), [memory]);
   const dirty =
-    !remote || remote.savedFingerprint !== digest || remote.savedMemoryFingerprint !== memoryDigest;
+    !remote?.shared &&
+    (!remote ||
+      remote.savedFingerprint !== digest ||
+      remote.savedMemoryFingerprint !== memoryDigest);
   const busy = saving || opening || recovering;
   const openSpace = async (id: string) => {
     if (await open(id)) setConfirmId(null);
@@ -42,7 +45,13 @@ export function SavedSpaces() {
       >
         <Save size={16} />
         <span>
-          {saving ? 'Saving space…' : remote ? 'Save changes' : 'Save this space'}
+          {remote?.shared
+            ? 'Shared house'
+            : saving
+              ? 'Saving space…'
+              : remote
+                ? 'Save changes'
+                : 'Save this space'}
           <small>
             {remote
               ? dirty
@@ -91,7 +100,7 @@ export function SavedSpaces() {
       >
         <Cloud size={16} />
         <span>
-          Saved spaces<small>Your private cloud collection</small>
+          Saved spaces<small>Your collection and houses shared with you</small>
         </span>
       </button>
       {expanded && (

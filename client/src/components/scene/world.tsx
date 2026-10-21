@@ -1,3 +1,4 @@
+import { SpatialPresence } from '@/components/collaboration/spatial-presence';
 import { Suspense, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { NoToneMapping, PCFShadowMap, SRGBColorSpace } from 'three';
@@ -31,7 +32,7 @@ function SceneReady() {
         ...exteriorUpgradeCommands(state.compiled.building, state.memory),
         ...catalogueBehaviourUpgrades(state.compiled.building),
       ];
-    for (let offset = 0; offset < commands.length; offset += 100)
+    for (let offset = 0; !state.remote?.shared && offset < commands.length; offset += 100)
       if (
         !useProject
           .getState()
@@ -84,6 +85,7 @@ export function World() {
           <ActionEvents />
           <NavigationMarkers />
           <SelectionChat />
+          <SpatialPresence />
           <SelectedFloor />
           <SceneReady key={epoch} />
           <PresentedScene />

@@ -52,7 +52,7 @@ export async function request<T>(
     throw new ProjectApiError(
       result.success ? result.data.error.code : 'REQUEST_FAILED',
       result.success ? result.data.error.message : 'Saved spaces could not complete the request.',
-      response.status >= 500,
+      response.status >= 500 || response.status === 429,
       result.success ? (result.data.error.issues ?? []) : [],
     );
   }

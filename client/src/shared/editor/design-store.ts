@@ -23,6 +23,12 @@ export type DesignState = {
 export const createDesignState: StateCreator<ProjectState, [], [], DesignState> = (set, get) => {
   const apply = (create: () => { document: DocumentState; message: string }, switching = false) => {
     const state = get();
+    if (state.remote?.shared) {
+      state.notify(
+        'Save a private copy to compare whole-house designs. Shared history can restore individual edits.',
+      );
+      return false;
+    }
     if (state.chatPending) {
       state.notify('Let the current request finish before changing saved designs.');
       return false;

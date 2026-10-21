@@ -1,10 +1,12 @@
+import { SharedHistory } from '@/components/collaboration/shared-history';
 import { MessageCircle, Redo2, RotateCcw, Undo2, X } from 'lucide-react';
 import { useProject } from '@/shared/scene/scene-store';
 import { DesignCheckpoints } from '@/components/editor/design-checkpoints';
 import { isUndoable } from '@/shared/editor/history';
 
 export function EditHistory({ close }: { close: () => void }) {
-  const { past, future, undo, redo, undoTo } = useProject();
+  const { past, future, undo, redo, undoTo, remote } = useProject();
+  if (remote?.shared) return <SharedHistory close={close} />;
   const records = past.filter(isUndoable).toReversed(),
     canRedo = future.some(isUndoable);
   return (
