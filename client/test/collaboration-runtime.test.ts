@@ -122,15 +122,13 @@ describe('shared browser lifecycle', () => {
     await vi.waitFor(() => expect(useCollaboration.getState().status).toBe('live'));
     const before = snapshot.project.building;
     expect(
-      useProject
-        .getState()
-        .edit([
-          {
-            type: 'set-roof-material',
-            roofId: before.roof.id,
-            material: { ...before.roof.material, color: '#112233' },
-          },
-        ]),
+      useProject.getState().edit([
+        {
+          type: 'set-roof-material',
+          roofId: before.roof.id,
+          material: { ...before.roof.material, color: '#112233' },
+        },
+      ]),
     ).toBe(true);
     await vi.waitFor(() => expect(useCollaboration.getState().status).toBe('offline'));
     const recovered = new SharedOutbox(snapshot.project.id, snapshot.self.id).load();
@@ -170,15 +168,13 @@ describe('shared browser lifecycle', () => {
     });
     const roof = snapshot.project.building.roof;
     expect(
-      useProject
-        .getState()
-        .edit([
-          {
-            type: 'set-roof-material',
-            roofId: roof.id,
-            material: { ...roof.material, color: '#112233' },
-          },
-        ]),
+      useProject.getState().edit([
+        {
+          type: 'set-roof-material',
+          roofId: roof.id,
+          material: { ...roof.material, color: '#112233' },
+        },
+      ]),
     ).toBe(false);
     expect(useProject.getState().compiled.building.roof.material).toEqual(roof.material);
     expect(useCollaboration.getState().pending).toBe(0);
