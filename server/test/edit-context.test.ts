@@ -1,3 +1,4 @@
+import { diffProperties, restorationChanges } from '@refloor/scene/properties';
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { createHouse } from '@refloor/catalogue/houses';
@@ -291,5 +292,49 @@ describe('recorded item context', () => {
         'original.position',
       ),
     ).toThrow('No recorded context');
+  });
+  it('keeps previous-property context after selective shared rollback', () => {
+    const before = initial(),
+      tv = televisionFor(before.building);
+    const edited = change(before, [
+      { type: 'set-television', objectId: tv.id, state: { volume: 0.48 } },
+    ]);
+    const result = applyCommands(
+      edited.building,
+      {
+        id: randomUUID(),
+        at: new Date().toISOString(),
+        expectedRevision: edited.building.revision,
+        commands: [
+          {
+            type: 'restore-properties',
+            changes: restorationChanges(
+              edited.building,
+              diffProperties(before.building, edited.building),
+            ),
+          },
+        ],
+      },
+      { evaluateRules: false },
+    );
+    const rolled = {
+      building: result.building,
+      memory: recordTransition(edited.memory, result.building, {
+        revision: result.revision,
+        kind: 'undo',
+        label: 'Roll back volume',
+        source: 'chat',
+      }),
+    };
+    const commands = restore(request(rolled), 'previous.volume');
+    const replayed = applyCommands(rolled.building, {
+      id: randomUUID(),
+      at: new Date().toISOString(),
+      expectedRevision: rolled.building.revision,
+      commands,
+    }).building;
+    expect(
+      televisionFor(replayed).behaviours.find((value) => value.kind === 'television')!.state.volume,
+    ).toBe(0.48);
   });
 });

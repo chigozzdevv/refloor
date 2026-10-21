@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { commandSchema, editMetadataSchema } from '@refloor/scene/command';
 import { editTargetSchema } from '@refloor/scene/edit-memory';
 import { playerSchema, projectSchema } from '@refloor/scene/contracts';
+import { coordinateSchema } from '@refloor/scene/primitives';
 import { propertyGuardSchema, propertyPatchSchema } from '@refloor/scene/properties';
 
 export const memberNameSchema = z.string().trim().min(1).max(40);
@@ -14,7 +15,13 @@ export const sharedMemberSchema = z.strictObject({
   active: z.boolean().optional(),
 });
 export const presenceInputSchema = z.strictObject({
-  selection: editTargetSchema.nullable(),
+  selection: editTargetSchema
+    .extend({
+      point: z
+        .strictObject({ x: coordinateSchema, y: coordinateSchema, z: coordinateSchema })
+        .optional(),
+    })
+    .nullable(),
   draft: z.string().max(500),
   player: playerSchema.nullable(),
   floorId: z.string().max(160),

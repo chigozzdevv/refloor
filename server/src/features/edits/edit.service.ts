@@ -1,3 +1,4 @@
+import { ApiError } from '@refloor/server/shared/http/errors';
 import { validatePlacement } from '@refloor/engine';
 import type { ProjectEdit, ProjectWrite } from '@refloor/scene/contracts';
 import type { RevisionRepository } from '@refloor/server/features/edits/revision.repo';
@@ -14,6 +15,8 @@ export class EditService {
 
   apply(ownerId: string, id: string, input: ProjectEdit): Promise<ProjectWrite> {
     return this.revisions.commit(ownerId, id, input.edit.id, 'edit', input, async (record) => {
+      if (input.edit.commands.some((command) => command.type === 'restore-properties'))
+        throw new ApiError(400, 'INVALID_COMMAND', 'Use history to restore a change.');
       validateTuning(record.building, input.edit.commands);
       const result = validatePlacement(record.building, input.edit, {}, input.player ?? undefined);
       validateTuning(record.building, result.revision.commands);

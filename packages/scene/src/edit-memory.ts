@@ -38,6 +38,7 @@ export const elementSnapshotSchema = z
   ])
   .refine((snapshot) => snapshot.id === snapshot.value.id, 'Snapshot identity does not match');
 export const chatTurnSchema = z.strictObject({
+  author: z.strictObject({ id: z.string(), name: z.string().max(40) }).optional(),
   id: idSchema,
   at: z.iso.datetime({ offset: true }),
   target: editTargetSchema,

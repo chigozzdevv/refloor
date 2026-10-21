@@ -2,6 +2,19 @@ import type { Db } from 'mongodb';
 
 export async function createIndexes(database: Db) {
   await database
+    .collection('project_members')
+    .createIndex({ projectId: 1, ownerId: 1 }, { unique: true });
+  await database.collection('project_invites').createIndex({ tokenHash: 1 }, { unique: true });
+  await database
+    .collection('project_invites')
+    .createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+  await database
+    .collection('project_activity')
+    .createIndex({ projectId: 1, requestId: 1 }, { unique: true });
+  await database
+    .collection('project_activity')
+    .createIndex({ projectId: 1, version: -1 }, { unique: true });
+  await database
     .collection('projects')
     .createIndex({ ownerId: 1, creationId: 1 }, { unique: true });
   await database.collection('projects').createIndex({ ownerId: 1, updatedAt: -1, _id: -1 });

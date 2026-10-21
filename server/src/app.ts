@@ -1,3 +1,8 @@
+import { CollaborationRepository } from '@refloor/server/features/collaboration/collaboration.repo';
+import { CollaborationService } from '@refloor/server/features/collaboration/collaboration.service';
+import { CollaborationController } from '@refloor/server/features/collaboration/collaboration.controller';
+import { registerCollaborationRoutes } from '@refloor/server/features/collaboration/collaboration.route';
+import { registerCollaborationSocket } from '@refloor/server/features/collaboration/collaboration.socket';
 import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
@@ -56,10 +61,13 @@ export async function createApp(config: ServerConfig, logging = true) {
       )
         throw new ApiError(403, 'ORIGIN_REJECTED', 'This origin cannot change projects.');
     });
-    const sessions = new SessionController(
-      new SessionService(new SessionRepository(database.db)),
-      config.production,
+    const sessionService = new SessionService(new SessionRepository(database.db));
+    const sessions = new SessionController(sessionService, config.production);
+    const collaboration = new CollaborationService(
+      new CollaborationRepository(database.client, database.db),
     );
+    registerCollaborationRoutes(app, new CollaborationController(collaboration, sessions));
+    registerCollaborationSocket(app, collaboration, sessionService, config);
     const houses = new HouseRepository(database.db);
     const revisions = new RevisionRepository(database.client, database.db, houses);
     const houseService = new HouseService(houses, revisions);

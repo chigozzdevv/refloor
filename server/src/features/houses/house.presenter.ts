@@ -7,6 +7,7 @@ export function houseSummary(record: HouseRecord): ProjectSummary {
   return {
     id: record._id,
     name: record.building.name,
+    ...(record.shared ? { shared: true } : {}),
     version: record.version,
     revision: record.building.revision,
     storeys: record.building.floors.length,

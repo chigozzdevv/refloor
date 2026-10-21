@@ -1,8 +1,10 @@
+import { writeProperty } from '@refloor/scene/properties';
+import { materialSchema } from '@refloor/scene/material';
 import { getObjectAsset } from '@refloor/scene';
 import { isPoweredBehaviour } from '@refloor/scene/behaviour';
 import type { TargetCapability } from '@refloor/server/shared/planning/household-edit';
 import type { SceneCommand, SceneObject } from '@refloor/scene';
-import { commandTouches, snapshotFor } from '@refloor/scene/edit-memory';
+import { commandTouches, snapshotFor, elementSnapshotSchema } from '@refloor/scene/edit-memory';
 import type { ElementSnapshot } from '@refloor/scene/edit-memory';
 import type { LanguageEditRequest } from '@refloor/scene/chat';
 import { defaultSiteMaterial } from '@refloor/scene/site-material';
@@ -31,6 +33,39 @@ function beforeCommand(
   current: ElementSnapshot | null,
   inverse: SceneCommand,
 ): ElementSnapshot | null {
+  if (inverse.type === 'restore-properties' && current) {
+    const restored = structuredClone(current);
+    if (restored.kind === 'surface') {
+      const wrapper = { siteMaterials: { [restored.value.slot]: restored.value.material } };
+      for (const change of inverse.changes)
+        if (change.path[0] === 'siteMaterials') writeProperty(wrapper, change);
+      restored.value.material = materialSchema
+        .nullable()
+        .parse(wrapper.siteMaterials?.[restored.value.slot] ?? null);
+    } else {
+      for (const change of inverse.changes) {
+        const index = change.path.findIndex(
+          (part) => typeof part !== 'string' && part.key === 'id' && part.value === restored.id,
+        );
+        const tail =
+          restored.kind === 'roof' && change.path[0] === 'roof'
+            ? change.path.slice(1)
+            : index >= 0
+              ? change.path.slice(index + 1)
+              : null;
+        if (!tail) continue;
+        if (!tail.length) {
+          if (!change.value.exists) return null;
+          return elementSnapshotSchema.parse({ ...restored, value: change.value.value });
+        }
+        writeProperty(
+          { objects: [restored.value] },
+          { ...change, path: ['objects', { key: 'id', value: restored.id }, ...tail] },
+        );
+      }
+    }
+    return elementSnapshotSchema.parse(restored);
+  }
   if (inverse.type === 'add-object')
     return { kind: 'object', id: inverse.object.id, value: structuredClone(inverse.object) };
   const before = structuredClone(current);

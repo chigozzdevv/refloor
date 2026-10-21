@@ -4,6 +4,7 @@ import type { EditMemory } from '@refloor/scene/edit-memory';
 export type HouseRecord = {
   _id: string;
   ownerId: string;
+  shared?: boolean;
   creationId: string;
   creationFingerprint: string;
   building: Building;

@@ -51,6 +51,12 @@ export class RevisionRepository {
           async () => {
             const record = await this.houses.find(ownerId, id, session);
             if (!record) throw notFound();
+            if (record.shared)
+              throw new ApiError(
+                409,
+                'COLLABORATION_REQUIRED',
+                'This house accepts individual shared edits. Reconnect collaboration before editing.',
+              );
             const previous = await this.collection.findOne({ _id: revisionId }, { session });
             if (previous) {
               checkRequest(previous, digest);
