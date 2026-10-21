@@ -1,4 +1,5 @@
 import { mergeActivity } from '@/shared/collaboration/history';
+import { mergeConversation } from '@/shared/collaboration/conversation';
 import { io } from 'socket.io-client';
 import { z } from 'zod';
 import { fingerprintBuilding } from '@refloor/scene';
@@ -120,7 +121,11 @@ export function startCollaboration(projectId: string) {
     queue = queue.filter((edit) => !accepted.includes(edit));
     let document: DocumentState = {
       compiled: compileBuilding(state.project.building),
-      memory: state.project.memory ?? createEditMemory(state.project.building),
+      memory: mergeConversation(
+        state.project.memory ?? createEditMemory(state.project.building),
+        useProject.getState().memory,
+        state.self.id,
+      ),
       past: [],
       future: [],
     };
