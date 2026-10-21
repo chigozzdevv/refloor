@@ -62,7 +62,11 @@ export async function createApp(config: ServerConfig, logging = true) {
         throw new ApiError(403, 'ORIGIN_REJECTED', 'This origin cannot change projects.');
     });
     const sessionService = new SessionService(new SessionRepository(database.db));
-    const sessions = new SessionController(sessionService, config.production);
+    const sessions = new SessionController(
+      sessionService,
+      config.production,
+      config.sessionCookieName,
+    );
     const collaboration = new CollaborationService(
       new CollaborationRepository(database.client, database.db),
     );

@@ -19,6 +19,7 @@ const environmentSchema = z.object({
 });
 
 export type ServerConfig = {
+  sessionCookieName?: string;
   production: boolean;
   host: string;
   port: number;

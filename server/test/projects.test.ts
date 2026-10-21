@@ -64,6 +64,38 @@ describe('MongoDB project API', () => {
     return projectWriteSchema.parse(response.json());
   }
 
+  it('keeps a configured browser-test cookie separate from the normal session cookie', async () => {
+    const isolated = await createApp(
+      { ...config, sessionCookieName: 'refloor_browser_test' },
+      false,
+    );
+    try {
+      const response = await isolated.inject({ method: 'POST', url: '/api/sessions' }),
+        token = response.cookies[0]!.value;
+      expect(response.cookies[0]!.name).toBe('refloor_browser_test');
+      expect(
+        (
+          await isolated.inject({
+            method: 'GET',
+            url: '/api/projects',
+            cookies: { refloor_session: token },
+          })
+        ).statusCode,
+      ).toBe(401);
+      expect(
+        (
+          await isolated.inject({
+            method: 'GET',
+            url: '/api/projects',
+            cookies: { refloor_browser_test: token },
+          })
+        ).statusCode,
+      ).toBe(200);
+    } finally {
+      await isolated.close();
+    }
+  });
+
   it('renews an existing browser session without changing project ownership', async () => {
     const cookies = await session(),
       current = await create(cookies),

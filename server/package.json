@@ -17,7 +17,9 @@
     "typecheck": "tsc --noEmit",
     "dev": "node --env-file-if-exists=../.env --import tsx --watch src/server.ts",
     "start": "node --env-file-if-exists=../.env dist/server.js",
-    "db:dev": "node --env-file-if-exists=../.env --import tsx scripts/database.ts"
+    "db:dev": "node --env-file-if-exists=../.env --import tsx scripts/database.ts",
+    "browser:fixtures": "node --import tsx scripts/browser-fixtures.ts",
+    "browser:serve": "node --env-file-if-exists=../.env --import tsx scripts/browser-server.ts"
   },
   "dependencies": {
     "@fastify/cookie": "11.1.3",
