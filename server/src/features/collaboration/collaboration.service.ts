@@ -94,7 +94,7 @@ export class CollaborationService {
         project: houseDocument(record),
         self: memberView(self),
         members: members.map(memberView),
-        activity: events.slice(0, 100).reverse().map(activityView),
+        activity: await this.presentActivity(events.slice(0, 100).reverse(), session),
         hasEarlier: events.length > 100,
       };
     });
@@ -107,9 +107,49 @@ export class CollaborationService {
       .limit(101)
       .toArray();
     return {
-      items: events.slice(0, 100).reverse().map(activityView),
+      items: await this.presentActivity(events.slice(0, 100).reverse()),
       hasEarlier: events.length > 100,
     };
+  }
+  private async presentActivity(events: ActivityRecord[], session?: ClientSession) {
+    const legacy = events.filter(
+      (event) => event.kind === 'edit' && event.lastHistoryAction === undefined,
+    );
+    if (!legacy.length) return events.map(activityView);
+    const latest = await this.repo.activity
+      .aggregate<{ _id: string; event: ActivityRecord }>(
+        [
+          {
+            $match: {
+              projectId: legacy[0]!.projectId,
+              originalId: { $in: legacy.map((event) => event.id) },
+            },
+          },
+          { $sort: { version: -1 } },
+          { $group: { _id: '$originalId', event: { $first: '$$ROOT' } } },
+        ],
+        session ? { session } : {},
+      )
+      .toArray();
+    const actions = new Map(
+      latest.map(({ _id, event }) => [
+        _id,
+        {
+          id: event.id,
+          version: event.version,
+          kind: event.kind === 'restore' ? ('restore' as const) : ('rollback' as const),
+          author: memberView(event.author),
+          at: event.at,
+        },
+      ]),
+    );
+    return events.map((event) =>
+      activityView(
+        event.lastHistoryAction === undefined
+          ? { ...event, lastHistoryAction: actions.get(event.id) ?? null }
+          : event,
+      ),
+    );
   }
   async enable(ownerId: string, id: string, name: string, expectedVersion: number) {
     await this.repo.transaction(async (session) => {
@@ -414,6 +454,7 @@ export class CollaborationService {
           ...('reply' in input && input.reply ? { reply: input.reply } : {}),
           ...(original ? { originalId: original.id } : {}),
           revertedBy: null,
+          lastHistoryAction: null,
           undoable:
             patches.length > 0 &&
             (source !== 'navigation' ||
@@ -446,7 +487,18 @@ export class CollaborationService {
         if (original)
           await this.repo.activity.updateOne(
             { _id: original._id },
-            { $set: { revertedBy: restore ? null : event.id } },
+            {
+              $set: {
+                revertedBy: restore ? null : event.id,
+                lastHistoryAction: {
+                  id: event.id,
+                  version: event.version,
+                  kind: restore ? 'restore' : 'rollback',
+                  author: memberView(author),
+                  at: event.at,
+                },
+              },
+            },
             { session },
           );
         acceptedVersion = event.version;

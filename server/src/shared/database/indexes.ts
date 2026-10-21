@@ -2,6 +2,9 @@ import type { Db } from 'mongodb';
 
 export async function createIndexes(database: Db) {
   await database
+    .collection('project_activity')
+    .createIndex({ projectId: 1, originalId: 1, version: -1 });
+  await database
     .collection('project_members')
     .createIndex({ projectId: 1, ownerId: 1 }, { unique: true });
   await database.collection('project_invites').createIndex({ tokenHash: 1 }, { unique: true });

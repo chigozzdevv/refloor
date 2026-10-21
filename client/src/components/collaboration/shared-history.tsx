@@ -93,6 +93,10 @@ export function SharedHistory({ close }: { close: () => void }) {
               const identity = event.target
                 ? targetIdentity(state.project.building, event.target)
                 : null;
+              const action = event.lastHistoryAction;
+              const attribution = action
+                ? `${action.kind === 'rollback' ? 'Undone' : 'Restored'} by ${action.author.name}`
+                : null;
               return (
                 <li
                   key={event.id}
@@ -101,7 +105,25 @@ export function SharedHistory({ close }: { close: () => void }) {
                 >
                   <div className="shared-history-author">
                     <span style={{ background: event.author.color }} />
-                    {event.author.id === state.self.id ? 'You' : event.author.name}
+                    <span className="shared-history-name">
+                      {event.author.id === state.self.id ? 'You' : event.author.name}
+                    </span>
+                    {action && (
+                      <details className="shared-history-attribution">
+                        <summary title={attribution!} aria-label={attribution!}>
+                          {action.kind === 'rollback' ? <Undo2 size={12} /> : <Redo2 size={12} />}
+                        </summary>
+                        <span>
+                          {attribution}
+                          <time dateTime={action.at}>
+                            {new Date(action.at).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </time>
+                        </span>
+                      </details>
+                    )}
                     <time dateTime={event.at}>
                       {new Date(event.at).toLocaleTimeString([], {
                         hour: '2-digit',

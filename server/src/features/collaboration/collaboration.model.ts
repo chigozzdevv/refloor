@@ -46,6 +46,9 @@ export function activityView(record: ActivityRecord): SharedActivity {
     ...(record.reply ? { reply: record.reply } : {}),
     ...(record.originalId ? { originalId: record.originalId } : {}),
     revertedBy: record.revertedBy,
+    ...(record.lastHistoryAction !== undefined
+      ? { lastHistoryAction: record.lastHistoryAction }
+      : {}),
     undoable: record.undoable,
   };
 }

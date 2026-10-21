@@ -29,6 +29,26 @@ describe('paginated shared history', () => {
       [event('undo', 150, 'rollback', 'old'), event('restore', 151, 'restore', 'old')],
     );
     expect(result[0]!.revertedBy).toBeNull();
+    expect(result[0]!.lastHistoryAction).toMatchObject({
+      id: 'restore',
+      kind: 'restore',
+      author: { name: 'Owner' },
+    });
     expect(result.map((value) => value.id)).toContain('other');
+  });
+  it('does not replace a paginated edit’s current attribution with an older history event', () => {
+    const original = {
+      ...event('old', 1),
+      lastHistoryAction: {
+        id: 'new',
+        version: 200,
+        kind: 'restore' as const,
+        author: event('new', 200).author,
+        at: new Date(0).toISOString(),
+      },
+    };
+    const result = mergeActivity([original], [event('undo', 150, 'rollback', 'old')]);
+    expect(result[0]!.revertedBy).toBeNull();
+    expect(result[0]!.lastHistoryAction?.id).toBe('new');
   });
 });

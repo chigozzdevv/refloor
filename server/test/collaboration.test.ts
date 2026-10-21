@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { beforeAll, afterAll, describe, expect, it } from 'vitest';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
+import { MongoClient } from 'mongodb';
 import { io } from 'socket.io-client';
 import type { Socket } from 'socket.io-client';
 import { createHouse } from '@refloor/catalogue/houses';
@@ -155,6 +156,10 @@ describe('durable house collaboration', () => {
     );
     expect(result.project.building.floors[0]!.rooms[0]!.floorMaterial.color).toBe('#345678');
     expect(result.activity.find((event) => event.id === a.id)?.revertedBy).toBeTruthy();
+    expect(result.activity.find((event) => event.id === a.id)?.lastHistoryAction).toMatchObject({
+      kind: 'rollback',
+      author: { name: 'Owner' },
+    });
     const restored = await post(editor, `${base}/activity/${a.id}`, {
       id: randomUUID(),
       at: new Date().toISOString(),
@@ -164,6 +169,31 @@ describe('durable house collaboration', () => {
     expect(
       sharedReceiptSchema.parse(restored.json()).state.project.building.roof.material.color,
     ).toBe('#123456');
+    const attribution = sharedReceiptSchema
+      .parse(restored.json())
+      .state.activity.find((event) => event.id === a.id)?.lastHistoryAction;
+    expect(attribution).toMatchObject({ kind: 'restore', author: { name: 'Ada' } });
+    const page = await app.inject({
+      url: `${base}/activity?before=${Number.MAX_SAFE_INTEGER}`,
+      cookies: owner,
+    });
+    expect(
+      page.json().items.find((event: { id: string }) => event.id === a.id).lastHistoryAction,
+    ).toEqual(attribution);
+    const client = await MongoClient.connect(replica.getUri());
+    try {
+      await client
+        .db('collaboration')
+        .collection('project_activity')
+        .updateOne({ id: a.id }, { $unset: { lastHistoryAction: '' } });
+      const legacy = await app.inject({ url: base, cookies: owner });
+      expect(
+        sharedStateSchema.parse(legacy.json()).activity.find((event) => event.id === a.id)
+          ?.lastHistoryAction,
+      ).toEqual(attribution);
+    } finally {
+      await client.close();
+    }
   });
   it('enforces roles, revocation, private collection isolation, and blocks snapshot overwrites', async () => {
     const { owner, editor, viewer, id, base, state } = await setup();

@@ -66,6 +66,13 @@ export const sharedHistorySchema = editMetadataSchema.extend({
   id: z.uuid(),
   restore: z.boolean(),
 });
+export const historyActionSchema = z.strictObject({
+  id: z.string(),
+  version: z.number().int().nonnegative(),
+  kind: z.enum(['rollback', 'restore']),
+  author: sharedMemberSchema,
+  at: z.iso.datetime(),
+});
 export const sharedActivitySchema = z.strictObject({
   id: z.string(),
   version: z.number().int().nonnegative(),
@@ -79,6 +86,7 @@ export const sharedActivitySchema = z.strictObject({
   reply: z.string().optional(),
   originalId: z.string().optional(),
   revertedBy: z.string().nullable(),
+  lastHistoryAction: historyActionSchema.nullable().optional(),
   undoable: z.boolean(),
 });
 export const sharedStateSchema = z.strictObject({
