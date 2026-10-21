@@ -423,17 +423,25 @@ can be reinstated from the same permissions list. Shared houses appear in Saved 
 Each visitor keeps their own camera, walking position and selection.
 
 Selected furniture gets a coloured outline and a name pointer in other visitors’ views.
-Typing previews follow the selected item; the map shows other walkers on their current floor.
+Typing previews follow the selected item, stay within the viewport and group people selecting
+the same item. A compact activity indicator also covers off-screen and whole-house requests,
+including the time spent applying the change. The map shows other walkers on their current floor.
 Draft text is temporary and shared with the people currently in the house. Accepted edits
-have a durable, authored history bubble with the instruction, result and time.
-Viewers can explore and operate navigation doors; editing and rollback require Editor access.
+have a durable, authored history bubble with the instruction and time. Undo/restore attribution
+is available from a small history icon, including for older and paginated activity.
+Viewers can explore and operate navigation doors. Room-arrival actions require a valid player
+position in that room; arbitrary object/device events, editing and rollback require Editor access.
 
 The server checks the properties each command read before applying it in a MongoDB
 transaction. Independent changes merge; a stale instruction affecting a changed property is
 rejected. The journal, scene, conversational context and version commit together. Request IDs
 make retries idempotent, and reconnecting reads the authoritative house and journal.
+AI edits carry guards for their changed properties and referenced items, so unrelated updates
+can merge without another model call. Local clarifications and failed requests survive shared
+refreshes and reconnects without replacing authoritative transitions or other members’ turns.
 Shared houses reject the older snapshot-save and whole-history undo endpoints.
-Pending commands remain in a browser outbox across reloads; new edits pause while disconnected.
+Pending commands use separate browser recovery entries, so tabs cannot overwrite each other’s
+queues. Recovery preserves command order and upgrades older outboxes. New edits pause while disconnected.
 Leaving the house waits for pending edits. Shared history rolls back only the selected edit’s
 changed properties, preserves unrelated later changes and rejects conflicting restorations.
 Saved-action effects roll back together without firing the actions again.
