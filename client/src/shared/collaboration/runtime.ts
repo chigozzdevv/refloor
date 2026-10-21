@@ -65,6 +65,7 @@ export function startCollaboration(projectId: string) {
     outbox: SharedOutbox | null = null;
   let recoveryError: string | null = null;
   let historyPending: Promise<void> | null = null;
+  let historyActivity: { target: NonNullable<SharedEdit['target']>; text: string } | null = null;
   let resetHistory = true;
   const waiting = new Map<
     string,
@@ -349,6 +350,10 @@ export function startCollaboration(projectId: string) {
         return;
       }
       const requestId = crypto.randomUUID();
+      historyActivity = {
+        target: event.target ?? { kind: 'house', id: canonical.project.building.id },
+        text: `${restore ? 'Restore' : 'Undo'}: ${event.label}`.slice(0, 500),
+      };
       useCollaboration.setState({ pending: 1 });
       historyPending = collaborationApi
         .rollback(projectId, event.id, requestId, restore)
@@ -362,6 +367,7 @@ export function startCollaboration(projectId: string) {
         })
         .finally(() => {
           historyPending = null;
+          historyActivity = null;
           updateQueue();
         });
       void historyPending.catch(() => undefined);
@@ -434,17 +440,31 @@ export function startCollaboration(projectId: string) {
   const presenceTimer = setInterval(() => {
     if (!socket.connected || useCollaboration.getState().status !== 'live') return;
     const state = useProject.getState(),
-      draft = useCollaboration.getState().draft;
-    const value = {
-      selection: state.selection
+      { draft, applying } = useCollaboration.getState();
+    const pending = queue[0];
+    const activity =
+      applying ??
+      historyActivity ??
+      (pending
         ? {
-            kind: state.selection.kind,
-            id: state.selection.id,
-            ...(state.selection.side ? { side: state.selection.side } : {}),
-            ...(state.selection.point ? { point: state.selection.point } : {}),
+            target: pending.target ?? { kind: 'house' as const, id: state.compiled.building.id },
+            text: pending.message ?? pending.label,
           }
-        : (draft?.target ?? null),
-      draft: draft?.text ?? '',
+        : null);
+    const value = {
+      selection:
+        activity?.target ??
+        draft?.target ??
+        (state.selection
+          ? {
+              kind: state.selection.kind,
+              id: state.selection.id,
+              ...(state.selection.side ? { side: state.selection.side } : {}),
+              ...(state.selection.point ? { point: state.selection.point } : {}),
+            }
+          : null),
+      draft: activity?.text ?? draft?.text ?? '',
+      phase: activity ? 'applying' : draft ? 'typing' : 'idle',
       player: state.mode === 'walk' ? (physicsSession.current?.player ?? null) : null,
       floorId: state.floorId,
     };
@@ -485,6 +505,12 @@ export function startCollaboration(projectId: string) {
         new Error('The shared house was closed. Pending changes will retry when it is reopened.'),
       );
     if (collaborationBridge.current === bridge) collaborationBridge.current = null;
-    useCollaboration.setState({ status: 'idle', peers: [], pending: 0, draft: null });
+    useCollaboration.setState({
+      status: 'idle',
+      peers: [],
+      pending: 0,
+      draft: null,
+      applying: null,
+    });
   };
 }

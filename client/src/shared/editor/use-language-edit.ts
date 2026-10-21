@@ -67,6 +67,8 @@ export async function sendLanguageEdit(target: ChatTarget, message: string) {
     before = useProject.getState(),
     requestId = crypto.randomUUID();
   if (!text || !before.beginChat(requestId)) return false;
+  if (before.remote?.shared)
+    useCollaboration.setState({ applying: { id: requestId, target, text }, draft: null });
   let turn: ChatTurn | undefined;
   const base = {
     id: requestId,
@@ -198,6 +200,8 @@ export async function sendLanguageEdit(target: ChatTarget, message: string) {
     return applied;
   } finally {
     const current = useProject.getState();
+    if (useCollaboration.getState().applying?.id === requestId)
+      useCollaboration.setState({ applying: null });
     current.finishChat(requestId, current.projectEpoch === before.projectEpoch ? turn : undefined);
   }
 }

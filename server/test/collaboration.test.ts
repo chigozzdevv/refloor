@@ -222,10 +222,31 @@ describe('durable house collaboration', () => {
     second.emit('presence', {
       selection: { kind: 'roof', id: state.project.building.roof.id },
       draft: 'Make the roof blue',
+      phase: 'typing',
       player: null,
       floorId: 'ground',
     });
-    expect(JSON.stringify(await presence)).toContain('Make the roof blue');
+    expect(await presence).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ draft: 'Make the roof blue', phase: 'typing' }),
+      ]),
+    );
+    const applying = new Promise<unknown[]>((resolve) => first.once('presence', resolve));
+    second.emit('presence', {
+      selection: { kind: 'house', id: state.project.building.id },
+      draft: 'Make the roof blue',
+      phase: 'applying',
+      player: null,
+      floorId: 'ground',
+    });
+    expect(await applying).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          phase: 'applying',
+          selection: { kind: 'house', id: state.project.building.id },
+        }),
+      ]),
+    );
     const changed = new Promise<void>((resolve) => second.once('changed', resolve));
     await post(owner, `${base}/edits`, edit(state, [roof('#123456', state)]));
     await changed;

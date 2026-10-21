@@ -8,5 +8,14 @@ export const useCollaboration = create<{
   pending: number;
   error: string | null;
   draft: { target: EditTarget; text: string } | null;
-}>(() => ({ state: null, status: 'idle', peers: [], pending: 0, error: null, draft: null }));
+  applying: { id: string; target: EditTarget; text: string } | null;
+}>(() => ({
+  state: null,
+  status: 'idle',
+  peers: [],
+  pending: 0,
+  error: null,
+  draft: null,
+  applying: null,
+}));
 export const collaborationClientId = crypto.randomUUID();

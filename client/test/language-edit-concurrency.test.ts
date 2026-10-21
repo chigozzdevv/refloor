@@ -10,6 +10,7 @@ import { editApi } from '@/shared/refloor/edits';
 import { sendLanguageEdit } from '@/shared/editor/use-language-edit';
 import { collaborationBridge } from '@/shared/collaboration/bridge';
 import { scenePresentation } from '@/shared/scene/presentation';
+import { useCollaboration } from '@/shared/collaboration/store';
 
 const initial = useProject.getState();
 const originalBridge = collaborationBridge.current;
@@ -114,9 +115,11 @@ async function finish(pending: Promise<boolean>) {
     ),
   );
   const compiled = useProject.getState().compiled;
+  expect(useCollaboration.getState().applying).not.toBeNull();
   scenePresentation.commit(compiled);
   scenePresentation.frame(compiled);
   expect(await pending).toBe(true);
+  expect(useCollaboration.getState().applying).toBeNull();
 }
 describe('concurrent language edits', () => {
   it('applies the original wall request without another model call after multiple unrelated edits', async () => {

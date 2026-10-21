@@ -36,6 +36,7 @@ export const presenceInputSchema = z.strictObject({
     })
     .nullable(),
   draft: z.string().max(500),
+  phase: z.enum(['idle', 'typing', 'applying']).default('idle'),
   player: playerSchema.nullable(),
   floorId: z.string().max(160),
 });

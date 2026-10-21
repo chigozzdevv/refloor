@@ -97,6 +97,7 @@ export function registerCollaborationSocket(
               member: memberView(member),
               selection: null,
               draft: '',
+              phase: 'idle',
               player: null,
               floorId: '',
             },

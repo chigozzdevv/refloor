@@ -78,6 +78,7 @@ export function StudioHeader({
       {!minimal && (
         <div className="house-controls" ref={panel}>
           <CollaborationMenu
+            showActivity={!open && !historyOpen}
             onOpen={() => {
               setHistoryOpen(false);
               setOpen(false);

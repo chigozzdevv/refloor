@@ -7,8 +7,16 @@ import { collaborationApi } from '@/shared/collaboration/api';
 import { remoteShared } from '@/shared/collaboration/runtime';
 import { useProject } from '@/shared/scene/scene-store';
 import { useSavedProjects } from '@/shared/scene/scene-sync';
+import { PresenceActivity } from '@/components/collaboration/presence-activity';
+import { activePresence, presencePhase } from '@/shared/collaboration/presence';
 
-export function CollaborationMenu({ onOpen }: { onOpen: () => void }) {
+export function CollaborationMenu({
+  onOpen,
+  showActivity = true,
+}: {
+  onOpen: () => void;
+  showActivity?: boolean;
+}) {
   const { state, status, peers, pending, error } = useCollaboration();
   const shared = useProject((project) => project.remote?.shared);
   const [open, setOpen] = useState(false),
@@ -41,6 +49,9 @@ export function CollaborationMenu({ onOpen }: { onOpen: () => void }) {
   };
   const live = shared && state && state.project.id === useProject.getState().remote?.id;
   const online = new Set(peers.map((peer) => peer.member.id));
+  const activity = new Map(
+    activePresence(peers).map((peer) => [peer.member.id, presencePhase(peer)]),
+  );
   return (
     <div className="collaboration-controls" ref={panel}>
       <button
@@ -55,6 +66,7 @@ export function CollaborationMenu({ onOpen }: { onOpen: () => void }) {
         <Users size={20} strokeWidth={1.5} />
         {shared && <i data-status={status} />}
       </button>
+      {!open && showActivity && <PresenceActivity />}
       {open && (
         <section className="collaboration-menu" aria-label="Collaboration">
           <div className="panel-heading">
@@ -93,10 +105,14 @@ export function CollaborationMenu({ onOpen }: { onOpen: () => void }) {
                       <small>
                         {member.active === false
                           ? 'Access removed'
-                          : status === 'live' &&
-                              (online.has(member.id) || member.id === state.self.id)
-                            ? 'Here now'
-                            : 'Offline'}
+                          : activity.has(member.id)
+                            ? activity.get(member.id) === 'applying'
+                              ? 'Applying a change…'
+                              : 'Typing…'
+                            : status === 'live' &&
+                                (online.has(member.id) || member.id === state.self.id)
+                              ? 'Here now'
+                              : 'Offline'}
                       </small>
                     </div>
                     {state.self.role === 'owner' && member.role !== 'owner' ? (
