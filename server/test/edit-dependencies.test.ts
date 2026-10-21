@@ -4,6 +4,7 @@ import { propertiesMatch } from '@refloor/scene/properties';
 import type { LanguageEditRequest } from '@refloor/scene/chat';
 import { languageReadGuards } from '@refloor/server/shared/planning/edit-dependencies';
 import type { LanguagePlan } from '@refloor/server/shared/planning/language-edit';
+import { siteSurfaceId } from '@refloor/scene/site-material';
 
 const building = createHouse({ id: 'dependencies-house', name: 'Dependencies house', storeys: 1 });
 const wall = building.floors[0]!.walls[0]!;
@@ -24,6 +25,22 @@ const commands = [
 ];
 
 describe('language edit dependencies', () => {
+  it('keeps clarifications valid without constructing an empty scene edit', () => {
+    expect(
+      languageReadGuards(input, { message: 'Which finish?', actions: [], automations: [] }, []),
+    ).toEqual([]);
+    const guards = languageReadGuards(
+      input,
+      {
+        message: 'Done',
+        references: [siteSurfaceId(building, 'paving')],
+        actions: [],
+        automations: [],
+      },
+      commands,
+    );
+    expect(propertiesMatch(building, guards)).toBe(true);
+  });
   it('ignores unrelated roof edits and door animation but detects a changed requested surface', () => {
     const guards = languageReadGuards(
       input,

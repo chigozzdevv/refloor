@@ -4,10 +4,12 @@ import type { PropertyPath } from '@refloor/scene/properties';
 import type { Building, SceneCommand } from '@refloor/scene';
 import type { LanguageEditRequest } from '@refloor/scene/chat';
 import type { LanguagePlan } from '@refloor/server/shared/planning/language-edit';
+import { siteSurfaceSlot } from '@refloor/scene/site-material';
 
 const item = (id: string) => ({ key: 'id' as const, value: id });
 function referencePaths(building: Building, id: string, spatial: boolean): PropertyPath[] {
   if (id === building.id) return [];
+  if (siteSurfaceSlot(building, id)) return [['siteMaterials']];
   if (building.objects.some((object) => object.id === id)) {
     const root: PropertyPath = ['objects', item(id)];
     return spatial
@@ -67,7 +69,7 @@ export function languageReadGuards(
       paths.push(['objects']);
   }
   const guards = [
-    ...createEditGuards(input.building, commands),
+    ...(commands.length ? createEditGuards(input.building, commands) : []),
     ...paths.map((path) => ({ path, value: readProperty(input.building, path) })),
   ];
   return [...new Map(guards.map((guard) => [propertyKey(guard.path), guard])).values()];
