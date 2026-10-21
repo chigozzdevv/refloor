@@ -174,15 +174,11 @@ export async function leaveHouse(tab: JourneyTab) {
       'hidden',
     );
   }
-  const closed = tab.playwright.getByRole('button', {
-    name: 'Open door using handle',
-    exact: true,
+  const handle = tab.playwright.getByRole('button', {
+    name: /^(Open door using handle|Enter through door handle)$/,
   });
-  const open = (await closed.isVisible())
-    ? closed
-    : tab.playwright.getByRole('button', { name: 'Enter through door handle', exact: true });
-  await wait(tab, open, 'visible');
-  await open.click();
+  await wait(tab, handle, 'visible');
+  await handle.click();
   await wait(
     tab,
     tab.playwright.getByRole('button', { name: 'Stop moving', exact: true }),
@@ -204,13 +200,17 @@ export async function exportHouse(tab: JourneyTab) {
 }
 
 type Fixture = {
-  floors: { name: string; rooms: { id: string; name: string; kind: string; uses?: string[] }[] }[];
+  floors: {
+    name: string;
+    rooms: { id: string; name: string; kind: string; uses?: string[] | undefined }[];
+  }[];
 };
 export async function runHouseJourney(
   tab: JourneyTab,
   path: string,
   house: Fixture,
   report: (step: string) => void,
+  afterEdits?: () => Promise<void>,
 ) {
   await importHouse(tab, path);
   report('Imported and entered the house through its real door');
@@ -230,6 +230,7 @@ export async function runHouseJourney(
     await visitRoom(tab, kitchenFloor.name, kitchen.name);
     await editRefrigerator(tab, kitchen.id);
     report('Opened and closed the refrigerator through chat');
+    await afterEdits?.();
   }
   const ground = house.floors[0]!,
     entrance =

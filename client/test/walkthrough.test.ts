@@ -23,11 +23,23 @@ const houses = [
       ) as Building,
   ),
 ];
+const generated = ['generated-l-shaped', 'generated-open-plan', 'generated-two-storey'].map(
+  (name) =>
+    JSON.parse(
+      readFileSync(new URL(`browser/fixtures/${name}.json`, import.meta.url), 'utf8'),
+    ) as Building,
+);
+const journeys = [
+  ...houses.map((building) => ({ building, name: building.name, delta: 1 / 60 })),
+  ...generated.flatMap((building) =>
+    [1 / 60, 1 / 30, 1 / 20].map((delta) => ({ building, name: building.name, delta })),
+  ),
+];
 
 describe('complete walkthrough', () => {
-  it.each(houses)(
-    'opens, crosses and closes doors and faces a usable view at every stop in $name',
-    (building) => {
+  it.each(journeys)(
+    'opens, crosses and closes doors and faces a usable view at every stop in $name at $delta seconds per frame',
+    ({ building, delta }) => {
       let compiled = compileBuilding(building),
         world = new CharacterWorld(compiled);
       const tour = new Walkthrough();
@@ -54,12 +66,12 @@ describe('complete walkthrough', () => {
           const trace: string[] = [];
           for (let frame = 0; frame < 9000; frame++) {
             for (const door of compiled.doors) {
-              const next = MathUtils.damp(fractions.get(door.id)!, Number(door.open), 9, 1 / 60);
+              const next = MathUtils.damp(fractions.get(door.id)!, Number(door.open), 9, delta);
               if (!world.doorBlocked(door.id, next)) fractions.set(door.id, next);
               world.setDoorFraction(door.id, fractions.get(door.id)!);
             }
             const before = world.feet;
-            const result = tour.step(world, arrived ? null : request, view, 1 / 60);
+            const result = tour.step(world, arrived ? null : request, view, delta);
             entryDoorId =
               doorCrossings(compiled, [before, world.feet])
                 .filter(({ door }) => door.floorId === stop.target.floorId)

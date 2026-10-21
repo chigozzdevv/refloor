@@ -1,10 +1,17 @@
-import { writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { format, resolveConfig } from 'prettier';
 import { generateLayout } from '@refloor/server/shared/planning/layout';
-import { lShapedBrief } from '@server-test/briefs/l-shaped';
+import { browserHouseBriefs } from '@server-test/briefs/browser-houses';
 
-const building = await generateLayout('browser-l-shaped', lShapedBrief('living-hub'));
-await writeFile(
-  new URL('../../client/test/fixtures/generated-l-shaped.json', import.meta.url),
-  JSON.stringify(building, null, 2) + '\n',
-);
-console.info('Generated the validated L-shaped browser fixture.');
+const directory = new URL('../../client/test/browser/fixtures/', import.meta.url),
+  options = await resolveConfig(fileURLToPath(directory));
+await mkdir(directory, { recursive: true });
+for (const { name, requirements } of browserHouseBriefs) {
+  const building = await generateLayout(`browser-${name}`, requirements);
+  await writeFile(
+    new URL(`${name}.json`, directory),
+    await format(JSON.stringify(building), { ...options, parser: 'json' }),
+  );
+  console.info(`Generated and validated ${name}.`);
+}

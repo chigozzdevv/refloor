@@ -19,7 +19,7 @@
     "start": "node --env-file-if-exists=../.env dist/server.js",
     "db:dev": "node --env-file-if-exists=../.env --import tsx scripts/database.ts",
     "browser:fixtures": "node --import tsx scripts/browser-fixtures.ts",
-    "browser:serve": "node --env-file-if-exists=../.env --import tsx scripts/browser-server.ts"
+    "browser:serve": "node --import tsx scripts/browser-server.ts"
   },
   "dependencies": {
     "@fastify/cookie": "11.1.3",

@@ -1,35 +1,41 @@
-import { randomUUID } from 'node:crypto';
-import { MongoClient } from 'mongodb';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { createApp } from '@refloor/server/app';
 import { readConfig } from '@refloor/server/shared/config/env';
 
-const database = `refloor_browser_${randomUUID().replaceAll('-', '')}`,
-  config = readConfig({ ...process.env, OPENAI_API_KEY: '' }),
+const replica = await MongoMemoryReplSet.create({
+  // Close the API before MongoDB when Playwright terminates the server process group.
+  replSet: { count: 1, storageEngine: 'wiredTiger', ip: '127.0.0.1', spawn: { detached: true } },
+});
+const config = readConfig({ MONGODB_URI: replica.getUri() });
+let app: Awaited<ReturnType<typeof createApp>> | undefined;
+try {
   app = await createApp(
     {
       ...config,
       sessionCookieName: 'refloor_browser_test',
       production: false,
-      database,
+      database: 'refloor_browser',
       host: '127.0.0.1',
       port: 4317,
       clientOrigins: ['http://127.0.0.1:4318'],
     },
     false,
   );
-await app.listen({ host: '127.0.0.1', port: 4317 });
+  await app.listen({ host: '127.0.0.1', port: 4317 });
+} catch (error) {
+  await app?.close();
+  await replica.stop({ doCleanup: true });
+  throw error;
+}
 console.info('Browser test API ready at http://127.0.0.1:4317');
 let closing = false;
 async function close() {
   if (closing) return;
   closing = true;
-  await app.close();
-  const client = new MongoClient(config.mongoUri);
   try {
-    await client.connect();
-    await client.db(database).dropDatabase();
+    await app?.close();
   } finally {
-    await client.close();
+    await replica.stop({ doCleanup: true });
   }
 }
 process.once('SIGINT', () => {
