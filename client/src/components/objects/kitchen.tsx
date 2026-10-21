@@ -8,6 +8,7 @@ import { FixtureControl } from '@/components/objects/fixture-control';
 import { FixtureMotion } from '@/components/objects/fixture-motion';
 import { CookerFlames, FixtureWater } from '@/components/objects/fixture-effects';
 import type { FixtureProps } from '@/components/objects/fixture-props';
+import { CookerHob } from '@/components/objects/cooker-hob';
 
 export function Kitchen({
   object,
@@ -102,18 +103,7 @@ export function Kitchen({
             metalness={0.35}
             roughness={0.12}
           />
-          {[-1, 1].flatMap((x) =>
-            [-1, 1].map((z) => (
-              <mesh
-                key={`${x}:${z}`}
-                position={[w * 0.23 + x * 0.14, top + 0.018, z * 0.12]}
-                rotation={[-Math.PI / 2, 0, 0]}
-              >
-                <torusGeometry args={[0.078, 0.004, 8, 32]} />
-                <meshStandardMaterial color="#778085" metalness={0.75} roughness={0.35} />
-              </mesh>
-            )),
-          )}
+          <CookerHob x={w * 0.23} y={top + 0.007} depth={d} />
           <CookerFlames object={object} top={top} />
           <Solid
             size={[ovenWidth, top * 0.5, 0.025]}

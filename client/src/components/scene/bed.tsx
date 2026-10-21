@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react';
 import type { SceneObject } from '@refloor/scene';
 import { finishes } from '@refloor/catalogue';
 import { useSurface } from '@/shared/scene/asset-loader';
-import { duvetGeometry } from '@/shared/scene/furniture-geometry';
+import { duvetGeometry, pillowGeometry } from '@/shared/scene/furniture-geometry';
 import { FurnitureSolid as Solid } from '@/components/scene/furniture-solid';
 
 export function Bed({ object }: { object: SceneObject }) {
@@ -10,8 +10,16 @@ export function Bed({ object }: { object: SceneObject }) {
     frame = useSurface(object.materials.frame ?? finishes.walnut),
     sheets = useSurface(finishes.linen),
     { width: w, height: h, depth: d } = object.dimensions,
-    cloth = useMemo(() => duvetGeometry(w, d), [w, d]);
+    cloth = useMemo(() => duvetGeometry(w, d), [w, d]),
+    pillow = useMemo(() => pillowGeometry(w * 0.405, 0.16, 0.5), [w]);
   useEffect(() => () => cloth.dispose(), [cloth]);
+  useEffect(
+    () => () => {
+      pillow.body.dispose();
+      pillow.seam.dispose();
+    },
+    [pillow],
+  );
   return (
     <>
       <Solid size={[w - 0.08, 0.11, d - 0.1]} at={[0, 0.185, 0.015]} material={frame} />
@@ -48,13 +56,8 @@ export function Bed({ object }: { object: SceneObject }) {
           position={[side * w * 0.23, 0.63, -d * 0.295]}
           rotation={[0.1, 0, side * -0.035]}
         >
-          <Solid size={[w * 0.405, 0.16, 0.5]} at={[0, 0, 0]} radius={0.075} material={sheets} />
-          <Solid
-            size={[w * 0.4, 0.009, 0.485]}
-            at={[0, -0.02, 0]}
-            radius={0.004}
-            material={sheets}
-          />
+          <mesh geometry={pillow.body} material={sheets} castShadow receiveShadow />
+          <mesh geometry={pillow.seam} material={sheets} castShadow />
         </group>
       ))}
       <Solid

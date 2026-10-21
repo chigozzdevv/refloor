@@ -1,7 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import { duvetGeometry, roundedFurnitureGeometry } from '@/shared/scene/furniture-geometry';
+import {
+  duvetGeometry,
+  pillowGeometry,
+  roundedFurnitureGeometry,
+} from '@/shared/scene/furniture-geometry';
 
 describe('furniture detail geometry', () => {
+  it('keeps soft pillows and their stitched edge inside the bedding envelope', () => {
+    const pillow = pillowGeometry(0.79, 0.16, 0.5);
+    for (const geometry of [pillow.body, pillow.seam]) {
+      geometry.computeBoundingBox();
+      expect(geometry.boundingBox!.max.x).toBeLessThan(0.4);
+      expect(geometry.boundingBox!.max.z).toBeLessThan(0.255);
+      expect(geometry.boundingBox!.max.y).toBeLessThan(0.085);
+      const normals = geometry.getAttribute('normal');
+      for (let index = 0; index < normals.count; index++)
+        expect(Number.isFinite(normals.getY(index))).toBe(true);
+      geometry.dispose();
+    }
+  });
   it('maps broad joinery faces in metres while preserving the requested bounds', () => {
     const geometry = roundedFurnitureGeometry([1.6, 0.65, 0.42]);
     geometry.computeBoundingBox();

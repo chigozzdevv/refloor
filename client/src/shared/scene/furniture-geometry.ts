@@ -1,7 +1,35 @@
-import { PlaneGeometry } from 'three';
+import { CatmullRomCurve3, PlaneGeometry, SphereGeometry, TubeGeometry, Vector3 } from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 export type FurnitureSize = [number, number, number];
+
+export function pillowGeometry(width: number, height: number, depth: number) {
+  const geometry = new SphereGeometry(1, 32, 20),
+    position = geometry.getAttribute('position'),
+    uv = geometry.getAttribute('uv'),
+    soften = (value: number) => Math.sign(value) * Math.abs(value) ** 0.45;
+  for (let index = 0; index < position.count; index++) {
+    const x = (soften(position.getX(index)) * width) / 2,
+      z = (soften(position.getZ(index)) * depth) / 2,
+      y = (position.getY(index) * height) / 2,
+      fold = (Math.sin(x * 42 + z * 6) * 0.002 * Math.abs(y)) / height;
+    position.setXYZ(index, x, y + fold, z);
+    uv.setXY(index, x, z);
+  }
+  geometry.computeVertexNormals();
+  const points = Array.from({ length: 64 }, (_, index) => {
+    const angle = (index * Math.PI * 2) / 64;
+    return new Vector3(
+      (soften(Math.cos(angle)) * width) / 2,
+      0,
+      (soften(Math.sin(angle)) * depth) / 2,
+    );
+  });
+  return {
+    body: geometry,
+    seam: new TubeGeometry(new CatmullRomCurve3(points, true), 64, 0.0025, 4, true),
+  };
+}
 
 export function roundedFurnitureGeometry(
   size: FurnitureSize,
