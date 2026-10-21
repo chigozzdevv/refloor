@@ -77,8 +77,19 @@ export function assembleHouse(
       east = wall('east', width, 0, width, depth),
       south = wall('south', 0, 0, width, 0),
       north = wall('north', 0, depth, width, depth);
+    const courtyard = layout.courtyard;
+    const recess = courtyard
+      ? [
+          wall('courtyard-side', courtyard.x, courtyard.z, courtyard.x, depth),
+          wall('courtyard-rear', courtyard.x, courtyard.z, width, courtyard.z),
+        ]
+      : [];
+    if (courtyard) {
+      east.end.z = courtyard.z;
+      north.end.x = courtyard.x;
+    }
     if (design)
-      for (const exterior of [west, east, south, north])
+      for (const exterior of [west, east, south, north, ...recess])
         exterior.exteriorMaterial =
           design.exterior.finish === 'plaster'
             ? finish(design.exterior.color, 'plaster', 0.9)
@@ -107,8 +118,10 @@ export function assembleHouse(
       height: 2.8,
       slabThickness: 0.2,
       footprint: { x: 0, z: 0, width, depth },
-      walls: [west, east, south, north],
-      voids: [],
+      walls: [west, east, south, north, ...recess],
+      voids: courtyard
+        ? [{ id: `${floorId}/courtyard`, kind: 'courtyard', footprint: courtyard }]
+        : [],
       rooms: [],
     };
     const sides: Wall[] = [];
@@ -118,7 +131,13 @@ export function assembleHouse(
         .filter((room) => room.requirement.floor === level && room.side === side)
         .sort((a, b) => a.footprint.z - b.footprint.z);
       if (!rooms.length) continue;
-      const partition = wall(`hall-${side}`, boundary, 0, boundary, depth);
+      const partition = wall(
+        `hall-${side}`,
+        boundary,
+        0,
+        boundary,
+        side === 1 && courtyard ? courtyard.z : depth,
+      );
       sides.push(partition);
       floor.walls.push(partition);
       for (const planned of rooms) {
@@ -176,6 +195,7 @@ export function assembleHouse(
         south,
         north,
         ...sides,
+        ...(recess[0] ? [recess[0]] : []),
         ...(hallX === 0 ? [west] : []),
         ...(Math.abs(hallX + hallWidth - width) < 1e-6 ? [east] : []),
       ].map((item) => item.id),
@@ -190,6 +210,16 @@ export function assembleHouse(
       sill: 0.85,
       material: structuredClone(finishes.glass),
     });
+    if (courtyard && recess[0])
+      recess[0].openings.push({
+        id: `${floorId}/courtyard-window`,
+        kind: 'window',
+        offset: 0.45,
+        width: Math.min(1.8, courtyard.depth - 0.9),
+        height: 1.7,
+        sill: 0.65,
+        material: structuredClone(finishes.glass),
+      });
     if (hub) {
       for (const fraction of [0.2, 0.8])
         south.openings.push({

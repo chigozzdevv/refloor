@@ -4,6 +4,7 @@ import type { CompiledBuilding, NavigationPoint } from '@refloor/engine';
 import { contains } from '@refloor/engine/math';
 import { planDoor, planRoomName, planWall } from '@/shared/navigation/floor-plan';
 import { MapFurniture } from '@/components/navigation/map-furniture';
+import { floorCourtyards, subtractRectangles } from '@refloor/scene/footprint';
 
 export function MapPlan({
   compiled,
@@ -72,7 +73,16 @@ export function MapPlan({
       viewBox={`${fp.x - 0.65} ${fp.z - 0.65} ${fp.width + 1.3} ${fp.depth + 1.3}`}
       aria-label={`${floor.name} plan`}
     >
-      <rect className="plan-paper" x={fp.x} y={fp.z} width={fp.width} height={fp.depth} />
+      {subtractRectangles(fp, floorCourtyards(floor)).map((region, index) => (
+        <rect
+          key={index}
+          className="plan-paper"
+          x={region.x}
+          y={region.z}
+          width={region.width}
+          height={region.depth}
+        />
+      ))}
       {floor.rooms.map((room) => (
         <g
           key={room.id}

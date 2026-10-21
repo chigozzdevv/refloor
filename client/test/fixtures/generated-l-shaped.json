@@ -1,0 +1,1838 @@
+{
+  "schemaVersion": 1,
+  "units": "metres",
+  "id": "browser-l-shaped",
+  "name": "Courtyard bungalow",
+  "revision": 0,
+  "floors": [
+    {
+      "id": "ground",
+      "name": "Ground floor",
+      "elevation": 0,
+      "height": 2.8,
+      "slabThickness": 0.2,
+      "footprint": {
+        "x": 0,
+        "z": 0,
+        "width": 15.2,
+        "depth": 10.6
+      },
+      "rooms": [
+        {
+          "id": "ground/room-2",
+          "name": "Bedroom One",
+          "kind": "bedroom",
+          "uses": ["bedroom"],
+          "footprint": {
+            "x": 0,
+            "z": 0,
+            "width": 4.6,
+            "depth": 4.5
+          },
+          "wallIds": ["ground/hall-0", "ground/west", "ground/south", "ground/divider-3"],
+          "floorMaterial": {
+            "color": "#f2dfbf",
+            "roughness": 0.68,
+            "metalness": 0,
+            "opacity": 1,
+            "textureId": "wood-floor"
+          }
+        },
+        {
+          "id": "ground/room-3",
+          "name": "Bedroom Two",
+          "kind": "bedroom",
+          "uses": ["bedroom"],
+          "footprint": {
+            "x": 0,
+            "z": 4.5,
+            "width": 4.6,
+            "depth": 6.1
+          },
+          "wallIds": ["ground/hall-0", "ground/west", "ground/divider-3", "ground/north"],
+          "floorMaterial": {
+            "color": "#f2dfbf",
+            "roughness": 0.68,
+            "metalness": 0,
+            "opacity": 1,
+            "textureId": "wood-floor"
+          }
+        },
+        {
+          "id": "ground/room-1",
+          "name": "Kitchen",
+          "kind": "kitchen",
+          "uses": ["kitchen"],
+          "footprint": {
+            "x": 10.6,
+            "z": 0,
+            "width": 4.6,
+            "depth": 4.2
+          },
+          "wallIds": ["ground/hall-1", "ground/east", "ground/south", "ground/divider-4"],
+          "floorMaterial": {
+            "color": "#f2dfbf",
+            "roughness": 0.68,
+            "metalness": 0,
+            "opacity": 1,
+            "textureId": "wood-floor"
+          }
+        },
+        {
+          "id": "ground/room-4",
+          "name": "Bathroom",
+          "kind": "bathroom",
+          "uses": ["bathroom"],
+          "footprint": {
+            "x": 10.6,
+            "z": 4.2,
+            "width": 4.6,
+            "depth": 3.6
+          },
+          "wallIds": ["ground/hall-1", "ground/east", "ground/divider-4", "ground/courtyard-rear"],
+          "floorMaterial": {
+            "color": "#f2dfbf",
+            "roughness": 0.68,
+            "metalness": 0,
+            "opacity": 1,
+            "textureId": "wood-floor"
+          }
+        },
+        {
+          "id": "ground/room-0",
+          "name": "Parlor",
+          "kind": "living",
+          "uses": ["living"],
+          "footprint": {
+            "x": 4.6,
+            "z": 0,
+            "width": 6,
+            "depth": 10.6
+          },
+          "wallIds": [
+            "ground/south",
+            "ground/north",
+            "ground/hall-0",
+            "ground/hall-1",
+            "ground/courtyard-side"
+          ],
+          "floorMaterial": {
+            "color": "#f2dfbf",
+            "roughness": 0.68,
+            "metalness": 0,
+            "opacity": 1,
+            "textureId": "wood-floor"
+          }
+        }
+      ],
+      "walls": [
+        {
+          "id": "ground/west",
+          "start": {
+            "x": 0,
+            "z": 0
+          },
+          "end": {
+            "x": 0,
+            "z": 10.6
+          },
+          "height": 2.8,
+          "thickness": 0.16,
+          "material": {
+            "color": "#f5f0e6",
+            "roughness": 0.9,
+            "metalness": 0,
+            "opacity": 1,
+            "textureId": "plaster"
+          },
+          "exteriorMaterial": {
+            "color": "#eee8db",
+            "roughness": 0.9,
+            "metalness": 0,
+            "opacity": 1,
+            "textureId": "plaster"
+          },
+          "openings": [
+            {
+              "id": "ground/room-2/window",
+              "offset": 1.05,
+              "width": 2.4,
+              "height": 1.5,
+              "material": {
+                "color": "#e4eee9",
+                "roughness": 0.08,
+                "metalness": 0,
+                "opacity": 0.16,
+                "textureId": null
+              },
+              "kind": "window",
+              "sill": 0.85
+            },
+            {
+              "id": "ground/room-3/window",
+              "offset": 6.35,
+              "width": 2.4,
+              "height": 1.5,
+              "material": {
+                "color": "#e4eee9",
+                "roughness": 0.08,
+                "metalness": 0,
+                "opacity": 0.16,
+                "textureId": null
+              },
+              "kind": "window",
+              "sill": 0.85
+            }
+          ]
+        },
+        {
+          "id": "ground/east",
+          "start": {
+            "x": 15.2,
+            "z": 0
+          },
+          "end": {
+            "x": 15.2,
+            "z": 7.8
+          },
+          "height": 2.8,
+          "thickness": 0.16,
+          "material": {
+            "color": "#f5f0e6",
+            "roughness": 0.9,
+            "metalness": 0,
+            "opacity": 1,
+            "textureId": "plaster"
+          },
+          "exteriorMaterial": {
+            "color": "#eee8db",
+            "roughness": 0.9,
+            "metalness": 0,
+            "opacity": 1,
+            "textureId": "plaster"
+          },
+          "openings": [
+            {
+              "id": "ground/room-1/window",
+              "offset": 1,
+              "width": 2.2,
+              "height": 1.1,
+              "material": {
+                "color": "#e4eee9",
+                "roughness": 0.08,
+                "metalness": 0,
+                "opacity": 0.16,
+                "textureId": null
+              },
+              "kind": "window",
+              "sill": 1.35
+            },
+            {
+              "id": "ground/room-4/window",
+              "offset": 5.5,
+              "width": 1,
+              "height": 0.65,
+              "material": {
+                "color": "#e4eee9",
+                "roughness": 0.08,
+                "metalness": 0,
+                "opacity": 0.16,
+                "textureId": null
+              },
+              "kind": "window",
+              "sill": 1.65
+            }
+          ]
+        },
+        {
+          "id": "ground/south",
+          "start": {
+            "x": 0,
+            "z": 0
+          },
+          "end": {
+            "x": 15.2,
+            "z": 0
+          },
+          "height": 2.8,
+          "thickness": 0.16,
+          "material": {
+            "color": "#f5f0e6",
+            "roughness": 0.9,
+            "metalness": 0,
+            "opacity": 1,
+            "textureId": "plaster"
+          },
+          "exteriorMaterial": {
+            "color": "#eee8db",
+            "roughness": 0.9,
+            "metalness": 0,
+            "opacity": 1,
+            "textureId": "plaster"
+          },
+          "openings": [
+            {
+              "id": "ground/entrance",
+              "offset": 7.05,
+              "width": 1.1,
+              "height": 2.25,
+              "material": {
+                "color": "#f2dfbf",
+                "roughness": 0.68,
+                "metalness": 0,
+                "opacity": 1,
+                "textureId": "wood-floor"
+              },
+              "kind": "door",
+              "hinge": "end",
+              "swing": "inward",
+              "state": {
+                "open": false
+              }
+            },
+            {
+              "id": "ground/parlor-window-0.2",
+              "offset": 4.8999999999999995,
+              "width": 1.8,
+              "height": 1.7,
+              "material": {
+                "color": "#e4eee9",
+                "roughness": 0.08,
+                "metalness": 0,
+                "opacity": 0.16,
+                "textureId": null
+              },
+              "kind": "window",
+              "sill": 0.75
+            },
+            {
+              "id": "ground/parlor-window-0.8",
+              "offset": 8.5,
+              "width": 1.8,
+              "height": 1.7,
+              "material": {
+                "color": "#e4eee9",
+                "roughness": 0.08,
+                "metalness": 0,
+                "opacity": 0.16,
+                "textureId": null
+              },
+              "kind": "window",
+              "sill": 0.75
+            }
+          ]
+        },
+        {
+          "id": "ground/north",
+          "start": {
+            "x": 0,
+            "z": 10.6
+          },
+          "end": {
+            "x": 10.6,
+            "z": 10.6
+          },
+          "height": 2.8,
+          "thickness": 0.16,
+          "material": {
+            "color": "#f5f0e6",
+            "roughness": 0.9,
+            "metalness": 0,
+            "opacity": 1,
+            "textureId": "plaster"
+          },
+          "exteriorMaterial": {
+            "color": "#eee8db",
+            "roughness": 0.9,
+            "metalness": 0,
+            "opacity": 1,
+            "textureId": "plaster"
+          },
+          "openings": [
+            {
+              "id": "ground/hall-window",
+              "offset": 4.8,
+              "width": 2.8,
+              "height": 1.5,
+              "material": {
+                "color": "#e4eee9",
+                "roughness": 0.08,
+                "metalness": 0,
+                "opacity": 0.16,
+                "textureId": null
+              },
+              "kind": "window",
+              "sill": 0.85
+            }
+          ]
+        },
+        {
+          "id": "ground/courtyard-side",
+          "start": {
+            "x": 10.6,
+            "z": 7.8
+          },
+          "end": {
+            "x": 10.6,
+            "z": 10.6
+          },
+          "height": 2.8,
+          "thickness": 0.16,
+          "material": {
+            "color": "#f5f0e6",
+            "roughness": 0.9,
+            "metalness": 0,
+            "opacity": 1,
+            "textureId": "plaster"
+          },
+          "exteriorMaterial": {
+            "color": "#eee8db",
+            "roughness": 0.9,
+            "metalness": 0,
+            "opacity": 1,
+            "textureId": "plaster"
+          },
+          "openings": [
+            {
+              "id": "ground/courtyard-window",
+              "offset": 0.45,
+              "width": 1.8,
+              "height": 1.7,
+              "material": {
+                "color": "#e4eee9",
+                "roughness": 0.08,
+                "metalness": 0,
+                "opacity": 0.16,
+                "textureId": null
+              },
+              "kind": "window",
+              "sill": 0.65
+            }
+          ]
+        },
+        {
+          "id": "ground/courtyard-rear",
+          "start": {
+            "x": 10.6,
+            "z": 7.8
+          },
+          "end": {
+            "x": 15.2,
+            "z": 7.8
+          },
+          "height": 2.8,
+          "thickness": 0.16,
+          "material": {
+            "color": "#f5f0e6",
+            "roughness": 0.9,
+            "metalness": 0,
+            "opacity": 1,
+            "textureId": "plaster"
+          },
+          "exteriorMaterial": {
+            "color": "#eee8db",
+            "roughness": 0.9,
+            "metalness": 0,
+            "opacity": 1,
+            "textureId": "plaster"
+          },
+          "openings": []
+        },
+        {
+          "id": "ground/hall-0",
+          "start": {
+            "x": 4.6,
+            "z": 0
+          },
+          "end": {
+            "x": 4.6,
+            "z": 10.6
+          },
+          "height": 2.8,
+          "thickness": 0.16,
+          "material": {
+            "color": "#f5f0e6",
+            "roughness": 0.9,
+            "metalness": 0,
+            "opacity": 1,
+            "textureId": "plaster"
+          },
+          "openings": [
+            {
+              "id": "ground/room-2/door",
+              "offset": 0.35,
+              "width": 1,
+              "height": 2.2,
+              "material": {
+                "color": "#f2dfbf",
+                "roughness": 0.68,
+                "metalness": 0,
+                "opacity": 1,
+                "textureId": "wood-floor"
+              },
+              "kind": "door",
+              "hinge": "start",
+              "swing": "inward",
+              "state": {
+                "open": false
+              }
+            },
+            {
+              "id": "ground/room-3/door",
+              "offset": 4.85,
+              "width": 1,
+              "height": 2.2,
+              "material": {
+                "color": "#f2dfbf",
+                "roughness": 0.68,
+                "metalness": 0,
+                "opacity": 1,
+                "textureId": "wood-floor"
+              },
+              "kind": "door",
+              "hinge": "start",
+              "swing": "inward",
+              "state": {
+                "open": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ground/divider-3",
+          "start": {
+            "x": 0,
+            "z": 4.5
+          },
+          "end": {
+            "x": 4.6,
+            "z": 4.5
+          },
+          "height": 2.8,
+          "thickness": 0.16,
+          "material": {
+            "color": "#f5f0e6",
+            "roughness": 0.9,
+            "metalness": 0,
+            "opacity": 1,
+            "textureId": "plaster"
+          },
+          "openings": []
+        },
+        {
+          "id": "ground/hall-1",
+          "start": {
+            "x": 10.6,
+            "z": 0
+          },
+          "end": {
+            "x": 10.6,
+            "z": 7.8
+          },
+          "height": 2.8,
+          "thickness": 0.16,
+          "material": {
+            "color": "#f5f0e6",
+            "roughness": 0.9,
+            "metalness": 0,
+            "opacity": 1,
+            "textureId": "plaster"
+          },
+          "openings": [
+            {
+              "id": "ground/room-1/door",
+              "offset": 0.35,
+              "width": 1,
+              "height": 2.2,
+              "material": {
+                "color": "#f2dfbf",
+                "roughness": 0.68,
+                "metalness": 0,
+                "opacity": 1,
+                "textureId": "wood-floor"
+              },
+              "kind": "door",
+              "hinge": "start",
+              "swing": "outward",
+              "state": {
+                "open": false
+              }
+            },
+            {
+              "id": "ground/room-4/door",
+              "offset": 4.55,
+              "width": 1,
+              "height": 2.2,
+              "material": {
+                "color": "#f2dfbf",
+                "roughness": 0.68,
+                "metalness": 0,
+                "opacity": 1,
+                "textureId": "wood-floor"
+              },
+              "kind": "door",
+              "hinge": "start",
+              "swing": "outward",
+              "state": {
+                "open": false
+              }
+            }
+          ]
+        },
+        {
+          "id": "ground/divider-4",
+          "start": {
+            "x": 10.6,
+            "z": 4.2
+          },
+          "end": {
+            "x": 15.2,
+            "z": 4.2
+          },
+          "height": 2.8,
+          "thickness": 0.16,
+          "material": {
+            "color": "#f5f0e6",
+            "roughness": 0.9,
+            "metalness": 0,
+            "opacity": 1,
+            "textureId": "plaster"
+          },
+          "openings": []
+        }
+      ],
+      "voids": [
+        {
+          "id": "ground/courtyard",
+          "kind": "courtyard",
+          "footprint": {
+            "x": 10.6,
+            "z": 7.8,
+            "width": 4.6,
+            "depth": 2.8
+          }
+        }
+      ]
+    }
+  ],
+  "stairs": [],
+  "objects": [
+    {
+      "assetId": "catalogue/pendant",
+      "label": "Opal pendant",
+      "kind": "light",
+      "dimensions": {
+        "width": 0.42,
+        "height": 0.45,
+        "depth": 0.42
+      },
+      "materials": {
+        "body": {
+          "color": "#f1eadb",
+          "roughness": 0.45,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": null
+        },
+        "frame": {
+          "color": "#20211e",
+          "roughness": 0.35,
+          "metalness": 0.25,
+          "opacity": 1,
+          "textureId": null
+        }
+      },
+      "behaviours": [
+        {
+          "kind": "light",
+          "state": {
+            "powered": true,
+            "intensity": 3,
+            "color": "#fff0dc"
+          }
+        }
+      ],
+      "id": "ground/room-1/pendant",
+      "floorId": "ground",
+      "roomId": "ground/room-1",
+      "position": {
+        "x": 12.899999999999999,
+        "z": 2.1,
+        "y": 2.33
+      },
+      "rotation": 0
+    },
+    {
+      "assetId": "catalogue/kitchen-counter",
+      "label": "Kitchen unit with sink and hob",
+      "kind": "custom",
+      "dimensions": {
+        "width": 2.8,
+        "height": 1.18,
+        "depth": 0.65
+      },
+      "materials": {
+        "body": {
+          "color": "#f2dfbf",
+          "roughness": 0.58,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": "wood-veneer"
+        },
+        "frame": {
+          "color": "#20211e",
+          "roughness": 0.35,
+          "metalness": 0.25,
+          "opacity": 1,
+          "textureId": null
+        },
+        "top": {
+          "color": "#ffffff",
+          "roughness": 0.35,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": "marble-slab"
+        }
+      },
+      "behaviours": [
+        {
+          "kind": "cooker",
+          "state": {
+            "powered": false,
+            "heat": 0.6,
+            "burners": [true, false, false, false]
+          }
+        },
+        {
+          "kind": "water",
+          "state": {
+            "powered": false,
+            "flow": 0.55,
+            "temperature": 22
+          }
+        },
+        {
+          "kind": "openable",
+          "state": {
+            "open": false
+          }
+        }
+      ],
+      "id": "ground/room-1/kitchen-counter",
+      "floorId": "ground",
+      "roomId": "ground/room-1",
+      "position": {
+        "x": 12.499999999999998,
+        "z": 3.7,
+        "y": 0
+      },
+      "rotation": 3.141592653589793
+    },
+    {
+      "assetId": "catalogue/fridge",
+      "label": "Stainless refrigerator",
+      "kind": "custom",
+      "dimensions": {
+        "width": 0.72,
+        "height": 1.9,
+        "depth": 0.72
+      },
+      "materials": {
+        "body": {
+          "color": "#b8c0c3",
+          "roughness": 0.28,
+          "metalness": 0.7,
+          "opacity": 1,
+          "textureId": null
+        },
+        "frame": {
+          "color": "#20211e",
+          "roughness": 0.35,
+          "metalness": 0.25,
+          "opacity": 1,
+          "textureId": null
+        }
+      },
+      "behaviours": [
+        {
+          "kind": "openable",
+          "state": {
+            "open": false
+          }
+        }
+      ],
+      "id": "ground/room-1/fridge",
+      "floorId": "ground",
+      "roomId": "ground/room-1",
+      "position": {
+        "x": 14.649999999999999,
+        "z": 3.6500000000000004,
+        "y": 0
+      },
+      "rotation": 3.141592653589793
+    },
+    {
+      "assetId": "catalogue/kitchen-island",
+      "label": "Oak kitchen island",
+      "kind": "storage",
+      "dimensions": {
+        "width": 1.6,
+        "height": 0.9,
+        "depth": 0.72
+      },
+      "materials": {
+        "body": {
+          "color": "#f2dfbf",
+          "roughness": 0.58,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": "wood-veneer"
+        },
+        "frame": {
+          "color": "#20211e",
+          "roughness": 0.35,
+          "metalness": 0.25,
+          "opacity": 1,
+          "textureId": null
+        },
+        "top": {
+          "color": "#ffffff",
+          "roughness": 0.35,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": "marble-slab"
+        }
+      },
+      "behaviours": [
+        {
+          "kind": "openable",
+          "state": {
+            "open": false
+          }
+        }
+      ],
+      "id": "ground/room-1/island",
+      "floorId": "ground",
+      "roomId": "ground/room-1",
+      "position": {
+        "x": 12.899999999999999,
+        "z": 1.9500000000000002,
+        "y": 0
+      },
+      "rotation": 0
+    },
+    {
+      "assetId": "catalogue/pendant",
+      "label": "Opal pendant",
+      "kind": "light",
+      "dimensions": {
+        "width": 0.42,
+        "height": 0.45,
+        "depth": 0.42
+      },
+      "materials": {
+        "body": {
+          "color": "#f1eadb",
+          "roughness": 0.45,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": null
+        },
+        "frame": {
+          "color": "#20211e",
+          "roughness": 0.35,
+          "metalness": 0.25,
+          "opacity": 1,
+          "textureId": null
+        }
+      },
+      "behaviours": [
+        {
+          "kind": "light",
+          "state": {
+            "powered": true,
+            "intensity": 3,
+            "color": "#fff0dc"
+          }
+        }
+      ],
+      "id": "ground/room-2/pendant",
+      "floorId": "ground",
+      "roomId": "ground/room-2",
+      "position": {
+        "x": 2.3,
+        "z": 2.25,
+        "y": 2.33
+      },
+      "rotation": 0
+    },
+    {
+      "assetId": "catalogue/bed",
+      "label": "Linen platform bed",
+      "kind": "bed",
+      "dimensions": {
+        "width": 1.95,
+        "height": 1.05,
+        "depth": 2.2
+      },
+      "materials": {
+        "body": {
+          "color": "#aca08a",
+          "roughness": 0.95,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": "fabric"
+        },
+        "frame": {
+          "color": "#f2dfbf",
+          "roughness": 0.58,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": "wood-veneer"
+        }
+      },
+      "behaviours": [],
+      "id": "ground/room-2/bed",
+      "floorId": "ground",
+      "roomId": "ground/room-2",
+      "position": {
+        "x": 2.3,
+        "z": 3.2,
+        "y": 0
+      },
+      "rotation": 3.141592653589793
+    },
+    {
+      "assetId": "catalogue/wardrobe",
+      "label": "Oak wardrobe",
+      "kind": "storage",
+      "dimensions": {
+        "width": 1.4,
+        "height": 2,
+        "depth": 0.58
+      },
+      "materials": {
+        "body": {
+          "color": "#f2dfbf",
+          "roughness": 0.58,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": "wood-veneer"
+        },
+        "frame": {
+          "color": "#20211e",
+          "roughness": 0.35,
+          "metalness": 0.25,
+          "opacity": 1,
+          "textureId": null
+        }
+      },
+      "behaviours": [
+        {
+          "kind": "openable",
+          "state": {
+            "open": false
+          }
+        }
+      ],
+      "id": "ground/room-2/wardrobe",
+      "floorId": "ground",
+      "roomId": "ground/room-2",
+      "position": {
+        "x": 2.3,
+        "z": 0.4,
+        "y": 0
+      },
+      "rotation": 0
+    },
+    {
+      "assetId": "catalogue/plant",
+      "label": "Variegated houseplant",
+      "kind": "decor",
+      "dimensions": {
+        "width": 0.7,
+        "height": 0.84,
+        "depth": 0.66
+      },
+      "materials": {
+        "body": {
+          "color": "#bd8770",
+          "roughness": 0.88,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": "plaster"
+        }
+      },
+      "behaviours": [],
+      "id": "ground/room-2/plant",
+      "floorId": "ground",
+      "roomId": "ground/room-2",
+      "position": {
+        "x": 4.1,
+        "z": 3.95,
+        "y": 0
+      },
+      "rotation": 0
+    },
+    {
+      "assetId": "catalogue/pendant",
+      "label": "Opal pendant",
+      "kind": "light",
+      "dimensions": {
+        "width": 0.42,
+        "height": 0.45,
+        "depth": 0.42
+      },
+      "materials": {
+        "body": {
+          "color": "#f1eadb",
+          "roughness": 0.45,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": null
+        },
+        "frame": {
+          "color": "#20211e",
+          "roughness": 0.35,
+          "metalness": 0.25,
+          "opacity": 1,
+          "textureId": null
+        }
+      },
+      "behaviours": [
+        {
+          "kind": "light",
+          "state": {
+            "powered": true,
+            "intensity": 3,
+            "color": "#fff0dc"
+          }
+        }
+      ],
+      "id": "ground/room-3/pendant",
+      "floorId": "ground",
+      "roomId": "ground/room-3",
+      "position": {
+        "x": 2.3,
+        "z": 7.55,
+        "y": 2.33
+      },
+      "rotation": 0
+    },
+    {
+      "assetId": "catalogue/bed",
+      "label": "Linen platform bed",
+      "kind": "bed",
+      "dimensions": {
+        "width": 1.95,
+        "height": 1.05,
+        "depth": 2.2
+      },
+      "materials": {
+        "body": {
+          "color": "#aca08a",
+          "roughness": 0.95,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": "fabric"
+        },
+        "frame": {
+          "color": "#f2dfbf",
+          "roughness": 0.58,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": "wood-veneer"
+        }
+      },
+      "behaviours": [],
+      "id": "ground/room-3/bed",
+      "floorId": "ground",
+      "roomId": "ground/room-3",
+      "position": {
+        "x": 2.3,
+        "z": 9.299999999999999,
+        "y": 0
+      },
+      "rotation": 3.141592653589793
+    },
+    {
+      "assetId": "catalogue/wardrobe",
+      "label": "Oak wardrobe",
+      "kind": "storage",
+      "dimensions": {
+        "width": 1.4,
+        "height": 2,
+        "depth": 0.58
+      },
+      "materials": {
+        "body": {
+          "color": "#f2dfbf",
+          "roughness": 0.58,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": "wood-veneer"
+        },
+        "frame": {
+          "color": "#20211e",
+          "roughness": 0.35,
+          "metalness": 0.25,
+          "opacity": 1,
+          "textureId": null
+        }
+      },
+      "behaviours": [
+        {
+          "kind": "openable",
+          "state": {
+            "open": false
+          }
+        }
+      ],
+      "id": "ground/room-3/wardrobe",
+      "floorId": "ground",
+      "roomId": "ground/room-3",
+      "position": {
+        "x": 2.3,
+        "z": 4.9,
+        "y": 0
+      },
+      "rotation": 0
+    },
+    {
+      "assetId": "catalogue/plant",
+      "label": "Variegated houseplant",
+      "kind": "decor",
+      "dimensions": {
+        "width": 0.7,
+        "height": 0.84,
+        "depth": 0.66
+      },
+      "materials": {
+        "body": {
+          "color": "#bd8770",
+          "roughness": 0.88,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": "plaster"
+        }
+      },
+      "behaviours": [],
+      "id": "ground/room-3/plant",
+      "floorId": "ground",
+      "roomId": "ground/room-3",
+      "position": {
+        "x": 4.1,
+        "z": 10.049999999999999,
+        "y": 0
+      },
+      "rotation": 0
+    },
+    {
+      "assetId": "catalogue/pendant",
+      "label": "Opal pendant",
+      "kind": "light",
+      "dimensions": {
+        "width": 0.42,
+        "height": 0.45,
+        "depth": 0.42
+      },
+      "materials": {
+        "body": {
+          "color": "#f1eadb",
+          "roughness": 0.45,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": null
+        },
+        "frame": {
+          "color": "#20211e",
+          "roughness": 0.35,
+          "metalness": 0.25,
+          "opacity": 1,
+          "textureId": null
+        }
+      },
+      "behaviours": [
+        {
+          "kind": "light",
+          "state": {
+            "powered": true,
+            "intensity": 3,
+            "color": "#fff0dc"
+          }
+        }
+      ],
+      "id": "ground/room-4/pendant",
+      "floorId": "ground",
+      "roomId": "ground/room-4",
+      "position": {
+        "x": 12.899999999999999,
+        "z": 6,
+        "y": 2.33
+      },
+      "rotation": 0
+    },
+    {
+      "assetId": "catalogue/vanity",
+      "label": "Basin vanity",
+      "kind": "custom",
+      "dimensions": {
+        "width": 1.15,
+        "height": 0.98,
+        "depth": 0.56
+      },
+      "materials": {
+        "body": {
+          "color": "#f2dfbf",
+          "roughness": 0.58,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": "wood-veneer"
+        },
+        "frame": {
+          "color": "#20211e",
+          "roughness": 0.35,
+          "metalness": 0.25,
+          "opacity": 1,
+          "textureId": null
+        },
+        "top": {
+          "color": "#ffffff",
+          "roughness": 0.35,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": "marble-slab"
+        }
+      },
+      "behaviours": [
+        {
+          "kind": "water",
+          "state": {
+            "powered": false,
+            "flow": 0.55,
+            "temperature": 22
+          }
+        },
+        {
+          "kind": "openable",
+          "state": {
+            "open": false
+          }
+        }
+      ],
+      "id": "ground/room-4/vanity",
+      "floorId": "ground",
+      "roomId": "ground/room-4",
+      "position": {
+        "x": 12.899999999999999,
+        "z": 7.300000000000001,
+        "y": 0
+      },
+      "rotation": 3.141592653589793
+    },
+    {
+      "assetId": "catalogue/toilet",
+      "label": "Ceramic toilet",
+      "kind": "custom",
+      "dimensions": {
+        "width": 0.7,
+        "height": 0.86,
+        "depth": 0.8
+      },
+      "materials": {
+        "body": {
+          "color": "#f1f0e9",
+          "roughness": 0.22,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": null
+        },
+        "frame": {
+          "color": "#20211e",
+          "roughness": 0.35,
+          "metalness": 0.25,
+          "opacity": 1,
+          "textureId": null
+        }
+      },
+      "behaviours": [],
+      "id": "ground/room-4/toilet",
+      "floorId": "ground",
+      "roomId": "ground/room-4",
+      "position": {
+        "x": 11.25,
+        "z": 7.15,
+        "y": 0
+      },
+      "rotation": 3.141592653589793
+    },
+    {
+      "assetId": "catalogue/shower",
+      "label": "Glass shower enclosure",
+      "kind": "custom",
+      "dimensions": {
+        "width": 1.05,
+        "height": 2.15,
+        "depth": 1.05
+      },
+      "materials": {
+        "body": {
+          "color": "#e8eee9",
+          "roughness": 0.12,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": null
+        },
+        "frame": {
+          "color": "#20211e",
+          "roughness": 0.35,
+          "metalness": 0.25,
+          "opacity": 1,
+          "textureId": null
+        }
+      },
+      "behaviours": [
+        {
+          "kind": "water",
+          "state": {
+            "powered": false,
+            "flow": 0.55,
+            "temperature": 38
+          }
+        }
+      ],
+      "id": "ground/room-4/shower",
+      "floorId": "ground",
+      "roomId": "ground/room-4",
+      "position": {
+        "x": 14.5,
+        "z": 7.1000000000000005,
+        "y": 0
+      },
+      "rotation": 3.141592653589793
+    },
+    {
+      "assetId": "catalogue/mirror",
+      "label": "Framed bathroom mirror",
+      "kind": "decor",
+      "dimensions": {
+        "width": 0.85,
+        "height": 0.72,
+        "depth": 0.04
+      },
+      "materials": {
+        "body": {
+          "color": "#b8c0c3",
+          "roughness": 0.02,
+          "metalness": 1,
+          "opacity": 1,
+          "textureId": null
+        },
+        "frame": {
+          "color": "#20211e",
+          "roughness": 0.35,
+          "metalness": 0.25,
+          "opacity": 1,
+          "textureId": null
+        }
+      },
+      "behaviours": [],
+      "id": "ground/room-4/mirror",
+      "floorId": "ground",
+      "roomId": "ground/room-4",
+      "position": {
+        "x": 12.899999999999999,
+        "z": 7.660000000000001,
+        "y": 1.25
+      },
+      "rotation": 3.141592653589793
+    },
+    {
+      "assetId": "catalogue/pendant",
+      "label": "Opal pendant",
+      "kind": "light",
+      "dimensions": {
+        "width": 0.42,
+        "height": 0.45,
+        "depth": 0.42
+      },
+      "materials": {
+        "body": {
+          "color": "#f1eadb",
+          "roughness": 0.45,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": null
+        },
+        "frame": {
+          "color": "#20211e",
+          "roughness": 0.35,
+          "metalness": 0.25,
+          "opacity": 1,
+          "textureId": null
+        }
+      },
+      "behaviours": [
+        {
+          "kind": "light",
+          "state": {
+            "powered": true,
+            "intensity": 3,
+            "color": "#fff0dc"
+          }
+        }
+      ],
+      "id": "ground/room-0/pendant",
+      "floorId": "ground",
+      "roomId": "ground/room-0",
+      "position": {
+        "x": 7.6,
+        "z": 5.3,
+        "y": 2.33
+      },
+      "rotation": 0
+    },
+    {
+      "assetId": "catalogue/sofa",
+      "label": "Forma sofa",
+      "kind": "sofa",
+      "dimensions": {
+        "width": 2.35,
+        "height": 0.88,
+        "depth": 0.98
+      },
+      "materials": {
+        "body": {
+          "color": "#aca08a",
+          "roughness": 0.95,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": "fabric"
+        }
+      },
+      "behaviours": [],
+      "id": "ground/room-0/sofa",
+      "floorId": "ground",
+      "roomId": "ground/room-0",
+      "position": {
+        "x": 7.6,
+        "z": 7.199999999999999,
+        "y": 0
+      },
+      "rotation": 0
+    },
+    {
+      "assetId": "catalogue/coffee-table",
+      "label": "Sora coffee table",
+      "kind": "table",
+      "dimensions": {
+        "width": 1.25,
+        "height": 0.42,
+        "depth": 0.68
+      },
+      "materials": {
+        "body": {
+          "color": "#f2dfbf",
+          "roughness": 0.58,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": "wood-veneer"
+        }
+      },
+      "behaviours": [],
+      "id": "ground/room-0/coffee-table",
+      "floorId": "ground",
+      "roomId": "ground/room-0",
+      "position": {
+        "x": 7.6,
+        "z": 8.6,
+        "y": 0
+      },
+      "rotation": 0
+    },
+    {
+      "assetId": "catalogue/television",
+      "label": "Frame television",
+      "kind": "television",
+      "dimensions": {
+        "width": 1.42,
+        "height": 0.82,
+        "depth": 0.075
+      },
+      "materials": {
+        "body": {
+          "color": "#20211e",
+          "roughness": 0.35,
+          "metalness": 0.25,
+          "opacity": 1,
+          "textureId": null
+        }
+      },
+      "behaviours": [
+        {
+          "kind": "television",
+          "screenNode": "screen",
+          "state": {
+            "powered": false,
+            "muted": true,
+            "volume": 0.35,
+            "source": "asset:spring"
+          }
+        }
+      ],
+      "id": "ground/room-0/television",
+      "floorId": "ground",
+      "roomId": "ground/room-0",
+      "position": {
+        "x": 7.6,
+        "z": 10.42,
+        "y": 1.05
+      },
+      "rotation": 3.141592653589793
+    },
+    {
+      "assetId": "catalogue/cabinet",
+      "label": "Linear sideboard",
+      "kind": "storage",
+      "dimensions": {
+        "width": 1.6,
+        "height": 0.7,
+        "depth": 0.42
+      },
+      "materials": {
+        "body": {
+          "color": "#f2dfbf",
+          "roughness": 0.58,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": "wood-veneer"
+        },
+        "frame": {
+          "color": "#20211e",
+          "roughness": 0.35,
+          "metalness": 0.25,
+          "opacity": 1,
+          "textureId": null
+        }
+      },
+      "behaviours": [
+        {
+          "kind": "openable",
+          "state": {
+            "open": false
+          }
+        }
+      ],
+      "id": "ground/room-0/sideboard",
+      "floorId": "ground",
+      "roomId": "ground/room-0",
+      "position": {
+        "x": 7.6,
+        "z": 10.2,
+        "y": 0
+      },
+      "rotation": 3.141592653589793
+    },
+    {
+      "assetId": "catalogue/chair",
+      "label": "Arc lounge chair",
+      "kind": "chair",
+      "dimensions": {
+        "width": 0.85,
+        "height": 0.88,
+        "depth": 0.87
+      },
+      "materials": {
+        "body": {
+          "color": "#aca08a",
+          "roughness": 0.95,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": "fabric"
+        }
+      },
+      "behaviours": [],
+      "id": "ground/room-0/lounge-chair-left",
+      "floorId": "ground",
+      "roomId": "ground/room-0",
+      "position": {
+        "x": 5.539999999999999,
+        "z": 8.399999999999999,
+        "y": 0
+      },
+      "rotation": 1.0471975511965976
+    },
+    {
+      "assetId": "catalogue/plant",
+      "label": "Variegated houseplant",
+      "kind": "decor",
+      "dimensions": {
+        "width": 0.7,
+        "height": 0.84,
+        "depth": 0.66
+      },
+      "materials": {
+        "body": {
+          "color": "#bd8770",
+          "roughness": 0.88,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": "plaster"
+        }
+      },
+      "behaviours": [],
+      "id": "ground/room-0/plant",
+      "floorId": "ground",
+      "roomId": "ground/room-0",
+      "position": {
+        "x": 5.6,
+        "z": 1.8,
+        "y": 0
+      },
+      "rotation": 0
+    },
+    {
+      "assetId": "catalogue/floodlight",
+      "label": "Left entrance floodlight",
+      "kind": "light",
+      "dimensions": {
+        "width": 0.32,
+        "height": 0.22,
+        "depth": 0.18
+      },
+      "materials": {
+        "body": {
+          "color": "#20211e",
+          "roughness": 0.35,
+          "metalness": 0.25,
+          "opacity": 1,
+          "textureId": null
+        },
+        "frame": {
+          "color": "#20211e",
+          "roughness": 0.35,
+          "metalness": 0.25,
+          "opacity": 1,
+          "textureId": null
+        }
+      },
+      "behaviours": [
+        {
+          "kind": "light",
+          "state": {
+            "powered": false,
+            "intensity": 20,
+            "color": "#ffe6c4"
+          }
+        }
+      ],
+      "id": "site/floodlight-left",
+      "floorId": "ground",
+      "roomId": "ground/room-0",
+      "placement": "exterior",
+      "position": {
+        "x": 8.2,
+        "z": -0.182,
+        "y": 2.4
+      },
+      "rotation": 3.141592653589793
+    },
+    {
+      "assetId": "catalogue/wall-light",
+      "label": "Left entrance wall light",
+      "kind": "light",
+      "dimensions": {
+        "width": 0.2,
+        "height": 0.44,
+        "depth": 0.2
+      },
+      "materials": {
+        "body": {
+          "color": "#20211e",
+          "roughness": 0.35,
+          "metalness": 0.25,
+          "opacity": 1,
+          "textureId": null
+        }
+      },
+      "behaviours": [
+        {
+          "kind": "light",
+          "state": {
+            "powered": true,
+            "intensity": 6,
+            "color": "#ffd0a3"
+          }
+        }
+      ],
+      "id": "site/wall-light-left",
+      "floorId": "ground",
+      "roomId": "ground/room-0",
+      "placement": "exterior",
+      "position": {
+        "x": 10.6,
+        "z": -0.192,
+        "y": 1.65
+      },
+      "rotation": 3.141592653589793
+    },
+    {
+      "assetId": "catalogue/outdoor-planter",
+      "label": "Left entrance planter",
+      "kind": "decor",
+      "dimensions": {
+        "width": 1.2,
+        "height": 1.22,
+        "depth": 0.72
+      },
+      "materials": {
+        "body": {
+          "color": "#a8a798",
+          "roughness": 0.92,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": null
+        }
+      },
+      "behaviours": [],
+      "id": "site/planter-left",
+      "floorId": "ground",
+      "roomId": "ground/room-0",
+      "placement": "exterior",
+      "position": {
+        "x": 9.45,
+        "z": -0.9,
+        "y": -0.095
+      },
+      "rotation": 3.141592653589793
+    },
+    {
+      "assetId": "catalogue/floodlight",
+      "label": "Right entrance floodlight",
+      "kind": "light",
+      "dimensions": {
+        "width": 0.32,
+        "height": 0.22,
+        "depth": 0.18
+      },
+      "materials": {
+        "body": {
+          "color": "#20211e",
+          "roughness": 0.35,
+          "metalness": 0.25,
+          "opacity": 1,
+          "textureId": null
+        },
+        "frame": {
+          "color": "#20211e",
+          "roughness": 0.35,
+          "metalness": 0.25,
+          "opacity": 1,
+          "textureId": null
+        }
+      },
+      "behaviours": [
+        {
+          "kind": "light",
+          "state": {
+            "powered": false,
+            "intensity": 20,
+            "color": "#ffe6c4"
+          }
+        }
+      ],
+      "id": "site/floodlight-right",
+      "floorId": "ground",
+      "roomId": "ground/room-0",
+      "placement": "exterior",
+      "position": {
+        "x": 7,
+        "z": -0.182,
+        "y": 2.4
+      },
+      "rotation": 3.141592653589793
+    },
+    {
+      "assetId": "catalogue/wall-light",
+      "label": "Right entrance wall light",
+      "kind": "light",
+      "dimensions": {
+        "width": 0.2,
+        "height": 0.44,
+        "depth": 0.2
+      },
+      "materials": {
+        "body": {
+          "color": "#20211e",
+          "roughness": 0.35,
+          "metalness": 0.25,
+          "opacity": 1,
+          "textureId": null
+        }
+      },
+      "behaviours": [
+        {
+          "kind": "light",
+          "state": {
+            "powered": true,
+            "intensity": 6,
+            "color": "#ffd0a3"
+          }
+        }
+      ],
+      "id": "site/wall-light-right",
+      "floorId": "ground",
+      "roomId": "ground/room-0",
+      "placement": "exterior",
+      "position": {
+        "x": 4.6,
+        "z": -0.192,
+        "y": 1.65
+      },
+      "rotation": 3.141592653589793
+    },
+    {
+      "assetId": "catalogue/outdoor-planter",
+      "label": "Right entrance planter",
+      "kind": "decor",
+      "dimensions": {
+        "width": 1.2,
+        "height": 1.22,
+        "depth": 0.72
+      },
+      "materials": {
+        "body": {
+          "color": "#a8a798",
+          "roughness": 0.92,
+          "metalness": 0,
+          "opacity": 1,
+          "textureId": null
+        }
+      },
+      "behaviours": [],
+      "id": "site/planter-right",
+      "floorId": "ground",
+      "roomId": "ground/room-0",
+      "placement": "exterior",
+      "position": {
+        "x": 5.75,
+        "z": -0.9,
+        "y": -0.095
+      },
+      "rotation": 3.141592653589793
+    }
+  ],
+  "roof": {
+    "id": "roof",
+    "kind": "flat",
+    "pitch": 0,
+    "overhang": 0.24,
+    "material": {
+      "color": "#555550",
+      "roughness": 0.95,
+      "metalness": 0,
+      "opacity": 1,
+      "textureId": "roof-asphalt"
+    }
+  }
+}

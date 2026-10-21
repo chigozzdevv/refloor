@@ -1,3 +1,4 @@
+import { floorBoundary } from '@refloor/scene/footprint';
 import { useEffect, useMemo } from 'react';
 import { RoundedBox } from '@react-three/drei';
 import { BufferGeometry, Float32BufferAttribute, Quaternion, Vector3 } from 'three';
@@ -147,42 +148,34 @@ export function ExteriorModel({ compiled }: { compiled: CompiledBuilding }) {
         ))}
       </SiteSurface>
       {roof.kind === 'flat' ? (
-        [-1, 1].map((side) => (
-          <group key={side}>
-            <SiteSurface buildingId={compiled.building.id} slot="parapet">
-              <SiteBox
-                position={[
-                  roofX,
-                  site.eaves + site.top.slabThickness + 0.12,
-                  roofZ + side * (roofDepth / 2 - 0.09),
-                ]}
-                size={[roofWidth, 0.26, 0.18]}
-                material={parapet}
-              />
-              <SiteBox
-                position={[
-                  roofX + side * (roofWidth / 2 - 0.09),
-                  site.eaves + site.top.slabThickness + 0.12,
-                  roofZ,
-                ]}
-                size={[0.18, 0.26, roofDepth]}
-                material={parapet}
-              />
-            </SiteSurface>
-            <SiteSurface buildingId={compiled.building.id} slot="roof-trim">
-              <SiteBox
-                position={[roofX, site.height, roofZ + side * (roofDepth / 2 - 0.09)]}
-                size={[roofWidth + 0.04, 0.04, 0.23]}
-                material={roofTrim}
-              />
-              <SiteBox
-                position={[roofX + side * (roofWidth / 2 - 0.09), site.height, roofZ]}
-                size={[0.23, 0.04, roofDepth + 0.04]}
-                material={roofTrim}
-              />
-            </SiteSurface>
-          </group>
-        ))
+        floorBoundary(site.top).map(({ start, end, normal }, index) => {
+          const dx = end.x - start.x,
+            dz = end.z - start.z,
+            length = Math.hypot(dx, dz) + roof.overhang * 2,
+            x = (start.x + end.x) / 2 + normal.x * (roof.overhang - 0.09),
+            z = (start.z + end.z) / 2 + normal.z * (roof.overhang - 0.09),
+            rotation: [number, number, number] = [0, Math.atan2(-dz, dx), 0];
+          return (
+            <group key={index}>
+              <SiteSurface buildingId={compiled.building.id} slot="parapet">
+                <SiteBox
+                  position={[x, site.eaves + site.top.slabThickness + 0.12, z]}
+                  rotation={rotation}
+                  size={[length, 0.26, 0.18]}
+                  material={parapet}
+                />
+              </SiteSurface>
+              <SiteSurface buildingId={compiled.building.id} slot="roof-trim">
+                <SiteBox
+                  position={[x, site.height, z]}
+                  rotation={rotation}
+                  size={[length + 0.04, 0.04, 0.23]}
+                  material={roofTrim}
+                />
+              </SiteSurface>
+            </group>
+          );
+        })
       ) : (
         <>
           {roof.material.textureId === 'metal-roof' && (

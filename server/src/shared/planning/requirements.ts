@@ -15,6 +15,7 @@ export const circulationSchema = z.strictObject({
   gallerySide: z.enum(['left', 'right']),
   stairPosition: z.enum(['front', 'rear']),
   balance: z.enum(['balanced', 'public-wide']).nullish(),
+  footprint: z.enum(['rectangle', 'l-shaped']).nullish(),
 });
 export const designSchema = z.strictObject({
   style: z.enum(['warm-contemporary', 'natural-minimal', 'moody-modern']),
@@ -66,7 +67,10 @@ export const houseResponseSchema = z.strictObject({
     .omit({ unsupported: true })
     .extend({
       circulation: circulationSchema
-        .extend({ balance: z.enum(['balanced', 'public-wide']).nullable() })
+        .extend({
+          balance: z.enum(['balanced', 'public-wide']).nullable(),
+          footprint: z.enum(['rectangle', 'l-shaped']).nullable(),
+        })
         .nullable(),
       design: designSchema
         .extend({
@@ -81,6 +85,15 @@ export const houseResponseSchema = z.strictObject({
 
 export function validateRequirements(input: unknown): HouseRequirements {
   const requirements = requirementsSchema.parse(input);
+  if (
+    requirements.circulation?.footprint === 'l-shaped' &&
+    (requirements.storeys !== 1 ||
+      requirements.roof !== 'flat' ||
+      requirements.circulation.family === 'side-gallery')
+  )
+    throw new GenerationFailure(
+      'L-shaped footprints currently support flat-roof bungalows with a central hall or direct parlor connections.',
+    );
   if (requirements.unsupported.length)
     throw new GenerationFailure(
       `This request needs unsupported features: ${requirements.unsupported.join('; ')}`,

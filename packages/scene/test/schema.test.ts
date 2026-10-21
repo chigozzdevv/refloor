@@ -187,4 +187,16 @@ describe('building validation', () => {
       expect(buildingSchema.safeParse(building).success).toBe(false);
     },
   );
+
+  it('does not treat a courtyard as a staircase opening', () => {
+    const building = createTwoStorey(),
+      upper = building.floors.find((floor) => floor.id === 'upper')!;
+    first(upper.voids).kind = 'courtyard';
+    const result = buildingSchema.safeParse(building);
+    expect(result.success).toBe(false);
+    if (!result.success)
+      expect(
+        result.error.issues.some((issue) => /covering the stairwell/.test(issue.message)),
+      ).toBe(true);
+  });
 });

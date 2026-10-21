@@ -22,6 +22,7 @@ export type HouseLayout = {
   hallWidth: number;
   stairPosition: 'front' | 'rear';
   rooms: PlannedRoom[];
+  courtyard?: Footprint;
 };
 
 export async function solveLayout(requirements: HouseRequirements): Promise<HouseLayout> {
@@ -33,6 +34,7 @@ export async function solveLayout(requirements: HouseRequirements): Promise<Hous
   solver.add(depth.ge(90), depth.le(240));
   if (requirements.depth !== null) solver.add(depth.eq(Math.round(requirements.depth * 10)));
   const family = requirements.circulation?.family ?? 'central-hall';
+  const notchDepth = requirements.circulation?.footprint === 'l-shaped' ? 28 : 0;
   const hub =
     family === 'living-hub'
       ? requirements.rooms.find((room) => room.uses.includes('living'))!
@@ -88,7 +90,13 @@ export async function solveLayout(requirements: HouseRequirements): Promise<Hous
         minimumDepth(requirement, leftWidth),
         minimumDepth(requirement, rightWidth),
       );
-    solver.add(side.ge(0), side.le(1), start.ge(0), size.ge(minimum), start.add(size).le(depth));
+    solver.add(
+      side.ge(0),
+      side.le(1),
+      start.ge(0),
+      size.ge(minimum),
+      start.add(size).le(depth.sub(If(side.eq(1), notchDepth, 0))),
+    );
     if (family === 'side-gallery') solver.add(side.eq(galleryLeft ? 1 : 0));
     if (publicWide && requirement.uses.includes('living')) solver.add(side.eq(publicSide));
     if (requirement.side !== null) solver.add(side.eq(requirement.side === 'left' ? 0 : 1));
@@ -103,7 +111,7 @@ export async function solveLayout(requirements: HouseRequirements): Promise<Hous
             (sum, room) => sum.add(If(room.side.eq(side), room.size, 0)),
             Int.val(0),
           )
-          .eq(depth),
+          .eq(side === 1 ? depth.sub(notchDepth) : depth),
       );
     for (const [i, room] of rooms.entries())
       for (const other of rooms.slice(0, i)) {
@@ -147,6 +155,16 @@ export async function solveLayout(requirements: HouseRequirements): Promise<Hous
     hallX,
     hallWidth,
     stairPosition: requirements.circulation?.stairPosition ?? 'front',
+    ...(notchDepth
+      ? {
+          courtyard: {
+            x: hallX + hallWidth,
+            z: value(depth) / 10 - notchDepth / 10,
+            width: rightWidth,
+            depth: notchDepth / 10,
+          },
+        }
+      : {}),
     rooms: [
       ...variables.map((room) => ({
         index: room.index,

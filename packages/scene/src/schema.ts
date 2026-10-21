@@ -105,6 +105,21 @@ export const buildingSchema = buildingModelSchema.superRefine((building, context
       register(hole.id, [...fp, 'voids', vi, 'id']);
       if (!contains(floor.footprint, hole.footprint))
         report('Floor opening extends outside its floor', [...fp, 'voids', vi]);
+      if (hole.kind === 'courtyard') {
+        if (building.roof.kind !== 'flat')
+          report('Courtyard footprints require a flat roof', ['roof', 'kind']);
+        if (
+          Math.min(hole.footprint.width, hole.footprint.depth) <=
+          building.roof.overhang * 2 + 0.2
+        )
+          report('The courtyard needs a clear opening beyond the roof overhang', [
+            ...fp,
+            'voids',
+            vi,
+          ]);
+        if (floor.rooms.some((room) => overlaps(room.footprint, hole.footprint)))
+          report('Rooms cannot overlap an open courtyard', [...fp, 'voids', vi]);
+      }
       floor.voids.slice(0, vi).forEach((other) => {
         if (overlaps(hole.footprint, other.footprint))
           report('Floor openings overlap', [...fp, 'voids', vi]);
@@ -284,7 +299,7 @@ export const buildingSchema = buildingModelSchema.superRefine((building, context
     if (!contains(lower.footprint, stair.footprint) || !contains(upper.footprint, stair.footprint))
       report('Staircase extends outside a connected floor', sp);
     const hole = upper.voids.find((value) => value.id === stair.openingId);
-    if (!hole || !contains(hole.footprint, stair.footprint))
+    if (!hole || hole.kind !== 'stairwell' || !contains(hole.footprint, stair.footprint))
       report('Upper floor requires an opening covering the stairwell', sp);
   });
 });

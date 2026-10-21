@@ -2,6 +2,7 @@ import { blockingCollider } from '@refloor/engine/collision/probes';
 import { contains, rotate } from '@refloor/engine/math';
 import type { CompiledBuilding, NavigationPoint } from '@refloor/engine/types';
 import { compoundFootprint } from '@refloor/engine/site';
+import { floorCourtyards, insideRectangle } from '@refloor/scene/footprint';
 
 export function isPlayerPositionValid(
   compiled: CompiledBuilding,
@@ -13,7 +14,8 @@ export function isPlayerPositionValid(
   const ground = compiled.building.floors.reduce((a, b) => (a.elevation < b.elevation ? a : b));
   if (
     floor.id === ground.id &&
-    !contains(ground.footprint, point) &&
+    (!contains(ground.footprint, point) ||
+      floorCourtyards(ground).some((cut) => insideRectangle(cut, point))) &&
     contains(compoundFootprint(compiled.building), point, compiled.options.radius) &&
     point.y >= ground.elevation - 0.22 &&
     point.y <= ground.elevation + 0.06 &&

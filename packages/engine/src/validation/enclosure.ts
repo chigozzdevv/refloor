@@ -1,16 +1,21 @@
 import { epsilon } from '@refloor/engine/math';
 import type { CompiledBuilding, EngineIssue } from '@refloor/engine/types';
+import { floorBoundary } from '@refloor/scene/footprint';
 
 export function checkEnclosure(compiled: CompiledBuilding): EngineIssue[] {
   const issues: EngineIssue[] = [];
   for (const floor of compiled.building.floors) {
-    const { x, z, width, depth } = floor.footprint;
-    const edges = [
-      { axis: 'x' as const, fixed: 'z' as const, value: z, from: x, to: x + width },
-      { axis: 'x' as const, fixed: 'z' as const, value: z + depth, from: x, to: x + width },
-      { axis: 'z' as const, fixed: 'x' as const, value: x, from: z, to: z + depth },
-      { axis: 'z' as const, fixed: 'x' as const, value: x + width, from: z, to: z + depth },
-    ];
+    const edges = floorBoundary(floor).map(({ start, end }) => {
+      const axis = start.z === end.z ? ('x' as const) : ('z' as const),
+        fixed = axis === 'x' ? ('z' as const) : ('x' as const);
+      return {
+        axis,
+        fixed,
+        value: start[fixed],
+        from: Math.min(start[axis], end[axis]),
+        to: Math.max(start[axis], end[axis]),
+      };
+    });
     for (const edge of edges) {
       const intervals = floor.walls
         .filter(

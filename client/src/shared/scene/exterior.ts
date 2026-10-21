@@ -3,17 +3,14 @@ import { compoundFootprint } from '@refloor/engine';
 import type { Floor, Wall } from '@refloor/scene';
 import { entryPose } from '@/shared/navigation/entry';
 import { Vector3 } from 'three';
+import { wallExteriorSide } from '@refloor/scene/wall-exterior';
 
 export function exteriorNormal(wall: Wall, floor: Floor) {
-  const { x, z, width, depth } = floor.footprint;
-  if (Math.abs(wall.start.z - wall.end.z) < 0.001) {
-    if (Math.abs(wall.start.z - z) < 0.001) return { x: 0, z: -1 };
-    if (Math.abs(wall.start.z - z - depth) < 0.001) return { x: 0, z: 1 };
-  } else if (Math.abs(wall.start.x - wall.end.x) < 0.001) {
-    if (Math.abs(wall.start.x - x) < 0.001) return { x: -1, z: 0 };
-    if (Math.abs(wall.start.x - x - width) < 0.001) return { x: 1, z: 0 };
-  }
-  return null;
+  const side = wallExteriorSide(floor, wall),
+    dx = wall.end.x - wall.start.x,
+    dz = wall.end.z - wall.start.z,
+    length = Math.hypot(dx, dz);
+  return side ? { x: (-dz / length) * side, z: (dx / length) * side } : null;
 }
 
 export function exteriorPlinth(floor: Floor) {

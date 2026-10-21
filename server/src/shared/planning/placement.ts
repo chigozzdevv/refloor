@@ -96,9 +96,9 @@ export function furnishLayout(
               front ? 0 : Math.PI,
             );
         }
-        if (design && fp.width >= 5.2) {
+        if (design && fp.width >= 5.8) {
           // Keep a continuous walkway around the seating and opening storage.
-          const offset = Math.min(2.1, fp.width / 2 - 1.32);
+          const offset = Math.min(2.1, fp.width / 2 - 0.94);
           add('lounge-chair-left', 'chair', centre - offset, at(2.2), turn + Math.PI / 3);
           if (design.style !== 'natural-minimal' && fp.width >= 6.9)
             add('lounge-chair-right', 'chair', centre + offset, at(2.2), turn - Math.PI / 3);

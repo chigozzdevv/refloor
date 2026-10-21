@@ -52,9 +52,15 @@ export const floorSchema = z.strictObject({
   footprint: footprintSchema,
   rooms: z.array(roomSchema).min(1),
   walls: z.array(wallSchema),
-  voids: z.array(
-    z.strictObject({ id: idSchema, kind: z.literal('stairwell'), footprint: footprintSchema }),
-  ),
+  voids: z
+    .array(
+      z.strictObject({
+        id: idSchema,
+        kind: z.enum(['stairwell', 'courtyard']),
+        footprint: footprintSchema,
+      }),
+    )
+    .max(32),
 });
 
 export type Floor = z.infer<typeof floorSchema>;
