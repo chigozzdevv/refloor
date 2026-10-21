@@ -1,5 +1,6 @@
 import { mergeActivity } from '@/shared/collaboration/history';
 import { mergeConversation } from '@/shared/collaboration/conversation';
+import { SharedOutbox } from '@/shared/collaboration/outbox';
 import { io } from 'socket.io-client';
 import { z } from 'zod';
 import { fingerprintBuilding } from '@refloor/scene';
@@ -61,7 +62,8 @@ export function startCollaboration(projectId: string) {
     retry: ReturnType<typeof setTimeout> | undefined;
   let canonical: SharedState | null = null,
     queue: SharedEdit[] = [],
-    storageKey = '';
+    outbox: SharedOutbox | null = null;
+  let recoveryError: string | null = null;
   let historyPending: Promise<void> | null = null;
   let resetHistory = true;
   const waiting = new Map<
@@ -70,16 +72,19 @@ export function startCollaboration(projectId: string) {
   >();
   const owns = () => !closed && useProject.getState().remote?.id === projectId;
   const updateQueue = () => {
-    useCollaboration.setState({ pending: queue.length + (historyPending ? 1 : 0) });
-    if (storageKey)
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(queue));
-      } catch {
-        useCollaboration.setState({
-          error:
-            'Pending changes cannot be recovered after a reload because browser storage is full.',
-        });
-      }
+    useCollaboration.setState({
+      pending: queue.length + (historyPending ? 1 : 0),
+      ...(recoveryError ? { error: recoveryError } : {}),
+    });
+  };
+  const discard = (ids: string[]) => {
+    if (!ids.length) return;
+    try {
+      outbox?.remove(ids);
+      recoveryError = null;
+    } catch {
+      recoveryError = 'The change was saved, but this browser could not clear its recovery entry.';
+    }
   };
   const receipt = (id: string) => {
     let result = waiting.get(id);
@@ -104,20 +109,19 @@ export function startCollaboration(projectId: string) {
     if (!owns()) return;
     if (canonical && state.project.version < canonical.project.version) state = canonical;
     canonical = state;
-    if (!storageKey) {
-      storageKey = `refloor.outbox.${projectId}.${state.self.id}`;
+    if (!outbox) {
+      const saved = new SharedOutbox(projectId, state.self.id);
       try {
-        queue = z
-          .array(sharedEditSchema)
-          .max(100)
-          .parse(JSON.parse(localStorage.getItem(storageKey) ?? '[]'));
-      } catch {
-        queue = [];
+        queue = saved.load();
+      } catch (cause) {
+        throw new Error('Pending changes could not be restored from this browser.', { cause });
       }
+      outbox = saved;
     }
     const accepted = queue.filter(
       (edit) => edit.id === acceptedId || state.activity.some((event) => event.id === edit.id),
     );
+    discard(accepted.map((edit) => edit.id));
     queue = queue.filter((edit) => !accepted.includes(edit));
     let document: DocumentState = {
       compiled: compileBuilding(state.project.building),
@@ -166,7 +170,7 @@ export function startCollaboration(projectId: string) {
           state.activity,
         ),
       },
-      error: null,
+      error: recoveryError,
     }));
     resetHistory = false;
     updateQueue();
@@ -230,6 +234,7 @@ export function startCollaboration(projectId: string) {
             });
         }, 2000);
       } else {
+        discard([next.id]);
         queue = queue.filter((edit) => edit.id !== next.id);
         updateQueue();
         if (canonical) apply(canonical);
@@ -280,6 +285,14 @@ export function startCollaboration(projectId: string) {
           : {}),
         player: player ?? null,
       });
+      try {
+        outbox!.add(edit);
+      } catch (cause) {
+        throw new Error(
+          'Browser storage could not keep this pending change. Free some space and try again.',
+          { cause },
+        );
+      }
       queue.push(edit);
       receipt(id);
       updateQueue();
@@ -447,7 +460,7 @@ export function startCollaboration(projectId: string) {
     });
   }, 3000);
   const beforeUnload = (event: BeforeUnloadEvent) => {
-    if (queue.length) {
+    if (queue.length || historyPending) {
       event.preventDefault();
       event.returnValue = '';
     }
