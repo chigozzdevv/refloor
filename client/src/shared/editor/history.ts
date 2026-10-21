@@ -1,9 +1,14 @@
+import type { EditTarget } from '@refloor/scene/edit-memory';
 import type { Building, SceneCommand, SceneRevision } from '@refloor/scene';
 import { targetIdentity } from '@/shared/editor/identity';
 
 export function describeTarget(building: Building, commands: SceneCommand[]) {
   const targets = commands.map((command) => {
-    if (command.type === 'set-rules' || command.type === 'emit-event')
+    if (
+      command.type === 'set-rules' ||
+      command.type === 'emit-event' ||
+      command.type === 'restore-properties'
+    )
       return { kind: 'house' as const, id: building.id };
     if ('objectId' in command) return { kind: 'object' as const, id: command.objectId };
     if ('roofId' in command) return { kind: 'roof' as const, id: command.roofId };
@@ -26,6 +31,13 @@ export function describeTarget(building: Building, commands: SceneCommand[]) {
 }
 
 export type EditDetails = {
+  id?: string;
+  at?: string;
+  chat?: {
+    target: EditTarget;
+    message: string;
+    reply: string;
+  };
   label?: string;
   target?: string | undefined;
   source?: 'chat' | 'manual' | 'navigation';
@@ -57,6 +69,9 @@ export function describeChange(building: Building, commands: SceneCommand[]) {
     'objectId' in command ? building.objects.find((value) => value.id === command.objectId) : null;
   let label: string;
   switch (command.type) {
+    case 'restore-properties':
+      label = 'Restore change';
+      break;
     case 'set-rules':
       label = 'Update saved actions';
       break;

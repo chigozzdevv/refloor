@@ -192,6 +192,15 @@ export function recordChatTurn(memory: EditMemory, turn: ChatTurn): EditMemory {
 
 export function commandTouches(command: SceneCommand, target: EditTarget): boolean {
   if (target.kind === 'house') return true;
+  if (command.type === 'restore-properties')
+    return command.changes.some(
+      (change) =>
+        (target.kind === 'roof' && change.path[0] === 'roof') ||
+        (target.kind === 'surface' && change.path[0] === 'siteMaterials') ||
+        change.path.some(
+          (part) => typeof part !== 'string' && part.key === 'id' && part.value === target.id,
+        ),
+    );
   if (target.kind === 'surface')
     return command.type === 'set-site-material' && command.surfaceId === target.id;
   if (command.type === 'set-rules')

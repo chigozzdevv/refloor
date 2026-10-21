@@ -11,8 +11,9 @@ export function validatePlacement(
   edit: unknown,
   options: Partial<EngineOptions> = {},
   player?: NavigationPoint,
+  commandOptions: { evaluateRules?: boolean } = {},
 ): EditResult & { compiled: CompiledBuilding } {
-  const result = applyCommands(input, edit);
+  const result = applyCommands(input, edit, commandOptions);
   const compiled = validateBuilding(result.building, options);
   if (result.revision.commands.some((command) => command.type === 'move-partition'))
     checkStructuralAttachments(parseBuilding(input), result.building, result.revision.commands);

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { propertyChangeSchema } from '@refloor/scene/properties';
 import { sceneActionSchema } from '@refloor/scene/action';
 import { sceneEventSchema, sceneRuleSchema } from '@refloor/scene/rules';
 import { idSchema } from '@refloor/scene/primitives';
@@ -6,6 +7,10 @@ import { behaviourSchema } from '@refloor/scene/behaviour';
 
 export const commandSchema = z.discriminatedUnion('type', [
   ...sceneActionSchema.options,
+  z.strictObject({
+    type: z.literal('restore-properties'),
+    changes: z.array(propertyChangeSchema).min(1).max(2000),
+  }),
   z.strictObject({
     type: z.literal('add-object-behaviours'),
     objectId: idSchema,

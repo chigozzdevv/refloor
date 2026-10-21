@@ -40,6 +40,7 @@ export const projectSummarySchema = z.strictObject({
   objectCount: z.number().int().nonnegative(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
+  shared: z.boolean().optional(),
   canUndo: z.boolean(),
   canRedo: z.boolean(),
 });

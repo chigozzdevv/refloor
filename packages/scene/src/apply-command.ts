@@ -1,3 +1,4 @@
+import { readProperty, writeProperty } from '@refloor/scene/properties';
 import { wallExteriorSide } from '@refloor/scene/wall-exterior';
 import type { Building } from '@refloor/scene/building';
 import type { SceneCommand } from '@refloor/scene/command';
@@ -30,6 +31,14 @@ function objectFor(building: Building, id: string): SceneObject {
 
 function execute(building: Building, command: ResolvedCommand): SceneCommand {
   switch (command.type) {
+    case 'restore-properties': {
+      const changes = command.changes.map((change) => ({
+        ...change,
+        value: readProperty(building, change.path),
+      }));
+      for (const change of command.changes) writeProperty(building, change);
+      return { type: 'restore-properties', changes: changes.reverse() };
+    }
     case 'set-site-material': {
       const slot = siteSurfaceSlot(building, command.surfaceId);
       if (!slot)
