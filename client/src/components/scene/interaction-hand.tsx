@@ -18,7 +18,12 @@ import { useProject } from '@/shared/scene/scene-store';
 import { useExperience } from '@/shared/scene/experience-store';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 import { useCapture } from '@/shared/scene/capture';
-import { handScale, interactionHand, showInteractionHand } from '@/shared/editor/interaction-hand';
+import {
+  handScale,
+  handSleeveLength,
+  interactionHand,
+  showInteractionHand,
+} from '@/shared/editor/interaction-hand';
 
 const fingers = ['thumb', 'index-finger', 'middle-finger', 'ring-finger', 'pinky-finger'];
 const segments = [
@@ -53,9 +58,18 @@ function HandMesh() {
   const source = useGLTF('/models/interaction/hand-right.glb'),
     size = useThree((state) => state.size),
     group = useRef<Group>(null),
+    arm = useRef<Mesh>(null),
     scene = useMemo(() => new Scene(), []),
     camera = useMemo(() => new OrthographicCamera(0, 1, 1, 0, 0.1, 2000), []),
-    bend = useRef(0);
+    bend = useRef(0),
+    reach = useRef(0),
+    walking = useRef(0),
+    stride = useRef(0),
+    previous = useRef<Vector3 | null>(null),
+    tip = useMemo(() => new Vector3(), []),
+    armTop = useMemo(() => new Vector3(), []),
+    armAxis = useMemo(() => new Vector3(), []),
+    reduced = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)'), []);
   const { model, joints, material, cuff, sleeve, buttons, nail, nailGeometry } = useMemo(() => {
     const model = clone(source.scene),
       material = new MeshStandardMaterial({ color: '#a16e50', roughness: 0.78, metalness: 0 }),
@@ -95,6 +109,7 @@ function HandMesh() {
     }
     return { model, joints, material, cuff, sleeve, buttons, nail, nailGeometry };
   }, [source]);
+  const fingertip = useMemo(() => model.getObjectByName('index-finger-tip'), [model]);
   useEffect(
     () => () => {
       for (const finish of [material, cuff, sleeve, buttons, nail]) finish.dispose();
@@ -111,7 +126,7 @@ function HandMesh() {
     [],
   );
   const curl = useMemo(() => new Quaternion(), []);
-  useFrame(({ gl }, delta) => {
+  useFrame(({ gl, camera: view }, delta) => {
     const project = useProject.getState(),
       nav = useNavigation.getState(),
       capture = useCapture.getState();
@@ -124,14 +139,31 @@ function HandMesh() {
       nav.mapOpen ||
       capture.pending ||
       capture.capturing
-    )
+    ) {
+      previous.current = null;
+      walking.current = 0;
+      reach.current = 0;
       return;
-    bend.current = MathUtils.damp(
-      bend.current,
-      interactionHand.pressed ? 1 : 0,
-      22,
-      Math.min(delta, 0.05),
+    }
+    const dt = Math.min(delta, 0.05),
+      distance = previous.current?.distanceTo(view.position) ?? 0;
+    (previous.current ??= new Vector3()).copy(view.position);
+    walking.current = MathUtils.damp(
+      walking.current,
+      !reduced.matches && project.mode === 'walk' ? Math.min(1, distance / Math.max(dt, 0.001)) : 0,
+      10,
+      dt,
     );
+    stride.current += Math.min(distance, 0.2) * 8;
+    bend.current = MathUtils.damp(bend.current, interactionHand.pressed ? 1 : 0, 22, dt);
+    reach.current = reduced.matches
+      ? Number(interactionHand.pressed)
+      : MathUtils.damp(
+          reach.current,
+          Number(interactionHand.pressed),
+          interactionHand.pressed ? 34 : 14,
+          dt,
+        );
     for (const { bone, rest, finger, segment } of joints) {
       const amount =
         segment === 0 || segment === 4
@@ -139,7 +171,7 @@ function HandMesh() {
           : finger === 0
             ? (segment === 1 ? 0.12 : 0.18) + bend.current * 0.15
             : finger === 1
-              ? 0.16 + bend.current * (segment === 1 ? 0.65 : 0.8)
+              ? 0.16 + walking.current * 0.35 + bend.current * (segment === 1 ? 0.3 : 0.45)
               : segment === 1
                 ? 0.55
                 : segment === 2
@@ -152,12 +184,31 @@ function HandMesh() {
     camera.position.z = 1000;
     camera.updateProjectionMatrix();
     group.current.position.set(
-      interactionHand.x * size.width,
-      130 * handScale(size.height) - interactionHand.y + bend.current * 5,
+      interactionHand.x * size.width + Math.sin(stride.current) * walking.current * 6,
+      130 * handScale(size.height) -
+        interactionHand.y +
+        Math.cos(stride.current * 2) * walking.current * 7,
       0,
     );
     group.current.scale.setScalar(1100 * handScale(size.height));
-    group.current.rotation.z = MathUtils.degToRad(interactionHand.turn - 14 - bend.current * 4);
+    group.current.rotation.z = MathUtils.degToRad(
+      interactionHand.turn - 14 - bend.current * 4 + Math.sin(stride.current) * walking.current * 2,
+    );
+    if (fingertip && reach.current > 0.001) {
+      group.current.updateWorldMatrix(true, true);
+      fingertip.getWorldPosition(tip);
+      group.current.position.x += (interactionHand.aim.x * size.width - tip.x) * reach.current;
+      group.current.position.y +=
+        ((1 - interactionHand.aim.y) * size.height - tip.y - bend.current * 4) * reach.current;
+    }
+    if (arm.current?.parent) {
+      arm.current.parent.updateWorldMatrix(true, false);
+      armTop.set(0.035, 0.086, 0.009).applyMatrix4(arm.current.parent.matrixWorld);
+      armAxis.set(0, 1, 0).transformDirection(arm.current.parent.matrixWorld);
+      const length = handSleeveLength(armTop.y, armAxis.y, size.height);
+      arm.current.scale.y = length / 0.19;
+      arm.current.position.y = 0.086 + length / 2;
+    }
     const autoClear = gl.autoClear;
     gl.autoClear = false;
     gl.clearDepth();
@@ -177,7 +228,7 @@ function HandMesh() {
           <mesh position={[0.035, 0.079, 0.009]} scale={[0.72, 1, 1]} material={cuff}>
             <cylinderGeometry args={[0.035, 0.034, 0.018, 24]} />
           </mesh>
-          <mesh position={[0.035, 0.181, 0.009]} scale={[0.78, 1, 1]} material={sleeve}>
+          <mesh ref={arm} position={[0.035, 0.181, 0.009]} scale={[0.78, 1, 1]} material={sleeve}>
             <cylinderGeometry args={[0.048, 0.039, 0.19, 24]} />
           </mesh>
           {[0.116, 0.13, 0.144].map((height) => (

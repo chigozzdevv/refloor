@@ -628,73 +628,109 @@ textarea:focus-visible,
   position: absolute;
   z-index: 45;
   right: max(20px, env(safe-area-inset-right));
-  bottom: max(20px, env(safe-area-inset-bottom));
-  width: 108px;
-  height: 108px;
-  padding: 0;
+  bottom: max(72px, calc(env(safe-area-inset-bottom) + 64px));
+  width: 156px;
+  height: 156px;
   border: 1px solid #ffffff30;
   border-radius: 50%;
-  background: #17212c66;
-  box-shadow: 0 6px 24px #0002;
-  backdrop-filter: blur(12px);
+  background: #17212c7a;
+  box-shadow:
+    0 8px 32px #0003,
+    inset 0 0 24px #ffffff05;
+  backdrop-filter: blur(14px);
   touch-action: none;
   user-select: none;
   color: #f1eee6;
-  cursor: grab;
 }
-.movement-pad:active {
-  cursor: grabbing;
-}
-.movement-pad > svg {
-  position: absolute;
-  opacity: 0.65;
-  pointer-events: none;
-}
-.pad-forward {
-  top: 9px;
-  left: calc(50% - 8px);
-}
-.pad-backward {
-  bottom: 9px;
-  left: calc(50% - 8px);
-}
-.pad-left {
-  left: 9px;
-  top: calc(50% - 8px);
-}
-.pad-right {
-  right: 9px;
-  top: calc(50% - 8px);
-}
+.pad-direction,
 .pad-stick {
   position: absolute;
-  top: calc(50% - 20px);
-  left: calc(50% - 20px);
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border: 1px solid #ffffff50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
   border-radius: 50%;
+  touch-action: none;
+}
+.pad-direction {
+  opacity: 0.75;
+}
+.pad-direction:hover,
+.pad-direction:active {
+  opacity: 1;
+  background: #ffffff12;
+}
+.pad-forward {
+  top: 0;
+  left: calc(50% - 22px);
+}
+.pad-backward {
+  bottom: 0;
+  left: calc(50% - 22px);
+}
+.pad-left {
+  left: 0;
+  top: calc(50% - 22px);
+}
+.pad-right {
+  right: 0;
+  top: calc(50% - 22px);
+}
+.pad-stick {
+  top: calc(50% - 22px);
+  left: calc(50% - 22px);
+  border: 1px solid #ffffff50;
   background: #b7c3cb30;
   box-shadow: 0 3px 12px #0003;
-  pointer-events: none;
+  cursor: grab;
 }
-.movement-pad:active .pad-stick {
+.pad-stick:active {
+  cursor: grabbing;
   background: #d1b88660;
 }
-.pad-stick > span {
-  width: 6px;
-  height: 6px;
+.pad-stick span {
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: #f1eee6b0;
 }
+.pad-turns {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+}
+.pad-turns button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #ffffff30;
+  border-radius: 50%;
+  background: #17212c7a;
+  box-shadow: 0 4px 16px #0002;
+  backdrop-filter: blur(14px);
+  color: #f1eee6;
+  touch-action: none;
+}
+.pad-turns button:hover,
+.pad-turns button:active,
+.pad-turns button[data-active='true'] {
+  background: #32404cc9;
+  border-color: #ffffff70;
+}
 @media (max-width: 600px) {
   .movement-pad {
-    width: 104px;
-    height: 104px;
+    width: 144px;
+    height: 144px;
     right: max(14px, env(safe-area-inset-right));
-    bottom: max(16px, env(safe-area-inset-bottom));
+    bottom: max(68px, calc(env(safe-area-inset-bottom) + 60px));
   }
 }
 .journey-stop {
@@ -2616,6 +2652,9 @@ select option {
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .chat-conversation {
+    transition: none;
+  }
   .typing-dots i {
     animation: none;
   }

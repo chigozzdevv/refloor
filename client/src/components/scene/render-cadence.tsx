@@ -7,7 +7,7 @@ import { useExperience } from '@/shared/scene/experience-store';
 import { usePlayback } from '@/shared/behaviours/television';
 import { scenePresentation } from '@/shared/scene/presentation';
 import { renderActivity } from '@/shared/scene/render-activity';
-import { showInteractionHand } from '@/shared/editor/interaction-hand';
+import { isHandSurface, showInteractionHand } from '@/shared/editor/interaction-hand';
 
 export function RenderCadence() {
   const invalidate = useThree((state) => state.invalidate),
@@ -42,7 +42,7 @@ export function RenderCadence() {
     const move = (event: PointerEvent) => {
       if (
         (pressed.current && event.buttons) ||
-        (event.target === canvas &&
+        (isHandSurface(event.target) &&
           useProject.getState().mode !== 'orbit' &&
           showInteractionHand(canvas.clientWidth, canvas.clientHeight))
       )
@@ -53,10 +53,10 @@ export function RenderCadence() {
       cancel();
       if (!document.hidden) wake();
     };
-    document.addEventListener('pointerdown', down);
-    document.addEventListener('pointermove', move);
-    document.addEventListener('pointerup', up);
-    document.addEventListener('pointercancel', up);
+    document.addEventListener('pointerdown', down, true);
+    document.addEventListener('pointermove', move, true);
+    document.addEventListener('pointerup', up, true);
+    document.addEventListener('pointercancel', up, true);
     document.addEventListener('keydown', key);
     document.addEventListener('keyup', key);
     document.addEventListener('wheel', wheel, { passive: true });
@@ -68,10 +68,10 @@ export function RenderCadence() {
     return () => {
       cancel();
       unsubscribe();
-      document.removeEventListener('pointerdown', down);
-      document.removeEventListener('pointermove', move);
-      document.removeEventListener('pointerup', up);
-      document.removeEventListener('pointercancel', up);
+      document.removeEventListener('pointerdown', down, true);
+      document.removeEventListener('pointermove', move, true);
+      document.removeEventListener('pointerup', up, true);
+      document.removeEventListener('pointercancel', up, true);
       document.removeEventListener('keydown', key);
       document.removeEventListener('keyup', key);
       document.removeEventListener('wheel', wheel);
