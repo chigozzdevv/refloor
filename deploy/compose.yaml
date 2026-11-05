@@ -1,0 +1,74 @@
+name: refloor
+
+services:
+  mongo:
+    image: mongo:8.0
+    command:
+      - mongod
+      - --replSet
+      - refloor-rs
+      - --bind_ip_all
+      - --keyFile
+      - /run/secrets/mongo-key
+      - --wiredTigerCacheSizeGB
+      - '0.25'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: refloor-admin
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Set the MongoDB administrator password}
+      REFLOOR_DATABASE_PASSWORD: ${MONGO_APP_PASSWORD:?Set the Refloor database password}
+    volumes:
+      - /opt/refloor/shared/mongo:/data/db
+      - /opt/refloor/shared/mongo-key:/run/secrets/mongo-key:ro
+    networks: [database]
+    restart: unless-stopped
+    mem_limit: 768m
+    cpus: 0.75
+    healthcheck:
+      test: [CMD, mongosh, --quiet, --eval, 'quit(db.adminCommand({ping:1}).ok ? 0 : 1)']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+  api:
+    image: refloor-api:${REFLOOR_RELEASE:?Set the release tag}
+    env_file: /opt/refloor/shared/server.env
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports: ['127.0.0.1:3017:3001']
+    networks:
+      database:
+      edge:
+        aliases: [refloor-api]
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs: ['/tmp:size=128m,mode=1777']
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 2g
+    cpus: 1.5
+    stop_grace_period: 30s
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3001/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    logging: *logging
+
+networks:
+  database:
+    internal: true
+  edge:
+    external: true
+    name: refloor-edge

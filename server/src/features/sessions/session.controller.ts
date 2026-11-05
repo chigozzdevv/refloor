@@ -18,25 +18,36 @@ export class SessionController {
   ) {}
 
   owner(request: FastifyRequest) {
-    return this.sessions.require(request.cookies[this.cookieName]);
+    return this.sessions.require(this.token(request));
   }
 
   create = async (request: FastifyRequest, reply: FastifyReply) => {
-    const token = await this.sessions.create(request.cookies[this.cookieName]);
-    if (token) this.cookie(reply, token);
-    return { ready: true };
+    const token = await this.sessions.create(this.token(request));
+    return this.ready(request, reply, token);
   };
 
   recovery = async (request: FastifyRequest) => ({
-    key: await this.sessions.recoveryKey(request.cookies[this.cookieName]),
+    key: await this.sessions.recoveryKey(this.token(request)),
   });
 
   recover = async (request: FastifyRequest, reply: FastifyReply) => {
     const { key } = recoverySchema.parse(request.body),
       token = await this.sessions.recover(key);
+    return this.ready(request, reply, token);
+  };
+
+  private token(request: FastifyRequest): string | undefined {
+    const authorization = request.headers.authorization;
+    return authorization === undefined
+      ? request.cookies[this.cookieName]
+      : /^Bearer ([a-f0-9]{64})$/.exec(authorization)?.[1];
+  }
+
+  private ready(request: FastifyRequest, reply: FastifyReply, token: string) {
+    if (request.headers['x-refloor-session'] === 'token') return { ready: true, token };
     this.cookie(reply, token);
     return { ready: true };
-  };
+  }
 
   private cookie(reply: FastifyReply, token: string) {
     reply.setCookie(this.cookieName, token, {

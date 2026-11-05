@@ -97,6 +97,8 @@ pnpm dev
 
 Run `pnpm check` to check formatting, linting, rendering assets, production builds, types and automated tests.
 
+See the [deployment guide](deploy/README.md) for Firebase Hosting and a VPS backend behind Caddy.
+
 ## Built with
 
 | Area                   | Technologies                                      |

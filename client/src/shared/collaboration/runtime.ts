@@ -2,6 +2,7 @@ import { mergeActivity } from '@/shared/collaboration/history';
 import { mergeConversation } from '@/shared/collaboration/conversation';
 import { SharedOutbox } from '@/shared/collaboration/outbox';
 import { io } from 'socket.io-client';
+import { apiOrigin, apiSessionToken } from '@/shared/refloor/endpoint';
 import { z } from 'zod';
 import { fingerprintBuilding } from '@refloor/scene';
 import type { NavigationPoint } from '@refloor/engine';
@@ -385,7 +386,12 @@ export function startCollaboration(projectId: string) {
   };
   collaborationBridge.current = bridge;
   useCollaboration.setState({ status: 'connecting', peers: [], error: null, pending: 0 });
-  const socket = io({ path: '/api/live', withCredentials: true, autoConnect: false });
+  const socket = io(apiOrigin || undefined, {
+    path: '/api/live',
+    withCredentials: !apiOrigin,
+    autoConnect: false,
+    auth: (done) => done({ session: apiSessionToken() ?? undefined }),
+  });
   socket.on('connect', () => {
     socket.emit(
       'join',

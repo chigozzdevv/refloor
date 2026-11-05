@@ -61,9 +61,15 @@ export function registerCollaborationSocket(
   service.changes.add(changed);
   io.use(async (socket, next) => {
     try {
-      const token = app.parseCookie(socket.request.headers.cookie ?? '')[
-        config.sessionCookieName ?? sessionCookie
-      ];
+      const session = socket.handshake.auth.session as unknown,
+        token =
+          session === undefined
+            ? app.parseCookie(socket.request.headers.cookie ?? '')[
+                config.sessionCookieName ?? sessionCookie
+              ]
+            : typeof session === 'string'
+              ? session
+              : undefined;
       socket.data.ownerId = await sessions.require(token);
       socket.data.token = token;
       next();

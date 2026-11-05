@@ -1,7 +1,14 @@
 import { apiErrorSchema } from '@refloor/scene/contracts';
 import { z } from 'zod';
+import { apiOrigin, apiSessionToken, rememberApiSession } from '@/shared/refloor/endpoint';
 
-const sessionReadySchema = z.strictObject({ ready: z.literal(true) });
+export const sessionReadySchema = z.strictObject({
+  ready: z.literal(true),
+  token: z
+    .string()
+    .regex(/^[a-f0-9]{64}$/)
+    .optional(),
+});
 
 export class ProjectApiError extends Error {
   constructor(
@@ -26,14 +33,19 @@ export async function request<T>(
 ): Promise<T> {
   let response: Response;
   const signal = AbortSignal.timeout(timeout);
+  const sessionRequest = path === '/sessions' || path === '/sessions/recover',
+    token = apiSessionToken();
   try {
-    response = await fetch(`/api${path}`, {
+    response = await fetch(`${apiOrigin}/api${path}`, {
       method,
-      credentials: 'same-origin',
+      credentials: apiOrigin ? 'omit' : 'same-origin',
       signal,
-      ...(body === undefined
-        ? {}
-        : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+      headers: {
+        ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+        ...(apiOrigin && sessionRequest ? { 'X-Refloor-Session': 'token' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
   } catch {
     if (signal.aborted) throw requestTimeout();
@@ -56,7 +68,13 @@ export async function request<T>(
     );
   }
   try {
-    return schema.parse(data);
+    const parsed = schema.parse(data);
+    if (apiOrigin && sessionRequest) {
+      const ready = sessionReadySchema.parse(data);
+      if (!ready.token) throw new Error('Session token missing');
+      rememberApiSession(ready.token);
+    }
+    return parsed;
   } catch {
     throw new ProjectApiError(
       'INVALID_RESPONSE',

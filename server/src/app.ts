@@ -32,6 +32,7 @@ import { LanguageEditService } from '@refloor/server/features/edits/language-edi
 
 export async function createApp(config: ServerConfig, logging = true) {
   const app = Fastify({
+    trustProxy: config.trustProxy ?? false,
     logger: logging
       ? { redact: ['req.headers.cookie', 'req.headers.authorization', 'res.headers.set-cookie'] }
       : false,

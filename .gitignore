@@ -8,3 +8,5 @@ coverage/
 *.tsbuildinfo
 .pnpm-store/
 .local/
+.firebase/
+firebase-debug.log*

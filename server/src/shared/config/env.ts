@@ -3,6 +3,7 @@ import { z } from 'zod';
 const environmentSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   HOST: z.string().min(1).default('127.0.0.1'),
+  TRUST_PROXY: z.enum(['true', 'false']).default('false'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3001),
   MONGODB_URI: z.string().regex(/^mongodb(?:\+srv)?:\/\//),
   MONGODB_DATABASE: z
@@ -22,6 +23,7 @@ export type ServerConfig = {
   sessionCookieName?: string;
   production: boolean;
   host: string;
+  trustProxy?: boolean;
   port: number;
   mongoUri: string;
   database: string;
@@ -47,6 +49,7 @@ export function readConfig(environment: NodeJS.ProcessEnv = process.env): Server
   return {
     production: value.NODE_ENV === 'production',
     host: value.HOST,
+    trustProxy: value.TRUST_PROXY === 'true',
     port: value.PORT,
     mongoUri: value.MONGODB_URI,
     database: value.MONGODB_DATABASE,

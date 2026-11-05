@@ -1,0 +1,4 @@
+refloor.144-91-113-54.sslip.io {
+    encode zstd gzip
+    reverse_proxy refloor-api:3001
+}
