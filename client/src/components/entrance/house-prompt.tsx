@@ -7,6 +7,9 @@ import { useSavedProjects } from '@/shared/scene/scene-sync';
 import { GenerationProgress } from '@/components/entrance/generation-progress';
 import { ProjectApiError } from '@/shared/refloor/client';
 
+const defaultPrompt =
+  'Create a modern two-storey home with three bedrooms upstairs, a bathroom on each floor and stairs at the rear. Downstairs, include spacious open-plan living and dining, a separate kitchen and an office. Use cream interiors, oak floors and cabinetry, sage seating, black fittings, brick exterior walls and a dark flat asphalt roof. Add large windows, a TV with stereo speakers, dining furniture, planters, warm wall lights and a paved compound. Keep the main bedroom spacious and walkways clear.';
+
 export function HousePrompt({
   close,
   resume,
@@ -21,7 +24,7 @@ export function HousePrompt({
   choosingTemplate?: boolean;
 }) {
   const [pending, setPending] = useState<PendingGeneration | null>(restoreGeneration);
-  const [prompt, setPrompt] = useState(() => restoreGeneration()?.prompt ?? '');
+  const [prompt, setPrompt] = useState(() => pending?.prompt ?? defaultPrompt);
   const [job, setJob] = useState<Generation | null>(null),
     [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0),

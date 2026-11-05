@@ -2,10 +2,31 @@ import { expect, test } from '@playwright/test';
 
 const prompt = 'A two-bedroom bungalow with a bright living room and oak floors.';
 
-test('starts with an empty description and a concise example', async ({ page }) => {
+test('starts with an editable description that can be generated without typing', async ({
+  page,
+}) => {
+  const submitted = page.waitForRequest(
+    (request) => request.url().endsWith('/api/generations') && request.method() === 'POST',
+  );
+  await page.route('**/api/generations', (route) =>
+    route.fulfill({
+      status: 503,
+      json: { error: { code: 'GENERATION_UNAVAILABLE', message: 'Not configured' } },
+    }),
+  );
   await page.goto('/');
-  await expect(page.getByRole('textbox', { name: 'Describe your house' })).toBeEmpty();
-  await expect(page.getByRole('button', { name: 'Generate house' })).toBeDisabled();
+  const input = page.getByRole('textbox', { name: 'Describe your house' }),
+    generate = page.getByRole('button', { name: 'Generate house' });
+  await expect(input).toHaveValue(/^Create a modern two-storey home/);
+  await expect(input).toBeEditable();
+  await expect(generate).toBeEnabled();
+  const initial = await input.inputValue();
+  expect(initial).toContain('brick exterior walls');
+  expect(initial).toContain('open-plan living and dining');
+  await generate.click();
+  expect((await submitted).postDataJSON().prompt).toBe(initial);
+  await expect(page.getByRole('alert')).toContainText('House generation is unavailable.');
+  await expect(input).toHaveValue(initial);
 });
 
 test('releases an expired generation and retains its description', async ({ page }) => {
