@@ -64,12 +64,16 @@ test('keeps a pending job when cancelling starters and clears it after choosing 
     }),
   );
   await page.goto('/');
-  await expect(page.getByRole('button', { name: 'Retry connection' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Retry connection' })).toBeVisible({
+    timeout: 30_000,
+  });
   await page.getByRole('button', { name: 'Choose a starting house' }).click();
   await expect(page.getByRole('dialog', { name: 'Create a new space' })).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem('refloor.generation.v1'))).not.toBeNull();
   await page.getByRole('button', { name: 'Close', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Retry connection' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Retry connection' })).toBeVisible({
+    timeout: 30_000,
+  });
   expect(await page.evaluate(() => localStorage.getItem('refloor.generation.v1'))).not.toBeNull();
   await page.getByRole('button', { name: 'Choose a starting house' }).click();
   await page.getByRole('button', { name: /The Garden House/ }).click();

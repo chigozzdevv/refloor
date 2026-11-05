@@ -29,6 +29,11 @@ export class HouseService {
     private readonly revisions: RevisionRepository,
   ) {}
 
+  async createdProjectId(ownerId: string, requestId: string) {
+    const record = await this.houses.findCreation(ownerId, requestId);
+    return record && !record.deleted ? record._id : null;
+  }
+
   async get(ownerId: string, id: string): Promise<Project> {
     const record = await this.houses.find(ownerId, id);
     if (!record)

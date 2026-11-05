@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, LoaderCircle, Send } from 'lucide-react';
 import type { Generation } from '@refloor/scene/contracts';
-import { generationApi, persistGeneration, restoreGeneration } from '@/shared/refloor/progress';
+import { persistGeneration, restoreGeneration, watchGeneration } from '@/shared/refloor/progress';
 import type { PendingGeneration } from '@/shared/refloor/progress';
 import { useSavedProjects } from '@/shared/scene/scene-sync';
 import { GenerationProgress } from '@/components/entrance/generation-progress';
@@ -70,16 +70,9 @@ export function HousePrompt({
   };
   useEffect(() => {
     if (!pending) return;
-    let cancelled = false,
-      timer: ReturnType<typeof setTimeout> | undefined,
-      current = pending;
-    const poll = async () => {
-      try {
-        const next = current.jobId
-          ? await generationApi.get(current.jobId)
-          : await generationApi.create(current);
-        if (cancelled) return;
-        current = { ...current, jobId: next.id };
+    return watchGeneration(
+      pending,
+      (next, current) => {
         persistGeneration(current);
         setJob(next);
         if (next.status === 'failed') {
@@ -92,12 +85,8 @@ export function HousePrompt({
               ? 'This house could not be generated. Please try again.'
               : null),
         );
-        if (!['complete', 'failed'].includes(next.status))
-          timer = setTimeout(() => {
-            void poll();
-          }, 1500);
-      } catch (failure) {
-        if (cancelled) return;
+      },
+      (failure) => {
         if (
           failure instanceof ProjectApiError &&
           (!failure.retryable || failure.code === 'GENERATION_UNAVAILABLE')
@@ -115,13 +104,8 @@ export function HousePrompt({
                 ? failure.message
                 : 'Generation could not connect.',
         );
-      }
-    };
-    void poll();
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
+      },
+    );
   }, [pending, attempt]);
   useEffect(() => {
     if (

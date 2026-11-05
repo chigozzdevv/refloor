@@ -10,6 +10,7 @@ export type GenerationRecord = Omit<Generation, 'id'> & {
   active: boolean;
   createdAt: Date;
   deadline: Date | null;
+  recoveries?: number;
   expiresAt: Date;
 };
 

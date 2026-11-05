@@ -1,6 +1,10 @@
 import { createApp } from '@refloor/server/app';
 import { readConfig } from '@refloor/server/shared/config/env';
 
+process.once('exit', (code) => {
+  console.error(JSON.stringify({ event: 'refloor-process-exit', code }));
+});
+
 let app: Awaited<ReturnType<typeof createApp>> | undefined;
 try {
   const config = readConfig();
@@ -18,9 +22,11 @@ try {
     }
   };
   process.once('SIGINT', () => {
+    server.log.info({ signal: 'SIGINT' }, 'Refloor is shutting down');
     void close();
   });
   process.once('SIGTERM', () => {
+    server.log.info({ signal: 'SIGTERM' }, 'Refloor is shutting down');
     void close();
   });
   await server.listen({ host: config.host, port: config.port });

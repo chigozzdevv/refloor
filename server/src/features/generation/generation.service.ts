@@ -110,9 +110,18 @@ export class GenerationService {
   private async run() {
     const job = await this.jobs.claim();
     if (!job || !this.ai || this.closed) return;
+    const update = (change: Parameters<GenerationRepository['update']>[1]) =>
+      this.jobs.update(job._id, change, job.deadline!);
     let results: MessagePort | undefined;
     let output: MessagePort | undefined;
     try {
+      if (job.recoveries) {
+        const savedId = await this.houses.createdProjectId(job.ownerId, job._id);
+        if (savedId) {
+          await update({ status: 'complete', active: false, projectId: savedId });
+          return;
+        }
+      }
       const source = new URL('./generation.worker.ts', import.meta.url);
       const { port1, port2 } = new MessageChannel();
       results = port1;
@@ -129,21 +138,23 @@ export class GenerationService {
       this.worker = worker;
       worker.on('error', this.report);
       const result = await receiveGeneration(worker, port1, async (message) => {
-        await this.jobs.update(job._id, { status: message.status, usage: message.usage });
+        const changed = await update({ status: message.status, usage: message.usage });
+        if (!changed.matchedCount) throw new Error('The generation lease has expired.');
       });
-      await this.jobs.update(job._id, { status: 'saving', usage: result.usage });
+      const changed = await update({ status: 'saving', usage: result.usage });
+      if (!changed.matchedCount) throw new Error('The generation lease has expired.');
       const saved = await this.houses.create(job.ownerId, {
         requestId: job._id,
         building: result.building,
       });
-      await this.jobs.update(job._id, {
+      await update({
         status: 'complete',
         active: false,
         projectId: saved.project.id,
       });
     } catch (error) {
       this.report(error);
-      await this.jobs.update(job._id, {
+      await update({
         status: 'failed',
         active: false,
         error: generationFailureMessage(error),

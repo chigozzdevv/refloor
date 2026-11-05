@@ -23,14 +23,22 @@ export class GenerationRepository {
     }
   }
   async claim() {
+    const expired = { active: true, deadline: { $lt: new Date(), $ne: null } };
     await this.collection.updateMany(
-      { active: true, deadline: { $lt: new Date(), $ne: null } },
+      { ...expired, recoveries: { $gte: 1 } },
       {
         $set: {
           active: false,
           status: 'failed',
           error: 'Generation was interrupted. Submit a new request to try again.',
         },
+      },
+    );
+    await this.collection.updateMany(
+      { ...expired, $or: [{ recoveries: { $exists: false } }, { recoveries: 0 }] },
+      {
+        $set: { status: 'queued', deadline: null, error: null },
+        $inc: { recoveries: 1 },
       },
     );
     return this.collection.findOneAndUpdate(
@@ -42,7 +50,11 @@ export class GenerationRepository {
   update(
     id: string,
     change: Partial<Pick<GenerationRecord, 'status' | 'projectId' | 'error' | 'usage' | 'active'>>,
+    deadline?: Date,
   ) {
-    return this.collection.updateOne({ _id: id, active: true }, { $set: change });
+    return this.collection.updateOne(
+      { _id: id, active: true, ...(deadline ? { deadline } : {}) },
+      { $set: change },
+    );
   }
 }

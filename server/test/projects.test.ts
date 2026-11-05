@@ -19,6 +19,9 @@ import { GenerationRepository } from '@refloor/server/features/generation/genera
 import type { GenerationRecord } from '@refloor/server/features/generation/generation.model';
 import type { HouseRecord } from '@refloor/server/features/houses/house.model';
 import { HouseRepository } from '@refloor/server/features/houses/house.repo';
+import { HouseService } from '@refloor/server/features/houses/house.service';
+import { RevisionRepository } from '@refloor/server/features/edits/revision.repo';
+import { GenerationService } from '@refloor/server/features/generation/generation.service';
 import { restoreElement } from '@refloor/server/shared/planning/restore-element';
 
 describe('MongoDB project API', () => {
@@ -540,6 +543,96 @@ describe('MongoDB project API', () => {
         status: 'failed',
       }),
     ).toBe(true);
+  });
+
+  it('recovers an interrupted job once, fences its old worker and bounds repeated interruptions', async () => {
+    const repository = new GenerationRepository(database.db(config.database)),
+      collection = database.db(config.database).collection<GenerationRecord>('generations');
+    const record: GenerationRecord = {
+      _id: randomUUID(),
+      ownerId: randomUUID(),
+      requestId: randomUUID(),
+      fingerprint: 'interrupted-job',
+      prompt: 'A bright bungalow.',
+      status: 'layout',
+      projectId: null,
+      error: null,
+      usage: null,
+      active: true,
+      createdAt: new Date(),
+      deadline: new Date(Date.now() - 1000),
+      expiresAt: new Date(Date.now() + 86400000),
+    };
+    await repository.insert(record);
+    const claims = await Promise.all([repository.claim(), repository.claim()]);
+    expect(claims.filter(Boolean)).toHaveLength(1);
+    const recovered = claims.find(Boolean)!;
+    expect(recovered._id).toBe(record._id);
+    expect(recovered.recoveries).toBe(1);
+    expect(recovered.status).toBe('interpreting');
+    expect(
+      (await repository.update(record._id, { status: 'failed', active: false }, record.deadline!))
+        .matchedCount,
+    ).toBe(0);
+    expect(await repository.claim()).toBeNull();
+    await collection.updateOne(
+      { _id: record._id },
+      { $set: { deadline: new Date(Date.now() - 1000) } },
+    );
+    expect(await repository.claim()).toBeNull();
+    expect(await repository.find(record.ownerId, record._id)).toMatchObject({
+      status: 'failed',
+      active: false,
+      recoveries: 1,
+    });
+  });
+
+  it('reuses a house saved before an interrupted completion without regenerating or duplicating it', async () => {
+    const db = database.db(config.database),
+      repository = new GenerationRepository(db),
+      houses = new HouseRepository(db),
+      service = new HouseService(houses, new RevisionRepository(database, db, houses));
+    const record: GenerationRecord = {
+      _id: randomUUID(),
+      ownerId: randomUUID(),
+      requestId: randomUUID(),
+      fingerprint: 'interrupted-save',
+      prompt: 'A bright bungalow.',
+      status: 'saving',
+      projectId: null,
+      error: null,
+      usage: null,
+      active: true,
+      createdAt: new Date(),
+      deadline: new Date(Date.now() - 1000),
+      expiresAt: new Date(Date.now() + 86400000),
+    };
+    const saved = await service.create(record.ownerId, { requestId: record._id, building });
+    await repository.insert(record);
+    const create = vi.spyOn(service, 'create'),
+      report = vi.fn();
+    const generation = new GenerationService(
+      repository,
+      service,
+      { apiKey: 'unused', model: 'gpt-6-luna' },
+      report,
+    );
+    generation.start();
+    try {
+      await vi.waitFor(async () => {
+        expect(await repository.find(record.ownerId, record._id)).toMatchObject({
+          status: 'complete',
+          active: false,
+          projectId: saved.project.id,
+        });
+      });
+      expect(create).not.toHaveBeenCalled();
+      expect(report).not.toHaveBeenCalled();
+      expect(await db.collection('projects').countDocuments({ ownerId: record.ownerId })).toBe(1);
+    } finally {
+      await generation.close();
+      create.mockRestore();
+    }
   });
 
   it('stores token hashes and reuses an unexpired browser session', async () => {
