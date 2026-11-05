@@ -5,7 +5,7 @@ import { dirname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 type AssetFile = { path: string; bytes: number; sha256: string };
-type Manifest = { assets: { files: AssetFile[] }[] };
+type Manifest = { totalBytes: number; assets: { files: AssetFile[] }[] };
 const publicDirectory = fileURLToPath(new URL('../client/public/', import.meta.url));
 const manifest = JSON.parse(
   await readFile(resolve(publicDirectory, 'manifest.json'), 'utf8'),
@@ -48,5 +48,7 @@ for (const file of files) {
     );
   }
 }
+
+assert.equal(manifest.totalBytes, bytes, 'Manifest totalBytes does not match the asset files');
 
 console.info(`Verified ${checked.size} asset files (${bytes.toLocaleString('en-US')} bytes).`);

@@ -29,7 +29,7 @@ export function Floodlight({ object }: { object: SceneObject }) {
         <meshStandardMaterial
           color={output ? '#fff3db' : '#9daba8'}
           emissive={state?.color ?? '#ffffff'}
-          emissiveIntensity={output ? 2 : 0}
+          emissiveIntensity={output ? 0.8 : 0}
           roughness={0.3}
         />
       </mesh>
@@ -38,7 +38,7 @@ export function Floodlight({ object }: { object: SceneObject }) {
         target={target}
         userData={{ lightBudget: { id: object.id, floorId: object.floorId, exterior: true } }}
         color={state?.color ?? '#ffe6c4'}
-        intensity={output * 5}
+        intensity={output * 2.5}
         angle={0.95}
         penumbra={0.55}
         distance={14}

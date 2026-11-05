@@ -19,4 +19,3 @@ export const designHistoryRecordSchema = z.strictObject({
   undoable: z.boolean().optional(),
   target: z.string().max(500).optional(),
 });
-export type DesignCheckpoint = z.infer<typeof designCheckpointSchema>;

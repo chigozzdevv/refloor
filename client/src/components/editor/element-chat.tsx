@@ -3,6 +3,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { History, Lightbulb, LoaderCircle, Send, Undo2, X } from 'lucide-react';
 import type { ChatTarget } from '@refloor/scene/chat';
 import { useLanguageEdit } from '@/shared/editor/use-language-edit';
+import { chatDraftKey, useChatDrafts } from '@/shared/editor/chat-drafts';
+import { useProject } from '@/shared/scene/scene-store';
 
 export function ElementChat({
   target,
@@ -11,6 +13,8 @@ export function ElementChat({
   status,
   close,
   active = true,
+  suggestionsInitiallyOpen = true,
+  closeLabel = 'Close chat',
 }: {
   target: ChatTarget;
   label: string;
@@ -18,19 +22,41 @@ export function ElementChat({
   status?: string | null;
   close?: () => void;
   active?: boolean;
+  suggestionsInitiallyOpen?: boolean;
+  closeLabel?: string;
 }) {
   const readonly = useCollaboration(
     (state) =>
       state.status !== 'idle' && (state.status !== 'live' || state.state?.self.role === 'viewer'),
   );
   const activity = useCollaboration((state) => state.state?.activity);
-  const [message, setMessage] = useState('');
+  const buildingId = useProject((state) => state.compiled.building.id);
+  const draftKey = chatDraftKey(buildingId, target);
+  const message = useChatDrafts((state) => state.drafts[draftKey] ?? '');
+  const setMessage = (text: string) => useChatDrafts.getState().set(draftKey, text);
   const [pending, setPending] = useState<{ message: string; turnIds: string[] } | null>(null);
   const [showHistory, setShowHistory] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(true);
+  const [showSuggestions, setShowSuggestions] = useState(suggestionsInitiallyOpen);
+  const [fadedTurn, setFadedTurn] = useState<string | null>(null);
+  const [reading, setReading] = useState(false);
   const input = useRef<HTMLTextAreaElement>(null);
   const conversation = useRef<HTMLDivElement>(null);
   const { send, busy, reply, history } = useLanguageEdit(target);
+  const latest = history.at(-1);
+  useEffect(() => {
+    if (
+      !active ||
+      busy ||
+      pending ||
+      showHistory ||
+      reading ||
+      latest?.status !== 'applied' ||
+      latest.reply.startsWith('Applied the change, but ')
+    )
+      return;
+    const timer = setTimeout(() => setFadedTurn(latest.id), 6500);
+    return () => clearTimeout(timer);
+  }, [active, busy, pending, showHistory, reading, latest?.id, latest?.status, latest?.reply]);
   useLayoutEffect(() => {
     if (conversation.current) conversation.current.scrollTop = conversation.current.scrollHeight;
   }, [showHistory, history.length, reply, pending]);
@@ -100,7 +126,7 @@ export function ElementChat({
             </button>
           )}
           {close && (
-            <button className="icon-button" aria-label="Close chat" onClick={close}>
+            <button className="icon-button" aria-label={closeLabel} onClick={close}>
               <X size={14} />
             </button>
           )}
@@ -111,9 +137,12 @@ export function ElementChat({
           ref={conversation}
           className="chat-conversation"
           data-expanded={showHistory}
+          data-faded={!showHistory && !pending && latest?.id === fadedTurn}
           role="log"
           aria-label="Recent conversation"
           aria-live="polite"
+          onPointerEnter={() => setReading(true)}
+          onPointerLeave={() => setReading(false)}
         >
           {visibleHistory.map((turn) => {
             const event = activity?.find((item) => item.id === turn.revisionId),

@@ -33,22 +33,15 @@ async function wait(tab: JourneyTab, locator: Locator, state: 'visible' | 'hidde
     `Browser journey did not reach ${state}: ${String(failure)}\n${await tab.playwright.domSnapshot()}`,
   );
 }
-export async function openTools(tab: JourneyTab) {
+export async function openHouse(tab: JourneyTab) {
   await tab.playwright.getByRole('button', { name: 'House controls', exact: true }).click();
-  await tab.playwright.getByRole('tab', { name: 'Tools', exact: true }).click();
 }
 export async function startHouse(tab: JourneyTab) {
   await tab.playwright
     .getByRole('button', { name: 'Choose a starting house', exact: true })
     .click();
   await tab.playwright.getByRole('button', { name: /The Garden House/ }).click();
-  const approach = tab.playwright.getByRole('button', {
-    name: 'Approach the entrance',
-    exact: true,
-  });
-  if (await approach.isVisible()) await approach.click();
-  const skip = tab.playwright.getByRole('button', { name: 'Skip approach', exact: true });
-  if (await skip.isVisible()) await skip.click();
+  // The introduction advances itself; its temporary buttons may disappear between reads.
   await wait(
     tab,
     tab.playwright.getByRole('button', { name: 'House controls', exact: true }),
@@ -56,12 +49,13 @@ export async function startHouse(tab: JourneyTab) {
   );
 }
 export async function importHouse(tab: JourneyTab, path: string) {
-  await openTools(tab);
-  await tab.playwright.getByRole('button', { name: 'Project files', exact: true }).click();
+  await openHouse(tab);
+  await tab.playwright.getByRole('button', { name: 'Homes', exact: true }).click();
+  await tab.playwright.getByText('Files & recovery', { exact: true }).click();
   const pending = tab.playwright.waitForEvent('filechooser');
-  await tab.playwright.getByRole('button', { name: /Open project/ }).click();
+  await tab.playwright.getByRole('button', { name: 'Import house', exact: true }).click();
   await (await pending).setFiles([path]);
-  await wait(tab, tab.playwright.locator('.project-menu'), 'hidden');
+  await wait(tab, tab.playwright.locator('.homes-menu'), 'hidden');
   await wait(
     tab,
     tab.playwright.getByRole('button', { name: 'Open door using handle', exact: true }),
@@ -77,7 +71,7 @@ export async function importHouse(tab: JourneyTab, path: string) {
   await tab.playwright.getByRole('button', { name: 'Open door using handle', exact: true }).click();
   await wait(
     tab,
-    tab.playwright.getByRole('button', { name: 'Walk forward', exact: true }),
+    tab.playwright.getByRole('button', { name: 'Drag to move in any direction', exact: true }),
     'visible',
   );
   await wait(
@@ -121,7 +115,7 @@ export async function visitRoom(tab: JourneyTab, floor: string, room: string) {
   return `${floor}: ${room}`;
 }
 export async function editRefrigerator(tab: JourneyTab, roomId: string) {
-  await openTools(tab);
+  await openHouse(tab);
   await tab.playwright.getByRole('button', { name: 'Furniture', exact: true }).click();
   await tab.playwright
     .getByRole('combobox', { name: 'Choose room', exact: true })
@@ -142,6 +136,7 @@ export async function editRefrigerator(tab: JourneyTab, roomId: string) {
   await tab.playwright.getByRole('button', { name: 'Close chat', exact: true }).click();
 }
 export async function undoRedo(tab: JourneyTab, direction: 'Undo' | 'Redo') {
+  await openHouse(tab);
   await tab.playwright.getByRole('button', { name: 'Edit history', exact: true }).click();
   await tab.playwright.getByRole('button', { name: direction, exact: true }).click();
   await tab.playwright.getByRole('button', { name: 'Close history', exact: true }).click();
@@ -188,13 +183,13 @@ export async function leaveHouse(tab: JourneyTab) {
     throw new Error('The entrance trip did not leave the interior');
 }
 export async function exportHouse(tab: JourneyTab) {
-  await openTools(tab);
-  await tab.playwright.getByRole('button', { name: 'Project files', exact: true }).click();
+  await openHouse(tab);
+  await tab.playwright.getByRole('button', { name: 'Homes', exact: true }).click();
+  await tab.playwright.getByText('Files & recovery', { exact: true }).click();
   const pending = tab.playwright.waitForEvent('download');
-  await tab.playwright.getByRole('button', { name: /Export project/ }).click();
+  await tab.playwright.getByRole('button', { name: 'Export house', exact: true }).click();
   const path = await (await pending).path();
-  await tab.playwright.getByRole('button', { name: 'Close project files', exact: true }).click();
-  await tab.playwright.getByRole('button', { name: 'Close house controls', exact: true }).click();
+  await tab.playwright.getByRole('button', { name: 'Close homes', exact: true }).click();
   if (!path) throw new Error('The browser did not export the house');
   return path;
 }

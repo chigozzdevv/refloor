@@ -5,6 +5,7 @@ import {
   houseListSchema,
   houseParamsSchema,
   houseSaveSchema,
+  houseCollectionSchema,
 } from '@refloor/server/features/houses/house.schema';
 import type { SessionController } from '@refloor/server/features/sessions/session.controller';
 
@@ -17,7 +18,7 @@ export class HouseController {
   list = async (request: FastifyRequest) => {
     const owner = await this.sessions.owner(request),
       query = houseListSchema.parse(request.query);
-    return this.houses.list(owner, query.limit, query.cursor);
+    return this.houses.list(owner, query.limit, query.cursor, query.deleted);
   };
   create = async (request: FastifyRequest, reply: FastifyReply) => {
     const owner = await this.sessions.owner(request);
@@ -34,6 +35,14 @@ export class HouseController {
       owner,
       houseParamsSchema.parse(request.params).id,
       houseSaveSchema.parse(request.body),
+    );
+  };
+  updateCollection = async (request: FastifyRequest) => {
+    const owner = await this.sessions.owner(request);
+    return this.houses.updateCollection(
+      owner,
+      houseParamsSchema.parse(request.params).id,
+      houseCollectionSchema.parse(request.body),
     );
   };
 }

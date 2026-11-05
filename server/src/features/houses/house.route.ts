@@ -6,4 +6,5 @@ export function registerHouseRoutes(app: FastifyInstance, controller: HouseContr
   app.post('/api/projects', controller.create);
   app.get('/api/projects/:id', controller.get);
   app.put('/api/projects/:id', controller.save);
+  app.patch('/api/projects/:id/collection', controller.updateCollection);
 }

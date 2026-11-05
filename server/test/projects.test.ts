@@ -1,18 +1,24 @@
 import { randomUUID } from 'node:crypto';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { MongoClient } from 'mongodb';
 import { createHouse } from '@refloor/catalogue/houses';
 import { fingerprintBuilding } from '@refloor/scene';
 import type { SceneCommand } from '@refloor/scene';
 import { createEditMemory, recordChatTurn } from '@refloor/scene/edit-memory';
-import { projectListSchema, projectSchema, projectWriteSchema } from '@refloor/scene/contracts';
+import {
+  projectListSchema,
+  projectSchema,
+  projectSummarySchema,
+  projectWriteSchema,
+} from '@refloor/scene/contracts';
 import type { ProjectWrite } from '@refloor/scene/contracts';
 import { createApp } from '@refloor/server/app';
 import type { ServerConfig } from '@refloor/server/shared/config/env';
 import { GenerationRepository } from '@refloor/server/features/generation/generation.repo';
 import type { GenerationRecord } from '@refloor/server/features/generation/generation.model';
 import type { HouseRecord } from '@refloor/server/features/houses/house.model';
+import { HouseRepository } from '@refloor/server/features/houses/house.repo';
 import { restoreElement } from '@refloor/server/shared/planning/restore-element';
 
 describe('MongoDB project API', () => {
@@ -922,6 +928,238 @@ describe('MongoDB project API', () => {
       400,
     );
     expect((await app.inject({ url: '/api/projects?limit=999', cookies })).statusCode).toBe(400);
+  });
+
+  it('renames saved houses without replacing scene revisions or losing the name on later saves', async () => {
+    const cookies = await session(),
+      created = await create(cookies);
+    const edited = projectWriteSchema.parse(
+      (await edit(cookies, created, [paint('#c7bba8')])).json(),
+    );
+    const response = await app.inject({
+      method: 'PATCH',
+      url: `/api/projects/${created.project.id}/collection`,
+      cookies,
+      payload: { expectedCollectionVersion: 0, name: '  Warm family home  ' },
+    });
+    expect(response.statusCode).toBe(200);
+    const renamed = projectSummarySchema.parse(response.json());
+    expect(renamed).toMatchObject({
+      name: 'Warm family home',
+      collectionVersion: 1,
+      version: edited.project.version,
+      revision: edited.project.revision,
+      canUndo: true,
+    });
+    expect(renamed.preview?.rooms).toHaveLength(building.floors[0]!.rooms.length);
+    expect(
+      projectSchema.parse(
+        (await app.inject({ url: `/api/projects/${created.project.id}`, cookies })).json(),
+      ).building,
+    ).toEqual(edited.project.building);
+    const saved = await app.inject({
+      method: 'PUT',
+      url: `/api/projects/${created.project.id}`,
+      cookies,
+      payload: {
+        requestId: randomUUID(),
+        expectedVersion: edited.project.version,
+        building: edited.project.building,
+      },
+    });
+    expect(saved.statusCode).toBe(200);
+    expect(projectWriteSchema.parse(saved.json()).project.name).toBe('Warm family home');
+    const replay = await app.inject({
+      method: 'PATCH',
+      url: `/api/projects/${created.project.id}/collection`,
+      cookies,
+      payload: { expectedCollectionVersion: 0, name: 'Warm family home' },
+    });
+    expect(replay.statusCode).toBe(200);
+    expect(replay.json().collectionVersion).toBe(1);
+    const stale = await app.inject({
+      method: 'PATCH',
+      url: `/api/projects/${created.project.id}/collection`,
+      cookies,
+      payload: { expectedCollectionVersion: 0, name: 'Stale name' },
+    });
+    expect(stale.statusCode).toBe(409);
+    expect(stale.json().error.code).toBe('COLLECTION_CONFLICT');
+  });
+
+  it('soft deletes and restores the complete private house and its undo history', async () => {
+    const cookies = await session(),
+      creationId = randomUUID(),
+      created = await create(cookies, creationId);
+    const edited = projectWriteSchema.parse(
+      (await edit(cookies, created, [paint('#c7bba8')])).json(),
+    );
+    const url = `/api/projects/${created.project.id}/collection`;
+    const removed = await app.inject({
+      method: 'PATCH',
+      url,
+      cookies,
+      payload: { expectedCollectionVersion: 0, deleted: true },
+    });
+    expect(removed.statusCode).toBe(200);
+    expect(removed.json()).toMatchObject({ deleted: true, collectionVersion: 1, canUndo: true });
+    const replay = await app.inject({
+      method: 'POST',
+      url: '/api/projects',
+      cookies,
+      payload: { requestId: creationId, building },
+    });
+    expect(replay.statusCode).toBe(410);
+    expect(replay.json().error.code).toBe('PROJECT_DELETED');
+    expect(
+      projectListSchema.parse((await app.inject({ url: '/api/projects', cookies })).json()).items,
+    ).toEqual([]);
+    expect(
+      (await app.inject({ url: `/api/projects/${created.project.id}`, cookies })).statusCode,
+    ).toBe(404);
+    expect((await edit(cookies, edited, [paint('#ffffff')])).statusCode).toBe(404);
+    const trash = projectListSchema.parse(
+      (await app.inject({ url: '/api/projects?deleted=true', cookies })).json(),
+    );
+    expect(trash.items.map((item) => item.id)).toEqual([created.project.id]);
+    const shared = await app.inject({
+      method: 'POST',
+      url: `/api/collaboration/projects/${created.project.id}/enable`,
+      cookies,
+      payload: { name: 'Owner', expectedVersion: edited.project.version },
+    });
+    expect(shared.statusCode).not.toBe(200);
+    const restored = await app.inject({
+      method: 'PATCH',
+      url,
+      cookies,
+      payload: { expectedCollectionVersion: 1, deleted: false },
+    });
+    expect(restored.statusCode).toBe(200);
+    const reopened = projectSchema.parse(
+      (await app.inject({ url: `/api/projects/${created.project.id}`, cookies })).json(),
+    );
+    expect(reopened.building).toEqual(edited.project.building);
+    expect(reopened.version).toBe(edited.project.version);
+    expect(reopened.canUndo).toBe(true);
+    expect(
+      projectListSchema.parse(
+        (await app.inject({ url: '/api/projects?deleted=true', cookies })).json(),
+      ).items,
+    ).toEqual([]);
+  });
+
+  it('retains collection metadata when an in-flight scene transaction retries its whole-record write', async () => {
+    const cookies = await session(),
+      created = await create(cookies);
+    let current = created;
+    const original = HouseRepository.prototype.replace;
+    for (const [index, operation] of ['edit', 'snapshot', 'undo'].entries()) {
+      if (operation === 'undo')
+        current = projectWriteSchema.parse(
+          (await edit(cookies, current, [paint('#fafafa')])).json(),
+        );
+      let entered!: () => void,
+        resume!: () => void,
+        paused = false;
+      const reached = new Promise<void>((resolve) => {
+        entered = resolve;
+      });
+      const release = new Promise<void>((resolve) => {
+        resume = resolve;
+      });
+      const replace = vi
+        .spyOn(HouseRepository.prototype, 'replace')
+        .mockImplementation(async function (this: HouseRepository, ...args) {
+          if (!paused) {
+            paused = true;
+            entered();
+            await release;
+          }
+          return original.apply(this, args);
+        });
+      const mutation =
+        operation === 'edit'
+          ? edit(cookies, current, [paint('#c7bba8')])
+          : app.inject({
+              method: operation === 'snapshot' ? 'PUT' : 'POST',
+              url: `/api/projects/${current.project.id}${operation === 'undo' ? '/undo' : ''}`,
+              cookies,
+              payload:
+                operation === 'snapshot'
+                  ? {
+                      requestId: randomUUID(),
+                      expectedVersion: current.project.version,
+                      building: current.project.building,
+                    }
+                  : {
+                      id: randomUUID(),
+                      at: new Date().toISOString(),
+                      expectedRevision: current.project.revision,
+                      player: null,
+                    },
+            });
+      try {
+        await reached;
+        const renamed = await app.inject({
+          method: 'PATCH',
+          url: `/api/projects/${current.project.id}/collection`,
+          cookies,
+          payload: { expectedCollectionVersion: index, name: `Managed ${operation}` },
+        });
+        expect(renamed.statusCode).toBe(200);
+        resume();
+        const response = await mutation;
+        expect(response.statusCode).toBe(200);
+        current = projectWriteSchema.parse(response.json());
+        expect(current.project.name).toBe(`Managed ${operation}`);
+        expect(current.project.collectionVersion).toBe(index + 1);
+        expect(replace.mock.calls.length).toBeGreaterThanOrEqual(2);
+      } finally {
+        resume();
+        replace.mockRestore();
+      }
+    }
+  });
+
+  it('guards collection changes with the owning session, origin and shared-house access', async () => {
+    const cookies = await session(),
+      created = await create(cookies),
+      other = await session();
+    const url = `/api/projects/${created.project.id}/collection`,
+      payload = { expectedCollectionVersion: 0, deleted: true };
+    expect((await app.inject({ method: 'PATCH', url, payload })).statusCode).toBe(401);
+    expect((await app.inject({ method: 'PATCH', url, payload, cookies: other })).statusCode).toBe(
+      404,
+    );
+    expect(
+      (
+        await app.inject({
+          method: 'PATCH',
+          url,
+          payload,
+          cookies,
+          headers: { origin: 'https://other.example' },
+        })
+      ).statusCode,
+    ).toBe(403);
+    expect(
+      (
+        await app.inject({
+          method: 'PATCH',
+          url,
+          cookies,
+          payload: { expectedCollectionVersion: 0, name: ' ' },
+        })
+      ).statusCode,
+    ).toBe(400);
+    await database
+      .db(config.database)
+      .collection<HouseRecord>('projects')
+      .updateOne({ _id: created.project.id }, { $set: { shared: true } });
+    const shared = await app.inject({ method: 'PATCH', url, payload, cookies });
+    expect(shared.statusCode).toBe(409);
+    expect(shared.json().error.code).toBe('SHARED_HOUSE');
   });
 
   it('rejects cross-origin writes, oversized bodies and malformed input', async () => {

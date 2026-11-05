@@ -104,7 +104,7 @@ export const useProject = create<ProjectState>((set, get, store) => ({
   floorId: restoredView?.floorId ?? entryPose(initial).floorId,
   mode: restoredView?.mode ?? 'entry',
   lighting: restoredView?.lighting ?? 'evening',
-  quality: 'high',
+  quality: 'balanced',
   cutaway: restoredView?.cutaway ?? false,
   notice: restored.historyWarning,
   notify: (notice) => {

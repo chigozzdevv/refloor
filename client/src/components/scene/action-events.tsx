@@ -14,10 +14,11 @@ export function ActionEvents() {
     if (useExperience.getState().stage !== 'ready') return;
     const state = useProject.getState(),
       player = physicsSession.current?.player;
-    if (state.mode !== 'walk' || !player) {
+    if (state.mode !== 'walk') {
       last.current = '';
       return;
     }
+    if (!player) return;
     const room = state.compiled.building.floors
       .find((floor) => floor.id === player.floorId)
       ?.rooms.find((value) => contains(value.footprint, player.position));

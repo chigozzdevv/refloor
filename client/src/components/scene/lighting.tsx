@@ -79,17 +79,17 @@ export function Lighting() {
       <ShadowUpdates />
       <Environment
         files="/textures/environment/daylight.hdr"
-        environmentIntensity={day ? 0.65 : 0.18}
+        environmentIntensity={day ? 0.48 : 0.16}
         environmentRotation={[0, 2.3, 0]}
       />
       <color attach="background" args={[day ? '#e7e7df' : '#121922']} />
       <Atmosphere color={day ? '#e7e7df' : '#121922'} />
-      <hemisphereLight args={['#e4ebf2', '#aa9276', day ? 0.35 : 0.12]} />
+      <hemisphereLight args={['#e4ebf2', '#aa9276', day ? 0.3 : 0.12]} />
       <directionalLight
         key={settings.sunlightResolution}
         position={[-6, 12, -6]}
         color={day ? '#fff2d8' : '#b6cbe3'}
-        intensity={day ? 3.2 : 0.35}
+        intensity={day ? 2.1 : 0.3}
         castShadow
         shadow-mapSize={[settings.sunlightResolution, settings.sunlightResolution]}
         shadow-autoUpdate={false}
@@ -117,7 +117,7 @@ export function Lighting() {
           quality={settings.aoQuality}
           halfRes
         />
-        {settings.bloom && <Bloom luminanceThreshold={1.6} intensity={0.16} mipmapBlur />}
+        {settings.bloom && <Bloom luminanceThreshold={2} intensity={0.08} mipmapBlur />}
         <Outline
           edgeStrength={6}
           visibleEdgeColor="#edc379"

@@ -153,7 +153,10 @@ export class CollaborationService {
   }
   async enable(ownerId: string, id: string, name: string, expectedVersion: number) {
     await this.repo.transaction(async (session) => {
-      const record = await this.repo.projects.findOne({ _id: id, ownerId }, { session });
+      const record = await this.repo.projects.findOne(
+        { _id: id, ownerId, deleted: { $ne: true } },
+        { session },
+      );
       if (!record) throw denied();
       if (!record.shared && record.version !== expectedVersion)
         throw new ApiError(

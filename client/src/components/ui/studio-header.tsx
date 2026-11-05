@@ -1,38 +1,44 @@
-import { CollaborationMenu } from '@/components/collaboration/collaboration-menu';
-import { useEffect, useRef, useState } from 'react';
-import { Globe2, History } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { House } from 'lucide-react';
 import { useProject } from '@/shared/scene/scene-store';
-import { useNavigation } from '@/shared/navigation/navigation-store';
-import { EditHistory } from '@/components/editor/edit-history';
+import { useCollaboration } from '@/shared/collaboration/store';
 import { HousePanel } from '@/components/editor/house-panel';
-import { useFurnishings } from '@/shared/editor/use-furnishings';
+import type { HouseSection } from '@/components/editor/house-panel';
+import { PresenceActivity } from '@/components/collaboration/presence-activity';
+import { SaveStatus } from '@/components/ui/save-status';
+import { BrandLogo } from '@/components/ui/brand-mark';
 
 export function StudioHeader({
   openNewHome,
   openLibrary,
+  open,
+  toggle,
+  close,
+  section,
+  setSection,
+  openRecovery,
   minimal = false,
 }: {
   openNewHome: () => void;
   openLibrary: () => void;
+  open: boolean;
+  toggle: () => void;
+  close: () => void;
+  section: HouseSection;
+  setSection: (section: HouseSection) => void;
+  openRecovery: () => void;
   minimal?: boolean;
 }) {
-  const { projectEpoch, select } = useProject();
-  const [open, setOpen] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const furnishings = useFurnishings();
+  const { projectEpoch, remote } = useProject();
+  const status = useCollaboration((state) => state.status);
   const panel = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    if (!open) return;
     const outside = (event: PointerEvent) => {
-      if (event.target instanceof Node && !panel.current?.contains(event.target)) {
-        setOpen(false);
-        setHistoryOpen(false);
-      }
+      if (event.target instanceof Node && !panel.current?.contains(event.target)) close();
     };
     const escape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setOpen(false);
-        setHistoryOpen(false);
-      }
+      if (event.key === 'Escape') close();
     };
     document.addEventListener('pointerdown', outside);
     document.addEventListener('keydown', escape);
@@ -40,60 +46,34 @@ export function StudioHeader({
       document.removeEventListener('pointerdown', outside);
       document.removeEventListener('keydown', escape);
     };
-  }, []);
+  }, [open, close]);
   return (
     <header className="topbar">
       <a className="wordmark" href="/" aria-label="Refloor home">
-        refloor<span className="brand-dot">®</span>
+        <BrandLogo />
       </a>
       {!minimal && (
         <div className="house-controls" ref={panel}>
-          <CollaborationMenu
-            showActivity={!open && !historyOpen}
-            onOpen={() => {
-              setHistoryOpen(false);
-              setOpen(false);
-              select(null);
-              useNavigation.getState().stop();
-              useNavigation.getState().setMapOpen(false);
-            }}
-          />
+          <SaveStatus openRecovery={openRecovery} />
+          {!open && <PresenceActivity />}
           <button
-            className="house-toggle"
-            aria-label="Edit history"
-            aria-expanded={historyOpen}
-            onClick={() => {
-              useNavigation.getState().stop();
-              useNavigation.getState().setMapOpen(false);
-              select(null);
-              setOpen(false);
-              setHistoryOpen(!historyOpen);
-            }}
-          >
-            <History size={20} strokeWidth={1.5} />
-          </button>
-          <button
-            className="house-toggle"
+            className="house-toggle collaboration-toggle"
             aria-label="House controls"
+            title="House chat"
             aria-expanded={open}
-            onClick={() => {
-              useNavigation.getState().stop();
-              useNavigation.getState().setMapOpen(false);
-              setHistoryOpen(false);
-              select(null);
-              setOpen(!open);
-            }}
+            onClick={toggle}
           >
-            <Globe2 size={22} strokeWidth={1.5} />
+            <House size={22} strokeWidth={1.5} />
+            {remote?.shared && <i data-status={status} />}
           </button>
-          {historyOpen && <EditHistory close={() => setHistoryOpen(false)} />}
           {open && (
             <HousePanel
               key={projectEpoch}
-              close={() => setOpen(false)}
+              section={section}
+              setSection={setSection}
+              close={close}
               openNewHome={openNewHome}
               openLibrary={openLibrary}
-              {...furnishings}
             />
           )}
         </div>

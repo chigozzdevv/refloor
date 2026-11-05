@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Maximize2, X } from 'lucide-react';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 import { useProject } from '@/shared/scene/scene-store';
@@ -7,13 +7,16 @@ import { physicsSession } from '@/shared/navigation/physics-session';
 import { entryPose } from '@/shared/navigation/entry';
 import { MapPlan } from '@/components/navigation/map-plan';
 
-export function HouseMap() {
-  const { compiled, mode, projectEpoch } = useProject(),
+export function HouseMap({ obscured = false }: { obscured?: boolean }) {
+  const { compiled, mode, projectEpoch, floorId: activeFloorId } = useProject(),
     { player, heading, mapOpen, setMapOpen, go } = useNavigation();
+  const dialog = useRef<HTMLDialogElement>(null),
+    expand = useRef<HTMLButtonElement>(null),
+    returnFocus = useRef<HTMLElement | null>(null);
   const [viewFloor, setViewFloor] = useState<string | null>(null);
   const entry = useMemo(() => entryPose(compiled), [compiled]),
     currentPlayer = mode === 'entry' ? { floorId: entry.floorId, position: entry.inside } : player,
-    currentFloor = currentPlayer?.floorId ?? entry.floorId,
+    currentFloor = mode === 'orbit' ? activeFloorId : (currentPlayer?.floorId ?? entry.floorId),
     floorId = viewFloor ?? currentFloor;
   useEffect(() => {
     setViewFloor(null);
@@ -28,12 +31,15 @@ export function HouseMap() {
     });
   }, [projectEpoch, setMapOpen]);
   useEffect(() => {
-    const escape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setMapOpen(false);
+    if (!mapOpen || obscured || !dialog.current) return;
+    const element = dialog.current;
+    element.showModal();
+    return () => {
+      element.close();
+      const target = returnFocus.current;
+      (target?.isConnected ? target : expand.current)?.focus({ preventScroll: true });
     };
-    window.addEventListener('keydown', escape);
-    return () => window.removeEventListener('keydown', escape);
-  }, [setMapOpen]);
+  }, [mapOpen, obscured]);
   const travel = (roomId: string) => {
     const state = useProject.getState(),
       entry = entryPose(compiled),
@@ -50,13 +56,16 @@ export function HouseMap() {
     setMapOpen(false);
     go(destination.target, destination.lookAt, destination.label);
   };
+  if (obscured) return null;
   if (!mapOpen)
     return mode !== 'entry' ? (
       <section className="map-mini" aria-label="House minimap">
         <button
+          ref={expand}
           className="map-expand"
           aria-label="Expand house map"
-          onClick={() => {
+          onClick={(event) => {
+            returnFocus.current = event.currentTarget;
             useNavigation.getState().stop();
             useProject.getState().select(null);
             setMapOpen(true);
@@ -75,13 +84,37 @@ export function HouseMap() {
       </section>
     ) : null;
   return (
-    <div className="map-backdrop" onPointerDown={() => setMapOpen(false)}>
-      <section
-        className="house-map"
-        role="dialog"
-        aria-label="House map"
-        onPointerDown={(event) => event.stopPropagation()}
-      >
+    <dialog
+      ref={dialog}
+      className="map-backdrop"
+      aria-label="House map"
+      onKeyDown={(event) => {
+        if (event.key !== 'Tab') return;
+        const items = Array.from(
+          event.currentTarget.querySelectorAll<HTMLElement | SVGElement>(
+            'button:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])',
+          ),
+        ).filter((element) => element.getClientRects().length > 0);
+        const first = items[0],
+          last = items.at(-1),
+          active = document.activeElement;
+        if (event.shiftKey && active === first && last) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && active === last && first) {
+          event.preventDefault();
+          first.focus();
+        }
+      }}
+      onCancel={(event) => {
+        event.preventDefault();
+        setMapOpen(false);
+      }}
+      onPointerDown={(event) => {
+        if (event.target === event.currentTarget) setMapOpen(false);
+      }}
+    >
+      <section className="house-map" onPointerDown={(event) => event.stopPropagation()}>
         <div className="plan-toolbar">
           <div className="map-floors" role="tablist" aria-label="Map floors">
             {compiled.building.floors.map((floor) => (
@@ -89,7 +122,26 @@ export function HouseMap() {
                 key={floor.id}
                 role="tab"
                 aria-selected={floor.id === floorId}
+                tabIndex={floor.id === floorId ? 0 : -1}
                 onClick={() => setViewFloor(floor.id)}
+                onKeyDown={(event) => {
+                  const floors = compiled.building.floors;
+                  const index = floors.findIndex((value) => value.id === floor.id);
+                  const next =
+                    event.key === 'ArrowRight'
+                      ? (index + 1) % floors.length
+                      : event.key === 'ArrowLeft'
+                        ? (index + floors.length - 1) % floors.length
+                        : event.key === 'Home'
+                          ? 0
+                          : event.key === 'End'
+                            ? floors.length - 1
+                            : null;
+                  if (next === null) return;
+                  event.preventDefault();
+                  setViewFloor(floors[next]!.id);
+                  event.currentTarget.parentElement?.querySelectorAll('button')[next]?.focus();
+                }}
               >
                 {floor.name}
               </button>
@@ -107,6 +159,6 @@ export function HouseMap() {
           navigate={travel}
         />
       </section>
-    </div>
+    </dialog>
   );
 }

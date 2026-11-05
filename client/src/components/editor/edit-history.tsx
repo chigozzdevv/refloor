@@ -1,22 +1,24 @@
 import { SharedHistory } from '@/components/collaboration/shared-history';
-import { MessageCircle, Redo2, RotateCcw, Undo2, X } from 'lucide-react';
+import { MessageCircle, Redo2, RotateCcw, Undo2 } from 'lucide-react';
+import { PanelHeading } from '@/components/ui/panel-heading';
 import { useProject } from '@/shared/scene/scene-store';
 import { DesignCheckpoints } from '@/components/editor/design-checkpoints';
 import { isUndoable } from '@/shared/editor/history';
 
-export function EditHistory({ close }: { close: () => void }) {
+export function EditHistory({
+  close,
+  back,
+}: {
+  close: () => void;
+  back?: (() => void) | undefined;
+}) {
   const { past, future, undo, redo, undoTo, remote } = useProject();
-  if (remote?.shared) return <SharedHistory close={close} />;
+  if (remote?.shared) return <SharedHistory close={close} back={back} />;
   const records = past.filter(isUndoable).toReversed(),
     canRedo = future.some(isUndoable);
   return (
     <section className="edit-history" aria-label="Edit history">
-      <div className="panel-heading">
-        <span>History</span>
-        <button className="icon-button" aria-label="Close history" onClick={close}>
-          <X size={17} />
-        </button>
-      </div>
+      <PanelHeading title="History" close={close} back={back} />
       <div className="history-actions">
         <button disabled={!records.length} onClick={undo}>
           <Undo2 size={15} />

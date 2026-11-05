@@ -92,6 +92,10 @@ export class ScenePresentation {
     return [...this.waiting].some((request) => request.compiled.building.id === buildingId);
   }
 
+  animating(buildingId: string) {
+    return this.moving(buildingId);
+  }
+
   private moving(buildingId: string, affected?: ReadonlySet<string>) {
     return [...this.motions.values()].some(
       (value) => value.buildingId === buildingId && (!affected || affected.has(value.entityId)),

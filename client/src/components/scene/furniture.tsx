@@ -15,7 +15,13 @@ import { SelectionBounds } from '@/components/editor/selection-bounds';
 import { invalidateShadows } from '@/shared/scene/shadow-updates';
 import { dispatchSceneEvent } from '@/shared/behaviours/events';
 
-function ScannedFurniture({ object, entry }: { object: SceneObject; entry: CatalogueEntry }) {
+export function ScannedFurniture({
+  object,
+  entry,
+}: {
+  object: SceneObject;
+  entry: CatalogueEntry;
+}) {
   const { scene } = useGLTF(entry.modelUrl!, false),
     finish = useSurface(object.materials.body!),
     { width, height, depth } = object.dimensions;
@@ -85,13 +91,14 @@ function FurnitureInstance({ object }: { object: SceneObject }) {
     compiled = useProject((state) => state.compiled),
     floorId = useProject((state) => state.floorId),
     mode = useProject((state) => state.mode),
+    cutaway = useProject((state) => state.cutaway),
     selection = useProject((state) => state.selection),
     select = useProject((state) => state.select);
   const floor = compiled.building.floors.find((value) => value.id === object.floorId),
     active = compiled.building.floors.find((value) => value.id === floorId);
   const body = object.materials.body;
   if (!floor || !body) return null;
-  const visible = mode !== 'orbit' || !active || floor.elevation <= active.elevation;
+  const visible = mode !== 'orbit' || !cutaway || !active || floor.elevation <= active.elevation;
   return (
     <>
       <group

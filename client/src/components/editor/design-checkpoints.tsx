@@ -1,19 +1,20 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeftRight, BookmarkPlus, Check, Eye, Trash2 } from 'lucide-react';
+import { BookmarkPlus, Check, Eye, Trash2 } from 'lucide-react';
 import { fingerprintBuilding } from '@refloor/scene';
 import { maxDesigns } from '@refloor/scene/design-checkpoint';
 import { useProject } from '@/shared/scene/scene-store';
+import { designPreviewNeedsSpace } from '@/shared/editor/design-checkpoints';
+import { DesignDiscardPrompt } from '@/components/editor/design-status';
 
 export function DesignCheckpoints() {
   const [name, setName] = useState(''),
-    [removing, setRemoving] = useState<string | null>(null);
-  const { compiled, memory, chatPending, saveDesign, viewDesign, returnToWorking, removeDesign } =
-    useProject();
+    [removing, setRemoving] = useState<string | null>(null),
+    [switching, setSwitching] = useState<string | null>(null);
+  const { compiled, memory, chatPending, saveDesign, viewDesign, removeDesign } = useProject();
   const designs = memory.designs,
     items = designs?.items ?? [],
     comparison = designs?.comparison,
-    current = useMemo(() => fingerprintBuilding(compiled.building), [compiled.building]),
-    active = comparison && items.find((item) => item.id === comparison.checkpointId);
+    current = useMemo(() => fingerprintBuilding(compiled.building), [compiled.building]);
   return (
     <section className="design-checkpoints" aria-label="Saved designs">
       <div className="design-heading">
@@ -45,16 +46,13 @@ export function DesignCheckpoints() {
           <BookmarkPlus size={18} />
         </button>
       </form>
-      {active && (
-        <div className="design-comparison">
-          <p>
-            Viewing <strong>{active.name}</strong>
-          </p>
-          <button disabled={!!chatPending} onClick={returnToWorking}>
-            <ArrowLeftRight size={15} />
-            Return to working design
-          </button>
-        </div>
+      {switching && (
+        <DesignDiscardPrompt
+          cancel={() => setSwitching(null)}
+          confirm={() => {
+            if (viewDesign(switching, true)) setSwitching(null);
+          }}
+        />
       )}
       {!items.length && (
         <p className="design-empty">Save a version to compare changes from the same view.</p>
@@ -69,7 +67,10 @@ export function DesignCheckpoints() {
                 className="design-view"
                 aria-label={`View ${item.name}`}
                 disabled={!!chatPending || (selected && matches)}
-                onClick={() => viewDesign(item.id)}
+                onClick={() => {
+                  if (designPreviewNeedsSpace(useProject.getState())) setSwitching(item.id);
+                  else viewDesign(item.id);
+                }}
               >
                 {selected && matches ? <Check size={16} /> : <Eye size={16} />}
                 <span>

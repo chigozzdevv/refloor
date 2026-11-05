@@ -6,6 +6,8 @@ import type {
   ProjectCreate,
   ProjectSave,
   ProjectList,
+  ProjectCollection,
+  ProjectSummary,
 } from '@refloor/scene/contracts';
 import type { HouseRecord } from '@refloor/server/features/houses/house.model';
 import type { HouseRepository } from '@refloor/server/features/houses/house.repo';
@@ -38,7 +40,12 @@ export class HouseService {
     return houseDocument(record);
   }
 
-  async list(ownerId: string, limit: number, cursor?: string): Promise<ProjectList> {
+  async list(
+    ownerId: string,
+    limit: number,
+    cursor?: string,
+    deleted = false,
+  ): Promise<ProjectList> {
     let after: HouseCursor | null = null;
     if (cursor) {
       try {
@@ -49,7 +56,7 @@ export class HouseService {
         throw new ApiError(400, 'INVALID_CURSOR', 'The project list cursor is invalid.');
       }
     }
-    const records = await this.houses.list(ownerId, limit, after),
+    const records = await this.houses.list(ownerId, limit, after, deleted),
       page = records.slice(0, limit),
       last = page.at(-1);
     return {
@@ -63,6 +70,35 @@ export class HouseService {
     };
   }
 
+  async updateCollection(
+    ownerId: string,
+    id: string,
+    input: ProjectCollection,
+  ): Promise<ProjectSummary> {
+    const record = await this.houses.findIncludingDeleted(ownerId, id);
+    if (!record)
+      throw new ApiError(
+        404,
+        'PROJECT_NOT_FOUND',
+        'This house is not available in this browser session.',
+      );
+    if (record.shared)
+      throw new ApiError(409, 'SHARED_HOUSE', 'Shared houses are managed through sharing.');
+    if (
+      (input.name === undefined || input.name === (record.displayName ?? record.building.name)) &&
+      (input.deleted === undefined || input.deleted === Boolean(record.deleted))
+    )
+      return houseSummary(record);
+    const updated = await this.houses.updateCollection(ownerId, id, input);
+    if (!updated)
+      throw new ApiError(
+        409,
+        'COLLECTION_CONFLICT',
+        'This house changed. Refresh your saved houses and try again.',
+      );
+    return houseSummary(updated);
+  }
+
   async create(ownerId: string, input: ProjectCreate): Promise<ProjectWrite> {
     const digest = fingerprint(input);
     const replay = async () => {
@@ -73,6 +109,12 @@ export class HouseService {
           409,
           'IDEMPOTENCY_CONFLICT',
           'This request ID has already been used to create a different project.',
+        );
+      if (existing.deleted)
+        throw new ApiError(
+          410,
+          'PROJECT_DELETED',
+          'This saved house was deleted. Restore it or save a new copy.',
         );
       return houseReceipt(existing, 0, true, null);
     };
@@ -87,6 +129,7 @@ export class HouseService {
       creationId: input.requestId,
       creationFingerprint: digest,
       building: compiled.building,
+      ...(input.name ? { displayName: input.name } : {}),
       memory: validateMemory(compiled.building, input.memory),
       version: 0,
       createdAt: now,

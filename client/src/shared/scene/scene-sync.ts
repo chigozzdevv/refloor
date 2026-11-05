@@ -11,6 +11,7 @@ import { parseProjectFile } from '@/shared/scene/files';
 import { useProject } from '@/shared/scene/scene-store';
 import type { EditMemory } from '@refloor/scene/edit-memory';
 import { fingerprintEditMemory } from '@refloor/scene/edit-memory';
+import { latestCollectionMetadata } from '@/shared/scene/remote';
 
 type PendingSave = {
   id: string;
@@ -20,6 +21,7 @@ type PendingSave = {
   building: Building;
   memory: EditMemory;
   asNew: boolean;
+  name?: string;
   collectionEpoch: number;
 };
 type SavedState = {
@@ -29,17 +31,21 @@ type SavedState = {
   saving: boolean;
   opening: boolean;
   recovering: boolean;
+  retrying: boolean;
   collectionEpoch: number;
   error: string | null;
+  saveError: string | null;
   listError: string | null;
   conflict: boolean;
   refresh: (more?: boolean) => Promise<void>;
   save: (asNew?: boolean, quiet?: boolean) => Promise<void>;
+  retrySave: () => Promise<void>;
   preserve: () => Promise<boolean>;
   open: (id: string) => Promise<boolean>;
   restoreCollection: (key: string) => Promise<boolean>;
 };
 let pending: PendingSave | null = null;
+let saveFailures = 0;
 const message = (error: unknown) =>
   error instanceof Error ? error.message : 'Saved spaces could not complete the request.';
 
@@ -50,8 +56,10 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
   saving: false,
   opening: false,
   recovering: false,
+  retrying: false,
   collectionEpoch: 0,
   error: null,
+  saveError: null,
   listError: null,
   conflict: false,
   refresh: async (more = false) => {
@@ -67,12 +75,31 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
         ...new Map([...page.items, ...shared.items].map((item) => [item.id, item])).values(),
       ];
       if (get().collectionEpoch !== collection) return;
-      set((state) => ({
-        items: more
-          ? [...new Map([...state.items, ...page.items].map((item) => [item.id, item])).values()]
-          : page.items,
-        cursor: page.nextCursor,
-      }));
+      set((state) => {
+        const known = new Map(state.items.map((item) => [item.id, item]));
+        const incoming = page.items
+          .map((item) => ({
+            ...item,
+            ...latestCollectionMetadata(item, known.get(item.id), useProject.getState().remote),
+          }))
+          .filter((item) => !item.deleted);
+        return {
+          items: more
+            ? [...new Map([...state.items, ...incoming].map((item) => [item.id, item])).values()]
+            : incoming,
+          cursor: page.nextCursor,
+        };
+      });
+      const current = useProject.getState();
+      const listed = get().items.find((item) => item.id === current.remote?.id);
+      if (
+        current.remote &&
+        listed &&
+        (listed.collectionVersion ?? 0) > (current.remote.collectionVersion ?? 0)
+      )
+        useProject.setState({
+          remote: { ...current.remote, ...latestCollectionMetadata(listed, current.remote) },
+        });
     } catch (error) {
       if (get().collectionEpoch === collection) set({ listError: message(error) });
     } finally {
@@ -96,15 +123,16 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
       pending = {
         id: crypto.randomUUID(),
         epoch: current.projectEpoch,
-        projectId: asNew ? null : (current.remote?.id ?? null),
+        projectId: asNew || current.remote?.deleted ? null : (current.remote?.id ?? null),
         version: current.remote?.version ?? 0,
         building: current.compiled.building,
         memory: current.memory,
         asNew,
+        ...(current.remote?.name ? { name: current.remote.name } : {}),
         collectionEpoch: collection,
       };
     const submitted = pending;
-    set({ saving: true, error: null, conflict: false });
+    set({ saving: true, error: null, saveError: null, conflict: false });
     try {
       const result = submitted.projectId
         ? await projectApi.save(submitted.projectId, {
@@ -117,15 +145,28 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
             requestId: submitted.id,
             building: submitted.building,
             memory: submitted.memory,
+            ...(submitted.name ? { name: submitted.name } : {}),
           });
       if (get().collectionEpoch !== collection) return;
       if (pending === submitted) pending = null;
+      saveFailures = 0;
+      set({ retrying: false });
       const state = useProject.getState();
-      if (state.projectEpoch !== submitted.epoch) return;
+      if (
+        state.projectEpoch !== submitted.epoch ||
+        (submitted.projectId !== null &&
+          (state.remote?.id !== submitted.projectId || state.remote.deleted))
+      )
+        return;
       const newer = result.project.version > result.acceptedVersion;
       useProject.setState({
         remote: {
           id: result.project.id,
+          ...latestCollectionMetadata(
+            result.project,
+            state.remote,
+            get().items.find((item) => item.id === result.project.id),
+          ),
           buildingId: submitted.building.id,
           version: result.acceptedVersion,
           savedFingerprint: fingerprintBuilding(submitted.building),
@@ -149,6 +190,8 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
           conflict: true,
           error:
             'Your save was accepted, but a newer version is now available. Open the latest saved version or save a new copy.',
+          saveError:
+            'Your save was accepted, but a newer version is now available. Open the latest saved version or save a new copy.',
         });
       else if (!quiet)
         state.notify(
@@ -159,16 +202,26 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
             : 'Snapshot saved. You have newer changes to save.',
         );
     } catch (error) {
-      if (get().collectionEpoch !== collection) return;
+      if (
+        get().collectionEpoch !== collection ||
+        useProject.getState().projectEpoch !== submitted.epoch ||
+        (submitted.projectId !== null &&
+          (useProject.getState().remote?.id !== submitted.projectId ||
+            useProject.getState().remote?.deleted))
+      )
+        return;
       const conflict =
         error instanceof ProjectApiError &&
         ['VERSION_CONFLICT', 'REVISION_CONFLICT'].includes(error.code);
-      set({ error: message(error), conflict });
+      const retrying = error instanceof ProjectApiError && error.retryable;
+      saveFailures = retrying ? saveFailures + 1 : 0;
+      set({ error: message(error), saveError: message(error), conflict, retrying });
       if (error instanceof ProjectApiError && !error.retryable) pending = null;
     } finally {
       if (get().collectionEpoch === collection) set({ saving: false });
     }
   },
+  retrySave: () => get().save(pending?.asNew ?? false, true),
   preserve: async () => {
     if (get().recovering) {
       set({ error: 'Let collection recovery finish before replacing your current house.' });
@@ -223,6 +276,11 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
         compiled,
         {
           id: project.id,
+          ...latestCollectionMetadata(
+            project,
+            current.remote,
+            get().items.find((item) => item.id === project.id),
+          ),
           ...(project.shared ? { shared: true } : {}),
           buildingId: project.building.id,
           version: project.version,
@@ -235,7 +293,8 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
         project.memory,
       );
       pending = null;
-      set({ conflict: false });
+      saveFailures = 0;
+      set({ conflict: false, retrying: false, saveError: null });
       return true;
     } catch (error) {
       if (get().collectionEpoch === collection) set({ error: message(error) });
@@ -254,11 +313,14 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
     const collection = get().collectionEpoch + 1;
     clearTimeout(syncTimer);
     pending = null;
+    saveFailures = 0;
     set({
       recovering: true,
+      retrying: false,
       collectionEpoch: collection,
       loading: false,
       error: null,
+      saveError: null,
       listError: null,
     });
     try {
@@ -269,7 +331,16 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
         remote = state.remote;
       if (remote) {
         try {
-          await projectApi.get(remote.id);
+          const project = await projectApi.get(remote.id);
+          const current = useProject.getState();
+          if (
+            get().collectionEpoch === collection &&
+            current.projectEpoch === state.projectEpoch &&
+            current.remote?.id === remote.id
+          )
+            useProject.setState({
+              remote: { ...current.remote, ...latestCollectionMetadata(project, current.remote) },
+            });
         } catch (error) {
           if (!(error instanceof ProjectApiError) || error.code !== 'PROJECT_NOT_FOUND')
             throw error;
@@ -284,7 +355,15 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
       }
       const page = await projectApi.list();
       if (get().collectionEpoch !== collection) return false;
-      set({ items: page.items, cursor: page.nextCursor, error: null, listError: null });
+      set({
+        items: page.items.map((item) => ({
+          ...item,
+          ...latestCollectionMetadata(item, useProject.getState().remote),
+        })),
+        cursor: page.nextCursor,
+        error: null,
+        listError: null,
+      });
       return true;
     } catch (error) {
       if (get().collectionEpoch === collection) set({ error: message(error) });
@@ -296,31 +375,53 @@ export const useSavedProjects = create<SavedState>((set, get) => ({
 }));
 
 let syncTimer: ReturnType<typeof setTimeout> | undefined;
-function scheduleCloudSave() {
+function scheduleCloudSave(delay?: number) {
   clearTimeout(syncTimer);
-  syncTimer = setTimeout(() => {
-    const state = useProject.getState(),
-      saved = useSavedProjects.getState();
-    if (
-      !state.remote ||
-      state.remote.shared ||
-      state.chatPending ||
-      state.recovery ||
-      saved.saving ||
-      saved.opening ||
-      saved.recovering ||
-      saved.conflict ||
-      saved.error
-    )
-      return;
-    if (
-      state.remote.savedFingerprint !== fingerprintBuilding(state.compiled.building) ||
-      state.remote.savedMemoryFingerprint !== fingerprintEditMemory(state.memory)
-    )
-      void saved.save(false, true);
-  }, 2000);
+  syncTimer = setTimeout(
+    () => {
+      const state = useProject.getState(),
+        saved = useSavedProjects.getState();
+      if (
+        state.remote?.shared ||
+        state.chatPending ||
+        state.recovery ||
+        saved.saving ||
+        saved.opening ||
+        saved.recovering ||
+        saved.conflict
+      )
+        return;
+      if (
+        saved.retrying &&
+        pending?.epoch === state.projectEpoch &&
+        pending.collectionEpoch === saved.collectionEpoch
+      ) {
+        void saved.save(pending.asNew, true);
+        return;
+      }
+      if (!state.remote || state.remote.deleted || saved.error) return;
+      if (
+        state.remote.savedFingerprint !== fingerprintBuilding(state.compiled.building) ||
+        state.remote.savedMemoryFingerprint !== fingerprintEditMemory(state.memory)
+      )
+        void saved.save(false, true);
+    },
+    delay ??
+      (useSavedProjects.getState().retrying
+        ? Math.min(30000, 2000 * 2 ** Math.min(saveFailures, 4))
+        : 2000),
+  );
 }
 const unsubscribeScene = useProject.subscribe((state, previous) => {
+  const archived =
+    previous.remote &&
+    (!state.remote || (!previous.remote.deleted && state.remote.deleted)) &&
+    (!pending || pending.projectId === previous.remote.id);
+  if (state.projectEpoch !== previous.projectEpoch || archived) {
+    pending = null;
+    saveFailures = 0;
+    useSavedProjects.setState({ retrying: false, saveError: null, error: null, conflict: false });
+  }
   if (
     state.remote !== previous.remote ||
     state.compiled.building !== previous.compiled.building ||
@@ -337,10 +438,15 @@ const unsubscribeSync = useSavedProjects.subscribe((state, previous) => {
   )
     scheduleCloudSave();
 });
-if (typeof window !== 'undefined') scheduleCloudSave();
+const reconnectSave = () => scheduleCloudSave(0);
+if (typeof window !== 'undefined') {
+  scheduleCloudSave();
+  window.addEventListener('online', reconnectSave);
+}
 if (import.meta.hot)
   import.meta.hot.dispose(() => {
     clearTimeout(syncTimer);
     unsubscribeScene();
     unsubscribeSync();
+    window.removeEventListener('online', reconnectSave);
   });

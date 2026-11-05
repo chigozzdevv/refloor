@@ -215,7 +215,8 @@ export function NavigationControls() {
         isTyping(event.target) ||
         useExperience.getState().stage !== 'ready' ||
         useProject.getState().mode !== 'walk' ||
-        useNavigation.getState().mapOpen
+        useNavigation.getState().mapOpen ||
+        useNavigation.getState().panelOpen
       )
         return;
       const key = event.key.toLowerCase();
@@ -244,6 +245,7 @@ export function NavigationControls() {
       if (
         useProject.getState().mode === 'walk' &&
         useExperience.getState().stage === 'ready' &&
+        !useNavigation.getState().panelOpen &&
         !useProject.getState().interacting &&
         event.button === 0
       ) {
@@ -325,6 +327,7 @@ export function NavigationControls() {
       interacting ||
       selection ||
       useNavigation.getState().mapOpen ||
+      useNavigation.getState().panelOpen ||
       isTyping(document.activeElement)
     ) {
       resetWalkInput();

@@ -6,6 +6,20 @@ import { exteriorLayout } from '@/shared/scene/exterior';
 import { openableBounds } from '@refloor/engine/collision/openable';
 import { fixtureReservations } from '@/shared/behaviours/fixture-motion';
 
+function collisionKey(compiled: CompiledBuilding): string {
+  const site = exteriorLayout(compiled);
+  return JSON.stringify({
+    buildingId: compiled.building.id,
+    colliders: compiled.colliders,
+    doors: compiled.doors,
+    options: compiled.options,
+    compound: site.compound,
+    centre: site.centre,
+    elevation: site.ground.elevation,
+    paving: site.paving,
+  });
+}
+
 export class CharacterWorld {
   readonly world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
   readonly body: RAPIER.RigidBody;
@@ -16,11 +30,13 @@ export class CharacterWorld {
   private readonly transientFixtures = new Set<string>();
   private velocityY = 0;
   private accumulator = 0;
+  private readonly geometry: string;
 
   constructor(
-    readonly compiled: CompiledBuilding,
+    public compiled: CompiledBuilding,
     position?: Point3,
   ) {
+    this.geometry = collisionKey(compiled);
     const feet = position ?? entryPose(compiled).inside;
     for (const source of compiled.colliders) {
       const desc =
@@ -86,6 +102,12 @@ export class CharacterWorld {
     this.controller.enableSnapToGround(stepHeight + 0.05);
     this.controller.setMaxSlopeClimbAngle(Math.PI / 4);
     this.world.step();
+  }
+
+  update(compiled: CompiledBuilding): boolean {
+    if (collisionKey(compiled) !== this.geometry) return false;
+    this.compiled = compiled;
+    return true;
   }
 
   get feet(): Point3 {

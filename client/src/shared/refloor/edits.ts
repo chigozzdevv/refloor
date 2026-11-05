@@ -4,5 +4,7 @@ import { authenticated, request } from '@/shared/refloor/client';
 
 export const editApi = {
   interpret: (input: LanguageEditRequest) =>
-    authenticated(() => request('/edits/interpret', languageEditResponseSchema, 'POST', input)),
+    authenticated(() =>
+      request('/edits/interpret', languageEditResponseSchema, 'POST', input, 35000),
+    ),
 };

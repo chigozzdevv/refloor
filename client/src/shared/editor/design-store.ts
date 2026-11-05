@@ -15,8 +15,8 @@ import { invalidateShadows } from '@/shared/scene/shadow-updates';
 
 export type DesignState = {
   saveDesign: (name: string) => boolean;
-  viewDesign: (id: string) => boolean;
-  returnToWorking: () => boolean;
+  viewDesign: (id: string, discardPreview?: boolean) => boolean;
+  returnToWorking: (discardPreview?: boolean) => boolean;
   removeDesign: (id: string) => boolean;
 };
 
@@ -77,9 +77,9 @@ export const createDesignState: StateCreator<ProjectState, [], [], DesignState> 
   return {
     saveDesign: (name) =>
       apply(() => ({ document: saveDesign(get(), name), message: 'Design saved.' })),
-    viewDesign: (id) =>
+    viewDesign: (id, discardPreview = false) =>
       apply(() => {
-        const result = viewDesign(get(), id, player()),
+        const result = viewDesign(get(), id, player(), discardPreview),
           name = get().memory.designs!.items.find((item) => item.id === id)!.name;
         return {
           ...result,
@@ -88,9 +88,9 @@ export const createDesignState: StateCreator<ProjectState, [], [], DesignState> 
             : `Viewing ${name}. Your working design is preserved.`,
         };
       }, true),
-    returnToWorking: () =>
+    returnToWorking: (discardPreview = false) =>
       apply(() => {
-        const result = returnToWorking(get(), player());
+        const result = returnToWorking(get(), player(), discardPreview);
         return {
           ...result,
           message: result.preserved

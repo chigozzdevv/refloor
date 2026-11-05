@@ -11,6 +11,7 @@ import {
   returnToWorking,
   saveDesign,
   viewDesign,
+  designPreviewNeedsSpace,
 } from '@/shared/editor/design-checkpoints';
 import { encodeDraft, decodeDraft } from '@/shared/scene/draft-codec';
 import { encodeProject, maxProjectBytes, readProjectFile } from '@/shared/scene/files';
@@ -88,6 +89,26 @@ describe('named design checkpoints', () => {
     expect(JSON.stringify(edited)).toBe(before);
     expect(() => returnToWorking(edited)).toThrow('Six designs');
     expect(JSON.stringify(edited)).toBe(before);
+    expect(designPreviewNeedsSpace(edited)).toBe(true);
+    expect(designPreviewNeedsSpace(viewed)).toBe(false);
+  });
+
+  it('can explicitly discard a full preview and return without deleting saved designs or working history', () => {
+    let state = changeColour(initial(), '#334455');
+    for (let index = 0; index < 6; index++) state = saveDesign(state, `Version ${index}`);
+    const saved = structuredClone(state.memory.designs!.items),
+      viewed = viewDesign(state, saved[0]!.id).document,
+      edited = changeColour(viewed, '#123456'),
+      returned = returnToWorking(edited, undefined, true).document;
+    expect(returned.memory.designs!.items).toEqual(saved);
+    expect(returned.memory.designs!.comparison).toBeUndefined();
+    expect(returned.compiled.building.roof.material.color).toBe('#334455');
+    expect(returned.past).toEqual(state.past);
+    expect(returned.memory.turns).toEqual(state.memory.turns);
+    expect(edited.compiled.building.roof.material.color).toBe('#123456');
+    const switched = viewDesign(edited, saved[1]!.id, undefined, true).document;
+    expect(switched.memory.designs!.items).toEqual(saved);
+    expect(switched.memory.designs!.comparison!.checkpointId).toBe(saved[1]!.id);
   });
 
   it('rejects a version that would put the visitor inside restored furniture', () => {

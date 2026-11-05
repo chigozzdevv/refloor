@@ -4,15 +4,15 @@ import type { JourneyTab } from '@browser-test/journeys';
 function target(locator: Locator, touch: boolean): ReturnType<JourneyTab['playwright']['locator']> {
   return {
     click: async () => {
-      if (!touch) return locator.click();
-      if ((await locator.getAttribute('data-door-handle')) === null) return locator.tap();
+      if ((await locator.getAttribute('data-door-handle')) === null)
+        return touch ? locator.tap() : locator.click();
       // Projected handles drift by fractions of a pixel while the camera settles.
       await locator.waitFor({ state: 'visible' });
       const bounds = await locator.boundingBox();
       if (!bounds) throw new Error('The visible door handle has no touch target');
-      await locator
-        .page()
-        .touchscreen.tap(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+      const point = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+      if (touch) await locator.page().touchscreen.tap(point.x, point.y);
+      else await locator.page().mouse.click(point.x, point.y);
     },
     fill: (value) => locator.fill(value),
     selectOption: (value) => locator.selectOption(value),

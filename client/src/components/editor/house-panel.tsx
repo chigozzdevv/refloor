@@ -1,175 +1,154 @@
-import { useState } from 'react';
 import {
   Armchair,
+  Box,
   Camera,
   DoorOpen,
+  Ellipsis,
   Footprints,
-  LoaderCircle,
+  History,
+  House,
   Moon,
-  Plus,
-  Rotate3D,
   Sun,
-  WandSparkles,
-  X,
+  Users,
 } from 'lucide-react';
 import { ElementChat } from '@/components/editor/element-chat';
 import { ProjectActions } from '@/components/editor/project-actions';
 import { SavedActions } from '@/components/editor/saved-actions';
-import { PanelTabs } from '@/components/ui/panel-tabs';
-import { useCollaboration } from '@/shared/collaboration/store';
+import { EditHistory } from '@/components/editor/edit-history';
+import { CollaborationMenu } from '@/components/collaboration/collaboration-menu';
+import { PanelHeading } from '@/components/ui/panel-heading';
 import { useNavigation } from '@/shared/navigation/navigation-store';
 import { useCapture } from '@/shared/scene/capture';
 import { useProject } from '@/shared/scene/scene-store';
 
-const tabs = [
-  { value: 'chat', label: 'Chat' },
-  { value: 'tools', label: 'Tools' },
-] as const;
+export type HouseSection = 'chat' | 'homes' | 'history' | 'more' | 'share';
 
 export function HousePanel({
   close,
   openNewHome,
   openLibrary,
-  furnishing,
-  complete,
+  section,
+  setSection,
 }: {
   close: () => void;
   openNewHome: () => void;
   openLibrary: () => void;
-  furnishing: boolean;
-  complete: () => Promise<void>;
+  section: HouseSection;
+  setSection: (section: HouseSection) => void;
 }) {
-  const [tab, setTab] = useState<'chat' | 'tools'>('chat');
-  const {
-    compiled,
-    projectEpoch,
-    mode,
-    setMode,
-    enterHome,
-    lighting,
-    setLighting,
-    quality,
-    setQuality,
-  } = useProject();
-  const readonly = useCollaboration(
-    (state) =>
-      state.status !== 'idle' && (state.status !== 'live' || state.state?.self.role === 'viewer'),
-  );
+  const { compiled, mode, setMode, enterHome, lighting, setLighting, quality, setQuality } =
+    useProject();
   const capturing = useCapture((state) => state.pending || state.capturing);
+  const back = () => setSection('chat');
+  if (section === 'homes')
+    return <ProjectActions close={close} back={back} openNewHome={openNewHome} />;
+  if (section === 'history') return <EditHistory close={close} back={back} />;
+  if (section === 'share') return <CollaborationMenu close={close} back={back} />;
   return (
     <section className="house-menu" aria-label="House controls menu">
-      <div className="panel-heading">
-        <span>House</span>
-        <button className="icon-button" aria-label="Close house controls" onClick={close}>
-          <X size={17} />
-        </button>
-      </div>
-      <PanelTabs label="House sections" tabs={tabs} value={tab} onChange={setTab}>
-        <div hidden={tab !== 'chat'}>
+      {section === 'chat' ? (
+        <>
           <ElementChat
-            key={projectEpoch}
             target={{ kind: 'house', id: compiled.building.id }}
-            label="Whole house"
+            label="House"
             suggestions={['Cream walls throughout', 'Turn off all lights']}
-            active={tab === 'chat'}
+            suggestionsInitiallyOpen={false}
+            close={close}
+            closeLabel="Close house controls"
           />
-        </div>
-        {tab === 'tools' && (
-          <>
-            <div className="house-tool-section" role="group" aria-label="Explore">
-              <h2>Explore</h2>
-              <div className="house-view-controls">
-                {(
-                  [
-                    ['walk', 'Walk', Footprints],
-                    ['orbit', 'Overview', Rotate3D],
-                    ['entry', 'Entrance', DoorOpen],
-                  ] as const
-                ).map(([value, label, Icon]) => (
-                  <button
-                    key={value}
-                    aria-pressed={mode === value}
-                    aria-label={value === 'orbit' ? 'House overview' : label}
-                    onClick={() => {
-                      if (value === 'orbit') useNavigation.getState().resetOverview();
-                      if (value === 'walk' && mode === 'entry') enterHome();
-                      else setMode(value);
-                      close();
-                    }}
-                  >
-                    <Icon size={16} />
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="house-tool-section" role="group" aria-label="Furnish">
-              <h2>Furnish</h2>
-              <div className="house-actions">
-                <button
-                  disabled={readonly || furnishing}
-                  onClick={() => {
-                    if (mode === 'entry') setMode('orbit');
-                    openLibrary();
-                    close();
-                  }}
-                >
-                  <Armchair size={16} /> Furniture
-                </button>
-                <button disabled={readonly || furnishing} onClick={() => void complete()}>
-                  {furnishing ? (
-                    <LoaderCircle size={16} className="spinning" />
-                  ) : (
-                    <WandSparkles size={16} />
-                  )}
-                  {furnishing ? 'Furnishing…' : 'Auto furnish'}
-                </button>
-              </div>
-            </div>
-            <SavedActions key={`actions:${projectEpoch}`} />
-            <div className="house-tool-section" role="group" aria-label="Project">
-              <h2>Project</h2>
-              <div className="house-actions">
-                <button
-                  disabled={capturing}
-                  onClick={() => {
-                    useCapture.getState().request();
-                    close();
-                  }}
-                >
-                  <Camera size={16} />
-                  {capturing ? 'Saving…' : 'Save view'}
-                </button>
-                <ProjectActions labeled />
-                <button
-                  className="house-new"
-                  onClick={() => {
-                    openNewHome();
-                    close();
-                  }}
-                >
-                  <Plus size={16} /> New house
-                </button>
-              </div>
-            </div>
-            <div className="house-utilities" role="group" aria-label="Appearance">
+          <div className="house-view-controls" role="group" aria-label="View">
+            {(
+              [
+                ['walk', 'Walk', Footprints],
+                ['orbit', 'Overview', Box],
+              ] as const
+            ).map(([value, label, Icon]) => (
               <button
-                aria-label={lighting === 'evening' ? 'Switch to daylight' : 'Switch to night'}
-                onClick={() => setLighting(lighting === 'evening' ? 'day' : 'evening')}
+                key={value}
+                aria-pressed={mode === value}
+                aria-label={value === 'orbit' ? 'House overview' : label}
+                onClick={() => {
+                  if (value === 'orbit') useNavigation.getState().resetOverview();
+                  if (value === 'walk' && mode === 'entry') enterHome();
+                  else setMode(value);
+                  close();
+                }}
               >
-                {lighting === 'evening' ? <Moon size={15} /> : <Sun size={15} />}
-                {lighting === 'evening' ? 'Night' : 'Daylight'}
+                <Icon size={16} />
+                {label}
               </button>
-              <button
-                aria-label={`Render quality: ${quality}`}
-                onClick={() => setQuality(quality === 'high' ? 'balanced' : 'high')}
-              >
-                {quality === 'high' ? 'High quality' : 'Balanced'}
-              </button>
-            </div>
-          </>
-        )}
-      </PanelTabs>
+            ))}
+          </div>
+          <nav className="house-shortcuts" aria-label="House shortcuts">
+            <button onClick={() => setSection('homes')}>
+              <House size={17} />
+              Homes
+            </button>
+            <button
+              onClick={() => {
+                if (mode === 'entry') setMode('orbit');
+                openLibrary();
+              }}
+            >
+              <Armchair size={17} />
+              Furniture
+            </button>
+            <button aria-label="Edit history" onClick={() => setSection('history')}>
+              <History size={17} />
+              History
+            </button>
+            <button onClick={() => setSection('more')}>
+              <Ellipsis size={18} />
+              More
+            </button>
+          </nav>
+        </>
+      ) : (
+        <>
+          <PanelHeading title="More" close={close} back={back} />
+          <div className="house-secondary-actions">
+            <button
+              onClick={() => {
+                setMode('entry');
+                close();
+              }}
+            >
+              <DoorOpen size={17} />
+              Entrance
+            </button>
+            <button onClick={() => setSection('share')}>
+              <Users size={17} />
+              Share house
+            </button>
+            <button
+              disabled={capturing}
+              onClick={() => {
+                useCapture.getState().request();
+                close();
+              }}
+            >
+              <Camera size={17} />
+              {capturing ? 'Saving…' : 'Download image'}
+            </button>
+          </div>
+          <SavedActions />
+          <div className="house-utilities" role="group" aria-label="Appearance">
+            <button
+              aria-label={lighting === 'evening' ? 'Switch to daylight' : 'Switch to night'}
+              onClick={() => setLighting(lighting === 'evening' ? 'day' : 'evening')}
+            >
+              {lighting === 'evening' ? <Moon size={15} /> : <Sun size={15} />}
+              {lighting === 'evening' ? 'Night' : 'Daylight'}
+            </button>
+            <button
+              aria-label={`Render quality: ${quality}`}
+              onClick={() => setQuality(quality === 'high' ? 'balanced' : 'high')}
+            >
+              {quality === 'high' ? 'High quality' : 'Balanced'}
+            </button>
+          </div>
+        </>
+      )}
     </section>
   );
 }

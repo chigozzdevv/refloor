@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { buildingSchema } from '@refloor/scene/schema';
 import { editSchema } from '@refloor/scene/command';
 import { revisionSchema } from '@refloor/scene/revision';
-import { coordinateSchema, pointSchema, idSchema } from '@refloor/scene/primitives';
+import { coordinateSchema, pointSchema, idSchema, labelSchema } from '@refloor/scene/primitives';
 import { editMemorySchema } from '@refloor/scene/edit-memory';
 
 export const playerSchema = z.strictObject({
@@ -12,6 +12,7 @@ export const playerSchema = z.strictObject({
 export const requestIdSchema = z.uuid();
 export const projectCreateSchema = z.strictObject({
   requestId: requestIdSchema,
+  name: labelSchema.optional(),
   building: buildingSchema,
   memory: editMemorySchema.optional(),
 });
@@ -31,6 +32,26 @@ export const projectHistorySchema = z.strictObject({
   expectedRevision: z.number().int().nonnegative(),
   player: playerSchema.nullable(),
 });
+export const projectCollectionSchema = z
+  .strictObject({
+    expectedCollectionVersion: z.number().int().nonnegative(),
+    name: labelSchema.optional(),
+    deleted: z.boolean().optional(),
+  })
+  .refine((input) => input.name !== undefined || input.deleted !== undefined);
+const projectPreviewSchema = z.strictObject({
+  width: z.number().positive(),
+  depth: z.number().positive(),
+  rooms: z.array(
+    z.strictObject({
+      x: z.number(),
+      z: z.number(),
+      width: z.number().positive(),
+      depth: z.number().positive(),
+      kind: z.string(),
+    }),
+  ),
+});
 export const projectSummarySchema = z.strictObject({
   id: requestIdSchema,
   name: z.string(),
@@ -41,6 +62,9 @@ export const projectSummarySchema = z.strictObject({
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
   shared: z.boolean().optional(),
+  collectionVersion: z.number().int().nonnegative().optional(),
+  deleted: z.boolean().optional(),
+  preview: projectPreviewSchema.optional(),
   canUndo: z.boolean(),
   canRedo: z.boolean(),
 });
@@ -77,6 +101,7 @@ export type ProjectCreate = z.infer<typeof projectCreateSchema>;
 export type ProjectSave = z.infer<typeof projectSaveSchema>;
 export type ProjectEdit = z.infer<typeof projectEditSchema>;
 export type ProjectHistory = z.infer<typeof projectHistorySchema>;
+export type ProjectCollection = z.infer<typeof projectCollectionSchema>;
 
 export const generationRequestSchema = z.strictObject({
   requestId: requestIdSchema,

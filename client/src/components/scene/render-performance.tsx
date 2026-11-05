@@ -4,6 +4,7 @@ import { FrameBudget, renderBudget } from '@/shared/scene/render-budget';
 import { useRenderSettings } from '@/shared/scene/render-settings';
 import { useProject } from '@/shared/scene/scene-store';
 import { useExperience } from '@/shared/scene/experience-store';
+import { renderActivity } from '@/shared/scene/render-activity';
 
 export function RenderPerformance() {
   const gl = useThree((state) => state.gl),
@@ -12,7 +13,8 @@ export function RenderPerformance() {
     quality = useProject((state) => state.quality),
     [reduction, setReduction] = useState(0),
     frames = useMemo(() => new FrameBudget(), []),
-    report = useRef(0);
+    report = useRef(0),
+    intervals = useRef<number[]>([]);
   const settings = useMemo(
     () =>
       renderBudget({
@@ -56,18 +58,29 @@ export function RenderPerformance() {
       useExperience.getState().stage === 'prompt'
     ) {
       frames.reset(now);
+      intervals.current = [];
+      report.current = now;
       return;
     }
-    const sample = frames.sample(delta * 1000, now);
-    if (!sample) return;
-    if (sample.reduction !== reduction) setReduction(sample.reduction);
+    // An intentional idle interval is not a slow GPU frame.
+    if (!renderActivity.continuous) frames.reset(now);
+    else {
+      const sample = frames.sample(delta * 1000, now);
+      if (sample && sample.reduction !== reduction) setReduction(sample.reduction);
+    }
+    intervals.current.push(delta * 1000);
     if (now - report.current < 1500) return;
     report.current = now;
+    const sorted = intervals.current.sort((a, b) => a - b),
+      mean = sorted.reduce((sum, value) => sum + value, 0) / sorted.length,
+      p90 = sorted[Math.floor((sorted.length - 1) * 0.9)] ?? mean;
+    intervals.current = [];
     gl.domElement.dataset.renderMetrics = JSON.stringify({
-      fps: Math.round(sample.fps),
-      frameMilliseconds: Math.round(sample.mean * 10) / 10,
-      p90Milliseconds: Math.round(sample.p90 * 10) / 10,
-      reduction: sample.reduction,
+      fps: Math.round(1000 / mean),
+      frameMilliseconds: Math.round(mean * 10) / 10,
+      p90Milliseconds: Math.round(p90 * 10) / 10,
+      idle: !renderActivity.continuous,
+      reduction: frames.reduction,
       compact: settings.compact,
       dpr: gl.getPixelRatio(),
       width: gl.domElement.width,

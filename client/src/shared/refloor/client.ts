@@ -14,38 +14,37 @@ export class ProjectApiError extends Error {
   }
 }
 
+const requestTimeout = () =>
+  new ProjectApiError('TIMEOUT', 'The request timed out. Try again.', true);
+
 export async function request<T>(
   path: string,
   schema: { parse: (value: unknown) => T },
   method = 'GET',
   body?: unknown,
+  timeout = 20000,
 ): Promise<T> {
   let response: Response;
+  const signal = AbortSignal.timeout(timeout);
   try {
     response = await fetch(`/api${path}`, {
       method,
       credentials: 'same-origin',
-      signal: AbortSignal.timeout(20000),
+      signal,
       ...(body === undefined
         ? {}
         : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
     });
   } catch {
-    throw new ProjectApiError(
-      'UNAVAILABLE',
-      'Refloor could not connect to the server. Your browser draft is still available.',
-      true,
-    );
+    if (signal.aborted) throw requestTimeout();
+    throw new ProjectApiError('UNAVAILABLE', 'Could not connect to Refloor. Try again.', true);
   }
   let data: unknown;
   try {
     data = await response.json();
   } catch {
-    throw new ProjectApiError(
-      'UNAVAILABLE',
-      'The server is unavailable. Your browser draft is still available.',
-      true,
-    );
+    if (signal.aborted) throw requestTimeout();
+    throw new ProjectApiError('UNAVAILABLE', 'Refloor is unavailable. Try again.', true);
   }
   if (!response.ok) {
     const result = apiErrorSchema.safeParse(data);

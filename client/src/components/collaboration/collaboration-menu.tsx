@@ -1,7 +1,8 @@
 import { InvitationLinks } from '@/components/collaboration/invitation-links';
 import { collaborationBridge } from '@/shared/collaboration/bridge';
-import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, LoaderCircle, Users, X } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronDown, LoaderCircle, Users } from 'lucide-react';
+import { PanelHeading } from '@/components/ui/panel-heading';
 import type { SharedMember } from '@refloor/scene/collaboration';
 import { PanelTabs } from '@/components/ui/panel-tabs';
 import { useCollaboration } from '@/shared/collaboration/store';
@@ -9,38 +10,15 @@ import { collaborationApi } from '@/shared/collaboration/api';
 import { remoteShared } from '@/shared/collaboration/runtime';
 import { useProject } from '@/shared/scene/scene-store';
 import { useSavedProjects } from '@/shared/scene/scene-sync';
-import { PresenceActivity } from '@/components/collaboration/presence-activity';
 import { activePresence, presencePhase } from '@/shared/collaboration/presence';
 
-export function CollaborationMenu({
-  onOpen,
-  showActivity = true,
-}: {
-  onOpen: () => void;
-  showActivity?: boolean;
-}) {
+export function CollaborationMenu({ close, back }: { close: () => void; back: () => void }) {
   const { state, status, peers, pending, error } = useCollaboration();
   const shared = useProject((project) => project.remote?.shared);
   const [tab, setTab] = useState<'people' | 'invite'>('people');
-  const [open, setOpen] = useState(false),
-    [name, setName] = useState('');
+  const [name, setName] = useState('');
   const [busy, setBusy] = useState(false),
     [failure, setFailure] = useState<string | null>(null);
-  const panel = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const close = (event: PointerEvent) => {
-      if (event.target instanceof Node && !panel.current?.contains(event.target)) setOpen(false);
-    };
-    const escape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('keydown', escape);
-    document.addEventListener('pointerdown', close);
-    return () => {
-      document.removeEventListener('pointerdown', close);
-      document.removeEventListener('keydown', escape);
-    };
-  }, []);
   const run = (task: () => Promise<void>) => {
     setBusy(true);
     setFailure(null);
@@ -125,129 +103,106 @@ export function CollaborationMenu({
     </>
   );
   return (
-    <div className="collaboration-controls" ref={panel}>
-      <button
-        className="house-toggle collaboration-toggle"
-        aria-label="Collaborate"
-        aria-expanded={open}
-        onClick={() => {
-          if (!open) onOpen();
-          setOpen(!open);
-        }}
-      >
-        <Users size={20} strokeWidth={1.5} />
-        {shared && <i data-status={status} />}
-      </button>
-      {!open && showActivity && <PresenceActivity />}
-      {open && (
-        <section className="collaboration-menu" aria-label="Collaboration">
-          <div className="panel-heading">
-            <span>Collaboration</span>
-            <button
-              className="icon-button"
-              aria-label="Close collaboration"
-              onClick={() => setOpen(false)}
-            >
-              <X size={17} />
-            </button>
+    <section className="collaboration-menu" aria-label="Collaboration">
+      <PanelHeading
+        title="Share house"
+        close={close}
+        back={back}
+        closeLabel="Close collaboration"
+      />
+      {shared && status === 'denied' ? (
+        <p className="collaboration-error" role="status">
+          {failure ?? error ?? 'Access removed'}
+        </p>
+      ) : live ? (
+        <>
+          <div className="collaboration-sync" role="status">
+            <i data-status={status} />
+            {pending
+              ? `Syncing ${pending} change${pending === 1 ? '' : 's'}…`
+              : status === 'live'
+                ? 'All changes saved'
+                : status === 'denied'
+                  ? 'Access removed'
+                  : 'Reconnecting…'}
           </div>
-          {shared && status === 'denied' ? (
-            <p className="collaboration-error" role="status">
-              {failure ?? error ?? 'Access removed'}
-            </p>
-          ) : live ? (
-            <>
-              <div className="collaboration-sync" role="status">
-                <i data-status={status} />
-                {pending
-                  ? `Syncing ${pending} change${pending === 1 ? '' : 's'}…`
-                  : status === 'live'
-                    ? 'All changes saved'
-                    : status === 'denied'
-                      ? 'Access removed'
-                      : 'Reconnecting…'}
-              </div>
-              {state.self.role === 'owner' ? (
-                <PanelTabs
-                  label="Collaboration sections"
-                  tabs={
-                    [
-                      { value: 'people', label: 'People' },
-                      { value: 'invite', label: 'Invite' },
-                    ] as const
-                  }
-                  value={tab}
-                  onChange={setTab}
-                >
-                  <div hidden={tab !== 'people'}>{people}</div>
-                  <div hidden={tab !== 'invite'}>
-                    <InvitationLinks projectId={state.project.id} disabled={status !== 'live'} />
-                  </div>
-                </PanelTabs>
-              ) : (
-                people
-              )}
-            </>
-          ) : shared ? (
-            <div className="collaboration-sync" role="status">
-              <LoaderCircle size={14} className="spinning" /> Connecting…
-            </div>
-          ) : (
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (!name.trim()) return;
-                run(async () => {
-                  collaborationBridge.preparing = true;
-                  try {
-                    const saved = useSavedProjects.getState();
-                    if (!(await saved.preserve()))
-                      throw new Error(
-                        useSavedProjects.getState().error ?? 'Wait for your house to save.',
-                      );
-                    if (!useProject.getState().remote) await useSavedProjects.getState().save();
-                    const remote = useProject.getState().remote;
-                    if (!remote) throw new Error('Save this house before inviting someone.');
-                    const sharedState = await collaborationApi.enable(
-                      remote.id,
-                      name.trim(),
-                      remote.version,
-                    );
-                    useCollaboration.setState({ state: sharedState });
-                    useProject.setState({ remote: remoteShared(sharedState) });
-                  } finally {
-                    collaborationBridge.preparing = false;
-                  }
-                });
-              }}
+          {state.self.role === 'owner' ? (
+            <PanelTabs
+              label="Collaboration sections"
+              tabs={
+                [
+                  { value: 'people', label: 'People' },
+                  { value: 'invite', label: 'Invite' },
+                ] as const
+              }
+              value={tab}
+              onChange={setTab}
             >
-              <label>
-                Your name
-                <input
-                  autoFocus
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  maxLength={40}
-                  autoComplete="nickname"
-                />
-              </label>
-              <button
-                className="collaboration-primary"
-                disabled={busy || !name.trim()}
-                type="submit"
-              >
-                {busy ? <LoaderCircle size={16} className="spinning" /> : <Users size={16} />} Start
-                sharing
-              </button>
-            </form>
+              <div hidden={tab !== 'people'}>{people}</div>
+              <div hidden={tab !== 'invite'}>
+                <InvitationLinks projectId={state.project.id} disabled={status !== 'live'} />
+              </div>
+            </PanelTabs>
+          ) : (
+            people
           )}
-          {status !== 'denied' && (failure || (shared && error)) && (
-            <p className="collaboration-error" role="alert">
-              {failure ?? error}
-            </p>
-          )}
-        </section>
+        </>
+      ) : shared ? (
+        <div className="collaboration-sync" role="status">
+          <LoaderCircle size={14} className="spinning" /> Connecting…
+        </div>
+      ) : (
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!name.trim()) return;
+            run(async () => {
+              collaborationBridge.preparing = true;
+              try {
+                const saved = useSavedProjects.getState();
+                if (!(await saved.preserve()))
+                  throw new Error(
+                    useSavedProjects.getState().error ?? 'Wait for your house to save.',
+                  );
+                if (!useProject.getState().remote || useProject.getState().remote?.deleted)
+                  await useSavedProjects.getState().save();
+                const remote = useProject.getState().remote;
+                if (!remote || remote.deleted)
+                  throw new Error('Save this house before inviting someone.');
+                const sharedState = await collaborationApi.enable(
+                  remote.id,
+                  name.trim(),
+                  remote.version,
+                );
+                useCollaboration.setState({ state: sharedState });
+                useProject.setState({ remote: remoteShared(sharedState) });
+              } finally {
+                collaborationBridge.preparing = false;
+              }
+            });
+          }}
+        >
+          <label>
+            Your name
+            <input
+              autoFocus
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              maxLength={40}
+              autoComplete="nickname"
+            />
+          </label>
+          <button className="collaboration-primary" disabled={busy || !name.trim()} type="submit">
+            {busy ? <LoaderCircle size={16} className="spinning" /> : <Users size={16} />} Start
+            sharing
+          </button>
+        </form>
       )}
-    </div>
+      {status !== 'denied' && (failure || (shared && error)) && (
+        <p className="collaboration-error" role="alert">
+          {failure ?? error}
+        </p>
+      )}
+    </section>
   );
 }

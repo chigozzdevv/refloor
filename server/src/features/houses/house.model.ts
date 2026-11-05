@@ -5,6 +5,9 @@ export type HouseRecord = {
   _id: string;
   ownerId: string;
   shared?: boolean;
+  displayName?: string;
+  deleted?: boolean;
+  collectionVersion?: number;
   creationId: string;
   creationFingerprint: string;
   building: Building;

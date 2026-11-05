@@ -12,33 +12,51 @@ import {
   Vector2,
 } from 'three';
 import type { Material } from '@refloor/scene';
+import type { CompiledBuilding } from '@refloor/engine';
 
-const scales: Record<string, [number, number]> = {
-  'wood-floor': [1.2, 1.2],
-  'wood-veneer': [1.83, 1.83],
-  plaster: [1.998063, 1.998064],
-  fabric: [0.263603, 0.2638],
-  brick: [1.12, 1.12],
-  marble: [1.5, 1.5],
-  'marble-slab': [1.5, 1.5],
-  'roof-asphalt': [20, 20],
-  'metal-roof': [2, 2],
+const surfaces: Record<string, { scale: [number, number]; maps: [string, string, string] }> = {
+  'wood-floor': { scale: [1.2, 1.2], maps: ['basecolor.webp', 'normal.jpg', 'arm.webp'] },
+  'wood-veneer': { scale: [1.83, 1.83], maps: ['basecolor.webp', 'normal.jpg', 'arm.webp'] },
+  plaster: { scale: [1.998063, 1.998064], maps: ['basecolor.webp', 'normal.webp', 'arm.jpg'] },
+  fabric: { scale: [0.263603, 0.2638], maps: ['basecolor.webp', 'normal.webp', 'arm.webp'] },
+  brick: { scale: [1.12, 1.12], maps: ['basecolor.webp', 'normal.jpg', 'arm.jpg'] },
+  marble: { scale: [1.5, 1.5], maps: ['basecolor.webp', 'normal.jpg', 'arm.jpg'] },
+  'marble-slab': { scale: [1.5, 1.5], maps: ['basecolor.webp', 'normal.webp', 'arm.jpg'] },
+  'roof-asphalt': { scale: [20, 20], maps: ['basecolor.webp', 'normal.jpg', 'arm.jpg'] },
+  'metal-roof': { scale: [2, 2], maps: ['basecolor.webp', 'normal.jpg', 'arm.webp'] },
 };
+
+const textureUrls = (id: string) => surfaces[id]!.maps.map((name) => `/textures/${id}/${name}`);
+
+export function preloadSurfaces(compiled: CompiledBuilding) {
+  const materials = [
+    ...compiled.parts.flatMap((part) => [
+      part.material,
+      ...(part.exterior ? [part.exterior.material] : []),
+    ]),
+    ...compiled.building.objects.flatMap((object) => Object.values(object.materials)),
+  ];
+  const ids = new Set(
+    materials.flatMap((material) =>
+      material.textureId && Object.hasOwn(surfaces, material.textureId) ? [material.textureId] : [],
+    ),
+  );
+  // Match useSurface's loader keys so the preload reuses the same texture instances.
+  for (const id of ids) useTexture.preload(textureUrls(id));
+}
 
 export function useSurface(finish: Material, glass = false): MeshPhysicalMaterial {
   const { textureId: id, color, roughness, metalness, opacity } = finish;
-  if (id !== null && !Object.hasOwn(scales, id))
+  if (id !== null && !Object.hasOwn(surfaces, id))
     throw new Error(`Surface texture is unavailable: ${id}`);
-  const [base, normal, arm] = useTexture(
-    id ? ['basecolor', 'normal', 'arm'].map((name) => `/textures/${id}/${name}.jpg`) : [],
-  );
+  const [base, normal, arm] = useTexture(id ? textureUrls(id) : []);
   const result = useMemo(() => {
     const cloned = [base, normal, arm].flatMap((texture, index) => {
       if (!texture) return [];
       const copy = texture.clone();
       copy.wrapS = copy.wrapT = RepeatWrapping;
       copy.colorSpace = index === 0 ? SRGBColorSpace : NoColorSpace;
-      const [width, depth] = scales[id ?? ''] ?? [1, 1];
+      const [width, depth] = surfaces[id ?? '']?.scale ?? [1, 1];
       copy.repeat.set(1 / width, 1 / depth);
       copy.anisotropy = 8;
       copy.needsUpdate = true;

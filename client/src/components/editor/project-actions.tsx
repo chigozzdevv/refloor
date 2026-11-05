@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { Check, Download, FolderOpen, Upload, X } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Check, Copy, Download, Plus, Upload } from 'lucide-react';
 import { useProject } from '@/shared/scene/scene-store';
 import {
   downloadText,
@@ -11,39 +11,83 @@ import { editingError } from '@/shared/editor/errors';
 import { SavedSpaces } from '@/components/editor/saved-spaces';
 import { useSavedProjects } from '@/shared/scene/scene-sync';
 import { ProjectRecovery } from '@/components/editor/project-recovery';
+import { PanelHeading } from '@/components/ui/panel-heading';
 
-export function ProjectActions({ labeled = false }: { labeled?: boolean }) {
-  const [open, setOpen] = useState(false),
-    [busy, setBusy] = useState(false),
-    input = useRef<HTMLInputElement>(null),
-    panel = useRef<HTMLDivElement>(null);
-  const { compiled, memory, saved, saveError, recovery, resumeSaving, notify } = useProject();
-  useEffect(() => {
-    const pointer = (event: PointerEvent) => {
-        if (event.target instanceof Node && !panel.current?.contains(event.target)) setOpen(false);
-      },
-      key = (event: KeyboardEvent) => {
-        if (event.key === 'Escape') setOpen(false);
-      };
-    document.addEventListener('pointerdown', pointer);
-    document.addEventListener('keydown', key);
-    return () => {
-      document.removeEventListener('pointerdown', pointer);
-      document.removeEventListener('keydown', key);
-    };
-  }, []);
+export function ProjectActions({
+  close,
+  back,
+  openNewHome,
+}: {
+  close: () => void;
+  back: () => void;
+  openNewHome: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [organizing, setOrganizing] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  const { compiled, memory, remote, saved, saveError, recovery, resumeSaving, notify } =
+    useProject();
+  const syncing = useSavedProjects((state) => state.saving || state.opening || state.recovering);
+  const savedName = useSavedProjects(
+    (state) => state.items.find((item) => item.id === remote?.id)?.name,
+  );
   return (
-    <div className="project-actions" ref={panel}>
+    <section className="house-menu homes-menu" aria-label="Homes">
+      <PanelHeading title="Homes" back={back} close={close} />
+      <div className="current-home">
+        <h2>{remote?.name ?? savedName ?? compiled.building.name}</h2>
+        <span className="draft-state">
+          <Check size={12} />
+          {saved ? 'Saved locally' : 'Not saved locally'}
+        </span>
+      </div>
       <button
-        className={labeled ? 'project-button-labeled' : 'project-button'}
-        title="Project files"
-        aria-label="Project files"
-        aria-expanded={open}
-        onClick={() => setOpen(!open)}
+        className="new-home-action"
+        disabled={busy || syncing || organizing}
+        onClick={openNewHome}
       >
-        <FolderOpen size={17} />
-        {labeled && 'Project files'}
+        <Plus size={17} />
+        New house
       </button>
+      <SavedSpaces
+        opened={close}
+        organizing={setOrganizing}
+        files={
+          <>
+            {remote && !remote.deleted && (
+              <button
+                className="file-action"
+                disabled={syncing || organizing}
+                onClick={() => void useSavedProjects.getState().save(true)}
+              >
+                <Copy size={16} />
+                Save a copy
+              </button>
+            )}
+            <button
+              className="file-action"
+              onClick={() =>
+                downloadText(
+                  encodeProject(compiled.building, memory),
+                  `${(remote?.name ?? savedName ?? compiled.building.name).toLowerCase().replace(/[^a-z0-9]+/g, '-')}.refloor.json`,
+                )
+              }
+            >
+              <Download size={16} />
+              Export house
+            </button>
+            <button
+              className="file-action"
+              disabled={busy || syncing || organizing}
+              onClick={() => input.current?.click()}
+            >
+              <Upload size={16} />
+              {busy ? 'Opening…' : 'Import house'}
+            </button>
+            <ProjectRecovery />
+          </>
+        }
+      />
       <input
         ref={input}
         type="file"
@@ -61,79 +105,36 @@ export function ProjectActions({ labeled = false }: { labeled?: boolean }) {
             if (!(await useSavedProjects.getState().preserve()))
               throw new Error(
                 useSavedProjects.getState().error ??
-                  'Your current space could not be saved. Keep it open and try again.',
+                  'Your current house could not be saved. Try again.',
               );
             useProject.getState().loadProject(result.compiled, undefined, result.memory);
-            setOpen(false);
+            close();
           } catch (error) {
-            notify(`Could not open this project. ${editingError(error)}`);
+            notify(`Could not open this house. ${editingError(error)}`);
           } finally {
             setBusy(false);
             if (input.current) input.current.value = '';
           }
         }}
       />
-      {open && (
-        <section className="project-menu" aria-label="Project files menu">
-          <div className="panel-heading">
-            <span>Files</span>
-            <button
-              className="icon-button"
-              aria-label="Close project files"
-              onClick={() => setOpen(false)}
-            >
-              <X size={17} />
-            </button>
-          </div>
-          <h2>{compiled.building.name}</h2>
-          <span className="draft-state">
-            <Check size={12} />
-            {saved ? 'Draft saved in this browser' : 'Browser-local draft'}
-          </span>
-          <SavedSpaces />
-          <ProjectRecovery />
-          <p>Export a project to keep a copy or open it on another device.</p>
-          <button
-            className="file-action"
-            onClick={() =>
-              downloadText(
-                encodeProject(compiled.building, memory),
-                `${compiled.building.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.refloor.json`,
-              )
-            }
-          >
-            <Download size={16} />
-            <span>
-              Export project<small>Editable rooms, furniture and device settings</small>
-            </span>
-          </button>
-          <button className="file-action" disabled={busy} onClick={() => input.current?.click()}>
-            <Upload size={16} />
-            <span>
-              {busy ? 'Checking project…' : 'Open project'}
-              <small>Import a Refloor JSON file</small>
-            </span>
-          </button>
-          {saveError && (
-            <div className="save-error" role="status">
-              <p>{saveError}</p>
-              {recovery && (
-                <>
-                  <button
-                    className="button compact outline"
-                    onClick={() => downloadText(recovery, 'refloor-draft-recovery.json')}
-                  >
-                    Download recovery copy
-                  </button>
-                  <button className="button compact outline" onClick={resumeSaving}>
-                    Save current space instead
-                  </button>
-                </>
-              )}
-            </div>
+      {saveError && (
+        <div className="save-error" role="status">
+          <p>{saveError}</p>
+          {recovery && (
+            <>
+              <button
+                className="button compact outline"
+                onClick={() => downloadText(recovery, 'refloor-draft-recovery.json')}
+              >
+                Download recovery copy
+              </button>
+              <button className="button compact outline" onClick={resumeSaving}>
+                Save current house instead
+              </button>
+            </>
           )}
-        </section>
+        </div>
       )}
-    </div>
+    </section>
   );
 }

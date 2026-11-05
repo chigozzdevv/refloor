@@ -8,7 +8,7 @@ export function useCommandShortcuts() {
     const key = (event: KeyboardEvent) => {
       if (
         isTyping(event.target) ||
-        (event.target instanceof Element && event.target.closest('[role=dialog]'))
+        (event.target instanceof Element && event.target.closest('dialog, [role=dialog]'))
       )
         return;
       const state = useProject.getState();

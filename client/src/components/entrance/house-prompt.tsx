@@ -5,23 +5,23 @@ import { generationApi, persistGeneration, restoreGeneration } from '@/shared/re
 import type { PendingGeneration } from '@/shared/refloor/progress';
 import { useSavedProjects } from '@/shared/scene/scene-sync';
 import { GenerationProgress } from '@/components/entrance/generation-progress';
-
-const defaultHousePrompt =
-  'Create a two-bedroom bungalow whose front door opens directly into a spacious parlor with cushioned seating, a television, stereo speakers and a dining table with chairs. Connect both bedrooms, a separate kitchen and one bathroom directly to the parlor, with no passage or entrance hall. Use cream interior walls, a brick exterior, oak floors and cabinetry, large windows and a dark metal gable roof.';
+import { ProjectApiError } from '@/shared/refloor/client';
 
 export function HousePrompt({
   close,
   resume,
   templates,
   canResume,
+  choosingTemplate = false,
 }: {
   close: () => void;
   resume: () => void;
   templates: () => void;
   canResume: boolean;
+  choosingTemplate?: boolean;
 }) {
   const [pending, setPending] = useState<PendingGeneration | null>(restoreGeneration);
-  const [prompt, setPrompt] = useState(() => restoreGeneration()?.prompt ?? defaultHousePrompt);
+  const [prompt, setPrompt] = useState(() => restoreGeneration()?.prompt ?? '');
   const [job, setJob] = useState<Generation | null>(null),
     [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0),
@@ -31,7 +31,7 @@ export function HousePrompt({
     mounted = useRef(true),
     completed = useRef(close);
   completed.current = close;
-  const busy = starting || (pending !== null && job?.status !== 'failed');
+  const busy = starting || opening || (pending !== null && job?.status !== 'failed');
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -79,6 +79,10 @@ export function HousePrompt({
         current = { ...current, jobId: next.id };
         persistGeneration(current);
         setJob(next);
+        if (next.status === 'failed') {
+          persistGeneration(null);
+          setPending(null);
+        }
         setError(
           next.error ??
             (next.status === 'failed'
@@ -90,8 +94,24 @@ export function HousePrompt({
             void poll();
           }, 1500);
       } catch (failure) {
-        if (!cancelled)
-          setError(failure instanceof Error ? failure.message : 'Generation could not connect.');
+        if (cancelled) return;
+        if (
+          failure instanceof ProjectApiError &&
+          (!failure.retryable || failure.code === 'GENERATION_UNAVAILABLE')
+        ) {
+          persistGeneration(null);
+          setPending(null);
+          setJob(null);
+        }
+        setError(
+          failure instanceof ProjectApiError && failure.code === 'GENERATION_NOT_FOUND'
+            ? 'This generation is no longer available. You can try your description again.'
+            : failure instanceof ProjectApiError && failure.code === 'GENERATION_UNAVAILABLE'
+              ? 'House generation is unavailable. Choose a starting house.'
+              : failure instanceof Error
+                ? failure.message
+                : 'Generation could not connect.',
+        );
       }
     };
     void poll();
@@ -101,7 +121,13 @@ export function HousePrompt({
     };
   }, [pending, attempt]);
   useEffect(() => {
-    if (job?.status !== 'complete' || !job.projectId || openingJob.current === job.id) return;
+    if (
+      choosingTemplate ||
+      job?.status !== 'complete' ||
+      !job.projectId ||
+      openingJob.current === job.id
+    )
+      return;
     openingJob.current = job.id;
     void open(job.projectId);
   });
@@ -201,7 +227,7 @@ export function HousePrompt({
           ) : null}
         </div>
       )}
-      {!busy && (
+      {!starting && !opening && (
         <div className="prompt-alternatives">
           {canResume && (
             <>

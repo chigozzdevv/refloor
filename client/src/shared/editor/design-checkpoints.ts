@@ -53,8 +53,30 @@ function append(history: DesignHistory, building: Building, input: string): Desi
   });
 }
 
-function preservePreview(history: DesignHistory, building: Building) {
+export function hasDesignPreviewChanges(state: DocumentState) {
+  const history = state.memory.designs;
+  return Boolean(
+    history?.comparison &&
+    !history.items.some(
+      (item) => fingerprintBuilding(item.building) === fingerprintBuilding(state.compiled.building),
+    ),
+  );
+}
+
+export function designPreviewNeedsSpace(state: DocumentState) {
+  if (!hasDesignPreviewChanges(state)) return false;
+  try {
+    const { history } = preservePreview(state.memory.designs!, state.compiled.building);
+    checkPortable({ ...state, memory: { ...state.memory, designs: history } });
+    return false;
+  } catch {
+    return true;
+  }
+}
+
+function preservePreview(history: DesignHistory, building: Building, discardPreview = false) {
   if (
+    discardPreview ||
     !history.comparison ||
     history.items.some(
       (item) => fingerprintBuilding(item.building) === fingerprintBuilding(building),
@@ -110,12 +132,17 @@ export function saveDesign(state: DocumentState, name: string): DocumentState {
   return checkPortable({ ...state, memory: { ...state.memory, designs } });
 }
 
-export function viewDesign(state: DocumentState, id: string, player?: NavigationPoint) {
+export function viewDesign(
+  state: DocumentState,
+  id: string,
+  player?: NavigationPoint,
+  discardPreview = false,
+) {
   const existing = state.memory.designs,
     saved = existing?.items.find((item) => item.id === id);
   if (!existing || !saved) throw new Error('This saved design is no longer available.');
   const compiled = compileDesign(state, saved.building, player),
-    { history, preserved } = preservePreview(existing, state.compiled.building),
+    { history, preserved } = preservePreview(existing, state.compiled.building, discardPreview),
     comparison = history.comparison ?? {
       checkpointId: id,
       working: structuredClone(state.compiled.building),
@@ -144,11 +171,19 @@ export function viewDesign(state: DocumentState, id: string, player?: Navigation
   return { document, preserved };
 }
 
-export function returnToWorking(state: DocumentState, player?: NavigationPoint) {
+export function returnToWorking(
+  state: DocumentState,
+  player?: NavigationPoint,
+  discardPreview = false,
+) {
   const comparison = state.memory.designs?.comparison;
   if (!comparison) throw new Error('Your working design is already open.');
   const compiled = compileDesign(state, comparison.working, player),
-    { history, preserved } = preservePreview(state.memory.designs!, state.compiled.building),
+    { history, preserved } = preservePreview(
+      state.memory.designs!,
+      state.compiled.building,
+      discardPreview,
+    ),
     designs = { ...history };
   delete designs.comparison;
   const document = checkPortable({

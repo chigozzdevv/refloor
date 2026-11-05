@@ -175,7 +175,6 @@ export const createEditorState: StateCreator<ProjectState, [], [], EditorState> 
       );
       if (!state.edit([{ type: 'add-object', object }])) return false;
       set({ selection: { kind: 'object', id: object.id } });
-      state.notify('Added to a clear spot. Select it to adjust its position.');
       return true;
     } catch (error) {
       state.notify(error instanceof Error ? error.message : 'No clear placement was found.');

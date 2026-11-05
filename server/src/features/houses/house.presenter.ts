@@ -4,10 +4,24 @@ import type { HouseRecord } from '@refloor/server/features/houses/house.model';
 import { createEditMemory } from '@refloor/scene/edit-memory';
 
 export function houseSummary(record: HouseRecord): ProjectSummary {
+  const floor = record.building.floors[0]!;
   return {
     id: record._id,
-    name: record.building.name,
+    name: record.displayName ?? record.building.name,
     ...(record.shared ? { shared: true } : {}),
+    collectionVersion: record.collectionVersion ?? 0,
+    ...(record.deleted ? { deleted: true } : {}),
+    preview: {
+      width: floor.footprint.width,
+      depth: floor.footprint.depth,
+      rooms: floor.rooms.map((room) => ({
+        x: room.footprint.x - floor.footprint.x,
+        z: room.footprint.z - floor.footprint.z,
+        width: room.footprint.width,
+        depth: room.footprint.depth,
+        kind: room.kind,
+      })),
+    },
     version: record.version,
     revision: record.building.revision,
     storeys: record.building.floors.length,

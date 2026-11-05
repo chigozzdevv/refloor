@@ -30,7 +30,7 @@ export function WallLight({ object }: { object: SceneObject }) {
         <meshStandardMaterial
           color={output ? '#fff2d7' : '#d0cbc0'}
           emissive={state?.color ?? '#ffd0a3'}
-          emissiveIntensity={output * 0.22}
+          emissiveIntensity={output * 0.12}
           roughness={0.3}
         />
       </mesh>
@@ -57,7 +57,7 @@ export function WallLight({ object }: { object: SceneObject }) {
             target={targets[index]!}
             userData={{ lightBudget: { id: object.id, floorId: object.floorId, exterior: true } }}
             color={state?.color ?? '#ffd0a3'}
-            intensity={output * 2.5}
+            intensity={output}
             angle={0.48}
             penumbra={0.65}
             distance={2.8}

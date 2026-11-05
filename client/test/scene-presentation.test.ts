@@ -52,6 +52,7 @@ describe('visible scene completion', () => {
     presentation.commit(compiled);
     presentation.motion(left, compiled.building.id, true, 'fridge');
     presentation.motion(right, compiled.building.id, true, 'fridge');
+    expect(presentation.animating(compiled.building.id)).toBe(true);
     const pending = presentation
       .waitFor(compiled, controller.signal, new Set(['fridge']))
       .then(() => (done = true));
@@ -63,6 +64,7 @@ describe('visible scene completion', () => {
     await Promise.resolve();
     expect(done).toBe(false);
     presentation.motion(right, compiled.building.id, false, 'fridge');
+    expect(presentation.animating(compiled.building.id)).toBe(false);
     presentation.frame(compiled);
     await pending;
     expect(done).toBe(true);

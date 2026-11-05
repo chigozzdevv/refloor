@@ -1,5 +1,5 @@
 import { SpatialPresence } from '@/components/collaboration/spatial-presence';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { NoToneMapping, PCFShadowMap, SRGBColorSpace } from 'three';
 import { Selection } from '@react-three/postprocessing';
@@ -15,7 +15,6 @@ import { NavigationMarkers } from '@/components/navigation/navigation-markers';
 import { SelectedFloor } from '@/components/editor/selected-floor';
 import { EntranceCamera } from '@/components/entrance/entrance-camera';
 import { ActionEvents } from '@/components/scene/action-events';
-import { useExperience } from '@/shared/scene/experience-store';
 import { exteriorUpgradeCommands } from '@/shared/editor/exterior-upgrade';
 import { SceneCapture } from '@/components/scene/capture';
 import { RenderPerformance } from '@/components/scene/render-performance';
@@ -23,6 +22,9 @@ import { useRenderSettings } from '@/shared/scene/render-settings';
 import { catalogueBehaviourUpgrades } from '@refloor/catalogue';
 import { PresentedScene } from '@/components/scene/presentation';
 import { scenePresentation } from '@/shared/scene/presentation';
+import { RenderCadence } from '@/components/scene/render-cadence';
+import { preloadSurfaces } from '@/shared/scene/asset-loader';
+import { FirstPersonHand } from '@/components/scene/interaction-hand';
 
 function SceneReady() {
   const setReady = useProject((state) => state.setSceneReady);
@@ -46,20 +48,15 @@ function SceneReady() {
 
 export function World() {
   const epoch = useProject((state) => state.projectEpoch),
+    compiled = useProject((state) => state.compiled),
     select = useProject((state) => state.select);
-  const stage = useExperience((state) => state.stage);
-  const [visible, setVisible] = useState(!document.hidden);
-  useEffect(() => {
-    const update = () => setVisible(!document.hidden);
-    document.addEventListener('visibilitychange', update);
-    return () => document.removeEventListener('visibilitychange', update);
-  }, []);
+  useEffect(() => preloadSurfaces(compiled), [compiled]);
   const dpr = useRenderSettings((state) => state.dpr);
   useEffect(() => () => scenePresentation.fail(new Error('The scene renderer was closed.')), []);
   return (
     <Canvas
       style={{ overflow: 'clip' }}
-      frameloop={stage === 'prompt' || !visible ? 'demand' : 'always'}
+      frameloop="demand"
       shadows
       camera={{ fov: 45, near: 0.08, far: 200, position: [16, 12, -8] }}
       dpr={dpr}
@@ -77,7 +74,11 @@ export function World() {
         if (event.target instanceof HTMLCanvasElement) select(null);
       }}
     >
+      <RenderCadence />
       <RenderPerformance />
+      <Suspense fallback={null}>
+        <FirstPersonHand />
+      </Suspense>
       <Suspense fallback={null}>
         <Selection>
           <PhysicsRuntime />

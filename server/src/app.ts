@@ -48,7 +48,7 @@ export async function createApp(config: ServerConfig, logging = true) {
     await app.register(cors, {
       origin: config.clientOrigins,
       credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'OPTIONS'],
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'OPTIONS'],
     });
     await app.register(rateLimit, { max: 120, timeWindow: '1 minute' });
     app.addHook('onRequest', async (request, reply) => {

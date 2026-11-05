@@ -1,16 +1,29 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Html } from '@react-three/drei';
 import { Vector3 } from 'three';
 import { ElementChat } from '@/components/editor/element-chat';
 import { useProject } from '@/shared/scene/scene-store';
 import { selectedContext } from '@/shared/editor/chat-context';
 import { usePlayback } from '@/shared/behaviours/television';
+import {
+  handChatHeight,
+  interactionHand,
+  showInteractionHand,
+} from '@/shared/editor/interaction-hand';
 
 export function SelectionChat() {
   const card = useRef<HTMLDivElement>(null);
   const { selection, compiled, projectEpoch, select } = useProject();
   const context = selectedContext(compiled.building, selection);
   const playback = usePlayback((state) => (selection ? state.players[selection.id] : undefined));
+  useEffect(() => {
+    if (!selection) return;
+    const outside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !card.current?.contains(event.target)) select(null);
+    };
+    document.addEventListener('pointerdown', outside, true);
+    return () => document.removeEventListener('pointerdown', outside, true);
+  }, [selection, select]);
   if (!context || !selection) return null;
   const markOffscreen = (hidden: boolean) =>
     card.current?.toggleAttribute('data-offscreen', hidden);
@@ -27,22 +40,39 @@ export function SelectionChat() {
           y = ((1 - point.y) * size.height) / 2;
         const width = card.current?.offsetWidth ?? Math.min(280, size.width - 24),
           height = card.current?.offsetHeight ?? 160;
-        const left = behind
-            ? Math.max(12, (size.width - width) / 2)
-            : Math.max(12, Math.min(size.width - width - 12, x + 18)),
-          top = behind
-            ? Math.max(76, (size.height - height) / 2)
-            : Math.max(
-                76,
-                Math.min(size.height - height - 18, size.width < 600 ? y - height - 18 : y - 30),
-              );
+        const docked =
+          useProject.getState().mode !== 'orbit' && showInteractionHand(size.width, size.height);
+        const left = docked
+            ? Math.max(
+                12,
+                Math.min(size.width - width - 12, interactionHand.x * size.width - width / 2),
+              )
+            : behind
+              ? Math.max(12, (size.width - width) / 2)
+              : Math.max(12, Math.min(size.width - width - 12, x + 18)),
+          top = docked
+            ? Math.max(76 + height, size.height - handChatHeight(size.height) + interactionHand.y)
+            : behind
+              ? Math.max(76, (size.height - height) / 2)
+              : Math.max(
+                  76,
+                  Math.min(size.height - height - 18, size.width < 600 ? y - height - 18 : y - 30),
+                );
         markOffscreen(behind);
         if (card.current) {
-          card.current.dataset.tail =
-            y > top + height ? 'bottom' : y < top ? 'top' : x > left + width ? 'right' : 'left';
+          card.current.toggleAttribute('data-hand', docked);
+          card.current.dataset.tail = docked
+            ? 'bottom'
+            : y > top + height
+              ? 'bottom'
+              : y < top
+                ? 'top'
+                : x > left + width
+                  ? 'right'
+                  : 'left';
           card.current.style.setProperty(
             '--tail-x',
-            `${Math.max(18, Math.min(width - 18, x - left))}px`,
+            `${docked ? width / 2 : Math.max(18, Math.min(width - 18, x - left))}px`,
           );
           card.current.style.setProperty(
             '--tail-y',

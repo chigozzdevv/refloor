@@ -10,6 +10,7 @@ export const usePlayback = create<{ players: Record<string, PlaybackState> }>(()
   players: {},
 }));
 export const mediaPlayers = new Map<string, HTMLVideoElement>();
+const playRequests = new WeakMap<HTMLVideoElement, symbol>();
 export const playbackFor = (id: string) => usePlayback.getState().players[id] ?? idle;
 export function setPlayback(id: string, state: PlaybackState) {
   usePlayback.setState((current) => ({ players: { ...current.players, [id]: state } }));
@@ -39,8 +40,8 @@ export function prepareMediaCommand(commands: SceneCommand[], building: Building
     if (!video || !state) continue;
     video.muted = state.muted;
     video.volume = state.volume;
-    if (state.powered) playMedia(id);
-    else video.pause();
+    if (state.powered) playMedia(id, state.source);
+    else stopMedia(id);
   }
 }
 
@@ -80,18 +81,40 @@ export function waitForPlayback(ids: string[], signal: AbortSignal): Promise<voi
     check();
   });
 }
-export function playMedia(id: string) {
+export function stopMedia(id: string) {
   const video = mediaPlayers.get(id);
   if (!video) return;
+  playRequests.delete(video);
+  video.pause();
+  setPlayback(id, idle);
+}
+
+export function playMedia(id: string, source: string | null) {
+  const video = mediaPlayers.get(id);
+  if (!video) return;
+  const request = Symbol(),
+    url = mediaSource(source);
+  playRequests.set(video, request);
+  if (!url) {
+    video.pause();
+    video.removeAttribute('src');
+    video.load();
+    setPlayback(id, {
+      status: 'failed',
+      message: 'Choose the included clip or a direct MP4 video URL.',
+    });
+    return;
+  }
+  if (video.getAttribute('src') !== url) video.src = url;
   if (video.paused || video.readyState < 3) setPlayback(id, { status: 'loading', message: null });
   void video
     .play()
     .then(() => {
-      if (mediaPlayers.get(id) === video && !video.paused)
+      if (mediaPlayers.get(id) === video && playRequests.get(video) === request && !video.paused)
         setPlayback(id, { status: 'playing', message: null });
     })
     .catch((error: unknown) => {
-      if (mediaPlayers.get(id) !== video) return;
+      if (mediaPlayers.get(id) !== video || playRequests.get(video) !== request) return;
       if (error instanceof DOMException && error.name === 'AbortError') return;
       const blocked = error instanceof DOMException && error.name === 'NotAllowedError';
       setPlayback(id, {

@@ -1,12 +1,19 @@
 import { targetIdentity } from '@/shared/editor/identity';
 import { useLayoutEffect, useRef, useState } from 'react';
-import { LoaderCircle, Redo2, Undo2, X } from 'lucide-react';
+import { LoaderCircle, Redo2, Undo2 } from 'lucide-react';
+import { PanelHeading } from '@/components/ui/panel-heading';
 import { useCollaboration } from '@/shared/collaboration/store';
 import { collaborationBridge } from '@/shared/collaboration/bridge';
 import { collaborationApi } from '@/shared/collaboration/api';
 import { mergeActivity } from '@/shared/collaboration/history';
 
-export function SharedHistory({ close }: { close: () => void }) {
+export function SharedHistory({
+  close,
+  back,
+}: {
+  close: () => void;
+  back?: (() => void) | undefined;
+}) {
   const { state, pending, status, error } = useCollaboration();
   const [loading, setLoading] = useState(false);
   const messages = useRef<HTMLDivElement>(null);
@@ -61,12 +68,7 @@ export function SharedHistory({ close }: { close: () => void }) {
 
   return (
     <section className="edit-history shared-history" aria-label="Shared edit history">
-      <div className="panel-heading">
-        <span>History</span>
-        <button className="icon-button" aria-label="Close history" onClick={close}>
-          <X size={17} />
-        </button>
-      </div>
+      <PanelHeading title="History" close={close} back={back} />
       {error && (
         <p className="collaboration-error" role="alert">
           {error}

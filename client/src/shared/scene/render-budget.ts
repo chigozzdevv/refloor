@@ -50,7 +50,7 @@ export function renderBudget(input: {
     mirrorInterval: constrained ? 1000 / 15 : 1000 / 30,
     aoQuality: constrained ? 'low' : 'medium',
     ambientOcclusion: reduction < 3,
-    bloom: reduction < 3,
+    bloom: !constrained && reduction < 2,
     landscapeQuality: constrained ? 'balanced' : 'high',
   };
 }

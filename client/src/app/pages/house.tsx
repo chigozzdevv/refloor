@@ -6,17 +6,26 @@ import { MovementPad } from '@/components/navigation/movement-pad';
 
 export type HousePageProps = {
   libraryOpen: boolean;
+  panelOpen: boolean;
+  addingFurniture: boolean;
   closeLibrary: () => void;
 };
 
-export function HousePage({ libraryOpen, closeLibrary }: HousePageProps) {
+export function HousePage({
+  libraryOpen,
+  panelOpen,
+  addingFurniture,
+  closeLibrary,
+}: HousePageProps) {
   const { mode, floorId, projectEpoch } = useProject();
   return (
     <>
       {mode === 'walk' && <JourneyControls key={projectEpoch} />}
-      <PortalDots />
-      {mode === 'walk' && <MovementPad />}
-      {libraryOpen && <FurniturePicker key={floorId} close={closeLibrary} />}
+      {!panelOpen && <PortalDots />}
+      {mode === 'walk' && !panelOpen && <MovementPad />}
+      {libraryOpen && (
+        <FurniturePicker key={floorId} close={closeLibrary} initialAdding={addingFurniture} />
+      )}
     </>
   );
 }

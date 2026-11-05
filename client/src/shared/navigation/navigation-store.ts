@@ -23,6 +23,7 @@ type NavigationState = {
   heading: number;
   portals: PortalCue[];
   mapOpen: boolean;
+  panelOpen: boolean;
   setMapOpen: (open: boolean) => void;
   setContext: (context: TourContext) => void;
   overview: number;
@@ -38,6 +39,7 @@ export const useNavigation = create<NavigationState>((set) => ({
   heading: 0,
   portals: [],
   mapOpen: false,
+  panelOpen: false,
   setMapOpen: (mapOpen) => set({ mapOpen }),
   setContext: (context) =>
     set((state) =>

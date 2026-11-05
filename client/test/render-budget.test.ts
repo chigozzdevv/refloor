@@ -45,9 +45,20 @@ describe('render target budget', () => {
         sunlightResolution: 1024,
         mirrorResolution: 256,
         landscapeQuality: 'balanced',
+        bloom: false,
       });
       expect(width! * height! * settings.dpr ** 2).toBeLessThanOrEqual(1_200_000);
     }
+  });
+
+  it('avoids the bloom pass in balanced mode while retaining depth shading and native clarity', () => {
+    expect(renderBudget({ ...desktop, quality: 'balanced' })).toMatchObject({
+      dpr: 1,
+      multisampling: 0,
+      sunlightResolution: 1024,
+      ambientOcclusion: true,
+      bloom: false,
+    });
   });
 
   it('does not allocate device-scale targets at 4K and respects small maximum texture dimensions', () => {

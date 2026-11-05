@@ -39,7 +39,7 @@ function Pendant({ object }: { object: SceneObject }) {
     shade.transmission = 0;
     shade.thickness = 0;
     shade.emissive.set(state?.color ?? '#ffe6bf');
-    shade.emissiveIntensity = (intensity / normal) * 0.8;
+    shade.emissiveIntensity = (intensity / normal) * 0.28;
     shade.needsUpdate = true;
   }, [shade, intensity, normal, state?.color]);
   return (
@@ -67,9 +67,9 @@ function Pendant({ object }: { object: SceneObject }) {
         shadow-bias={-0.00015}
         shadow-normalBias={0.015}
         shadow-autoUpdate={false}
-        position={[0, 0.18, 0]}
+        position={[0, -0.04, 0]}
         color={state?.color ?? '#ffe6bf'}
-        intensity={intensity * (lighting === 'day' ? 4 : 7)}
+        intensity={intensity * (lighting === 'day' ? 2 : 3.5)}
         distance={8}
         decay={2}
       />
