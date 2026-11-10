@@ -1,8 +1,8 @@
 # Refloor
 
-Refloor is a home design studio that runs in your browser. Describe a home, walk through the furnished result, and change its rooms, materials and furniture through conversation. Invite someone else to explore and work on the same design with you.
+Refloor turns a home brief into a furnished 3D house you can explore room by room. Describe the layout and finishes you want, then ask for changes to materials or furniture as you look around.
 
-Use it to try a colour scheme, rearrange a room or work through a home idea together. Your home stays editable as you make changes, with undo, saved designs and project files to help you keep your progress.
+Open doors and cupboards, switch on lights, or use the cooker and taps. Save designs, undo edits, and invite others to explore or edit the same home with you.
 
 [![A furnished Refloor bungalow with its roof and paved compound](docs/screenshots/bungalow.png)](docs/screenshots/bungalow.png)
 
@@ -96,8 +96,6 @@ pnpm dev
 ```
 
 Run `pnpm check` to check formatting, linting, rendering assets, production builds, types and automated tests.
-
-See the [deployment guide](deploy/README.md) for Firebase Hosting and a VPS backend behind Caddy.
 
 ## Built with
 

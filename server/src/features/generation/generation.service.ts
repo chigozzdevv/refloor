@@ -43,7 +43,7 @@ export class GenerationService {
       throw new ApiError(
         503,
         'GENERATION_UNAVAILABLE',
-        'Add OPENAI_API_KEY on the server to enable house generation.',
+        'Add the API key for the configured AI_PROVIDER to enable house generation.',
       );
     const now = new Date();
     const record = {

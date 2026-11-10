@@ -15,8 +15,11 @@ const environmentSchema = z.object({
     .default(
       'http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:4173,http://localhost:4173',
     ),
+  AI_PROVIDER: z.enum(['openai', 'boundless']).default('openai'),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.literal('gpt-6-luna').default('gpt-6-luna'),
+  BOUNDLESS_API_KEY: z.string().optional(),
+  BOUNDLESS_MODEL: z.string().min(1).default('openai/gpt-6-luna'),
 });
 
 export type ServerConfig = {
@@ -28,7 +31,7 @@ export type ServerConfig = {
   mongoUri: string;
   database: string;
   clientOrigins: string[];
-  ai?: { apiKey: string; model: 'gpt-6-luna' };
+  ai?: { provider: 'openai' | 'boundless'; apiKey: string; model: string };
 };
 
 export function readConfig(environment: NodeJS.ProcessEnv = process.env): ServerConfig {
@@ -46,6 +49,9 @@ export function readConfig(environment: NodeJS.ProcessEnv = process.env): Server
     if (!['http:', 'https:'].includes(url.protocol) || url.origin !== origin)
       throw new Error('CLIENT_ORIGINS must contain exact HTTP(S) origins');
   }
+  const provider = value.AI_PROVIDER;
+  const apiKey = provider === 'boundless' ? value.BOUNDLESS_API_KEY : value.OPENAI_API_KEY;
+  const model = provider === 'boundless' ? value.BOUNDLESS_MODEL : value.OPENAI_MODEL;
   return {
     production: value.NODE_ENV === 'production',
     host: value.HOST,
@@ -54,8 +60,6 @@ export function readConfig(environment: NodeJS.ProcessEnv = process.env): Server
     mongoUri: value.MONGODB_URI,
     database: value.MONGODB_DATABASE,
     clientOrigins,
-    ...(value.OPENAI_API_KEY
-      ? { ai: { apiKey: value.OPENAI_API_KEY, model: value.OPENAI_MODEL } }
-      : {}),
+    ...(apiKey ? { ai: { provider, apiKey, model } } : {}),
   };
 }

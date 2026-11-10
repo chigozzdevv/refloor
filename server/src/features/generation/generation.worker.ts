@@ -9,13 +9,16 @@ import { generationFailureMessage } from '@refloor/server/features/generation/ge
 const input = workerData as {
   id: string;
   prompt: string;
+  provider: 'openai' | 'boundless';
   apiKey: string;
   model: string;
   resultPort: MessagePort;
 };
 let usage: GenerationUsage | null = null;
 try {
-  const result = await new HouseAI(input.apiKey, input.model).requirements(input.prompt);
+  const result = await new HouseAI(input.apiKey, input.model, input.provider).requirements(
+    input.prompt,
+  );
   usage = result.usage;
   input.resultPort.postMessage({ type: 'progress', status: 'layout', usage: result.usage });
   const building = await generateLayout(input.id, result.requirements, (status) =>

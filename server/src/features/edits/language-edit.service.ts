@@ -11,7 +11,7 @@ import { languageReadGuards } from '@refloor/server/shared/planning/edit-depende
 export class LanguageEditService {
   private readonly ai: HouseAI | null;
   constructor(ai: ServerConfig['ai']) {
-    this.ai = ai ? new HouseAI(ai.apiKey, ai.model) : null;
+    this.ai = ai ? new HouseAI(ai.apiKey, ai.model, ai.provider) : null;
   }
   async interpret(input: LanguageEditRequest) {
     if (!this.ai)
