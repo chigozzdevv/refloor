@@ -4,7 +4,7 @@ Refloor turns a home brief into a furnished 3D house you can explore room by roo
 
 Open doors and cupboards, switch on lights, or use the cooker and taps. Save designs, undo edits, and invite others to explore or edit the same home with you.
 
-[![A furnished Refloor bungalow with its roof and paved compound](docs/screenshots/bungalow.png)](docs/screenshots/bungalow.png)
+[![Refloor's front door with the “Click to open” prompt](docs/screenshots/bungalow.png)](docs/screenshots/bungalow.png)
 
 ## What you can do
 
@@ -14,7 +14,7 @@ Describe the rooms you need, how they should connect and the finishes you have i
 
 You can ask for details such as an open living and dining area, a separate kitchen, brick exterior walls or oak floors. Start from a prepared house if you want to explore first, then make it your own through editing.
 
-[![Describing the bungalow in Refloor](docs/screenshots/create-home.png)](docs/screenshots/create-home.png)
+[![Prompt describing a modern two-storey home in Refloor](docs/screenshots/create-home.png)](docs/screenshots/create-home.png)
 
 ### Walk through the home
 
@@ -22,7 +22,7 @@ Enter through the front door and explore at room level. Use the room links or ho
 
 This lets you see furniture, openings and walkways from inside the home. You can also switch to an exterior overview to inspect the building and compound, then return indoors to continue exploring.
 
-[![Inside the bungalow's furnished living and dining room](docs/screenshots/explore-home.png)](docs/screenshots/explore-home.png)
+[![Entrance hall with stairs, room map and movement controls in Refloor](docs/screenshots/explore-home.png)](docs/screenshots/explore-home.png)
 
 ### Redesign through conversation
 
@@ -30,7 +30,7 @@ Select an item or surface and describe the change you want. Ask for terracotta u
 
 Use house chat for changes across the home, and the furniture library to add pieces to a chosen room. Changes are checked before they are applied, and undo lets you step back when an idea does not work for you.
 
-[![Changing the bungalow sofa's upholstery through chat](docs/screenshots/edit-home.png)](docs/screenshots/edit-home.png)
+[![Chat request to close a sideboard's storage fronts](docs/screenshots/edit-home.png)](docs/screenshots/edit-home.png)
 
 ### Make the home respond
 
@@ -38,7 +38,7 @@ The home has working objects you can operate. Open doors and cupboards, switch o
 
 You can also describe connections between actions. For example, ask the television to turn on when you enter the living room. These connections appear in Saved actions, where you can inspect, test, edit, disable or remove them.
 
-[![Operating the television and creating a room-entry action inside the bungalow](docs/screenshots/interactions.png)](docs/screenshots/interactions.png)
+[![Saved action that turns off the living-room light when the television turns on](docs/screenshots/interactions.png)](docs/screenshots/interactions.png)
 
 ### Design together
 
@@ -46,7 +46,7 @@ Create an invitation and choose whether someone can edit the home or view it. Ea
 
 You can see who is present, which items they select and when they are typing or applying a change. Accepted changes sync to everyone in the house. The owner can change permissions or remove access from the sharing panel.
 
-[![Two people collaborating from inside the same bungalow](docs/screenshots/collaborate.png)](docs/screenshots/collaborate.png)
+[![Joy and Samuel editing the same Refloor home together](docs/screenshots/collaborate.png)](docs/screenshots/collaborate.png)
 
 ### Keep and revisit your designs
 
@@ -54,7 +54,7 @@ The browser keeps your current draft as you edit, while saved homes let you retu
 
 You can also export a project file and import it again. The file keeps the editable home, saved designs and conversations together, so you can return to it later or keep a portable copy.
 
-[![Named designs and edit history inside the bungalow](docs/screenshots/save-designs.png)](docs/screenshots/save-designs.png)
+[![Refloor's house edit history with undo controls](docs/screenshots/save-designs.png)](docs/screenshots/save-designs.png)
 
 ## How it works
 
